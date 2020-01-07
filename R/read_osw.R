@@ -16,6 +16,7 @@
 #' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_Metabolomics".
 #' @param analyteInGroupLabel (logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.
 #'  FALSE for fetching analytes as PEPTIDE.MODIFIED_SEQUENCE and PRECURSOR.CHARGE from osw file.
+#' @param identifying logical value indicating the extraction of identifying transtions. (Default: FALSE)
 #' @return (data-frames) Data-frame has following columns:
 #' \item{transition_group_id}{(string) it is either fetched from PRECURSOR.GROUP_LABEL or a combination of PEPTIDE.MODIFIED_SEQUENCE and PRECURSOR.CHARGE from osw file.}
 #' \item{filename}{(string) as mentioned in RUN table of osw files.}
@@ -43,13 +44,15 @@
 #'   runType = "DIA_proteomics", analyteInGroupLabel = FALSE)
 #' }
 fetchAnalytesInfo <- function(oswName, maxFdrQuery, oswMerged,
-                              analytes, filename, runType, analyteInGroupLabel = FALSE){
+                              analytes, filename, runType, analyteInGroupLabel = FALSE,
+                              identifying = FALSE){
   # Establish a connection of SQLite file.
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname = oswName)
   # Generate a query.
   query <- getQuery(maxFdrQuery, oswMerged, analytes = analytes,
                     filename = filename, runType = runType,
-                    analyteInGroupLabel = analyteInGroupLabel)
+                    analyteInGroupLabel = analyteInGroupLabel,
+                    identifying = identifying)
   # Run query to get peptides, their coordinates and scores.
   analytesInfo <- tryCatch(expr = DBI::dbGetQuery(con, statement = query),
                            finally = DBI::dbDisconnect(con))

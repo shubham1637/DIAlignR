@@ -66,11 +66,11 @@ test_that("test_getOswFiles", {
   maxFdrQuery <- 0.05
   analyteFDR <- 0.01
   oswMerged <- TRUE
-  outData <- getOswFiles(dataPath = dataPath, filenames, maxFdrQuery, analyteFDR, oswMerged, analyteInGroupLabel = FALSE)
+  outData <- getOswFiles(dataPath = dataPath, filenames, maxFdrQuery, analyteFDR, oswMerged, analyteInGroupLabel = FALSE, identifying = FALSE)
   expect_identical(length(outData), 3L)
-  expect_identical(dim(outData[["run0"]]), c(211L, 12L))
-  expect_identical(dim(outData[["run1"]]), c(227L, 12L))
-  expect_identical(dim(outData[["run2"]]), c(212L, 12L))
+  expect_identical(dim(outData[["run0"]]), c(211L, 14L))
+  expect_identical(dim(outData[["run1"]]), c(227L, 14L))
+  expect_identical(dim(outData[["run2"]]), c(212L, 14L))
   expData <- data.frame("transition_group_id" = "AAAEMGIDLGQVPGTGPK_3",
                         "filename" = "data/raw/hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.mzML.gz",
                         "RT" = 3884.56,
@@ -81,11 +81,13 @@ test_that("test_getOswFiles", {
                         "rightWidth" = 3902.816,
                         "peak_group_rank" = 1L,
                         "m_score" = 0.0241832,
+                        "detecting_transitions" = 1,
+                        "identifying_transitions" = 0,
                         "chromatogramIndex" = "NA,NA,NA,NA,NA,NA",
                         "transition_ids" = "106468,106469,106470,106471,106472,106473",
                         stringsAsFactors=FALSE)
   expect_equal(as.data.frame(outData[["run1"]][1,]), expData, tolerance=1e-5)
-  outData <- getOswFiles(dataPath = dataPath, filenames, maxFdrQuery, analyteFDR, oswMerged, analyteInGroupLabel = TRUE)
+  outData <- getOswFiles(dataPath = dataPath, filenames, maxFdrQuery, analyteFDR, oswMerged, analyteInGroupLabel = TRUE, identifying = FALSE)
   expData <- data.frame("transition_group_id" = "10434_LIPNEAADVYVK/2",
                         "filename" = "data/raw/hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.mzML.gz",
                         "RT" = 3239.48,
@@ -96,8 +98,28 @@ test_that("test_getOswFiles", {
                         "rightWidth" = 3264.839,
                         "peak_group_rank" = 1L,
                         "m_score" = 5.692077e-05,
+                        "detecting_transitions" = 1,
+                        "identifying_transitions" = 0,
                         "chromatogramIndex" = "NA,NA,NA,NA,NA,NA",
                         "transition_ids" = "2820,2821,2822,2823,2824,2825",
+                        stringsAsFactors=FALSE)
+  expect_equal(as.data.frame(outData[["run1"]][1,]), expData, tolerance=1e-5)
+  ## Test Identifying
+  outData <- getOswFiles(dataPath = dataPath, filenames, maxFdrQuery, analyteFDR, oswMerged, analyteInGroupLabel = FALSE, identifying = TRUE)
+  expData <- data.frame("transition_group_id" = "AAAEMGIDLGQVPGTGPK_3",
+                        "filename" = "data/raw/hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.mzML.gz",
+                        "RT" = 3884.56,
+                        "delta_rt" = 17.0629,
+                        "assay_RT" = 53,
+                        "Intensity" = 42.0064,
+                        "leftWidth" = 3865.266,
+                        "rightWidth" = 3902.816,
+                        "peak_group_rank" = 1L,
+                        "m_score" = 0.0241832,
+                        "detecting_transitions" = 1,
+                        "identifying_transitions" = 0,
+                        "chromatogramIndex" = "NA,NA,NA,NA,NA,NA",
+                        "transition_ids" = "106468,106469,106470,106471,106472,106473",
                         stringsAsFactors=FALSE)
   expect_equal(as.data.frame(outData[["run1"]][1,]), expData, tolerance=1e-5)
 })

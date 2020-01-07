@@ -4,9 +4,15 @@
 \alias{getQuery}
 \title{Generate SQL query to fetch information from osw files.}
 \usage{
-getQuery(maxFdrQuery, oswMerged = TRUE, analytes = NULL,
-  filename = NULL, runType = "DIA_Proteomics",
-  analyteInGroupLabel = FALSE)
+getQuery(
+  maxFdrQuery,
+  oswMerged = TRUE,
+  analytes = NULL,
+  filename = NULL,
+  runType = "DIA_Proteomics",
+  analyteInGroupLabel = FALSE,
+  identifying = FALSE
+)
 }
 \arguments{
 \item{maxFdrQuery}{(numeric) value between 0 and 1. It is used to filter features from osw file which have SCORE_MS2.QVALUE less than itself.}
@@ -20,6 +26,8 @@ getQuery(maxFdrQuery, oswMerged = TRUE, analytes = NULL,
 \item{runType}{(char) This must be one of the strings "DIA_proteomics", "DIA_Metabolomics".}
 
 \item{analyteInGroupLabel}{(logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.}
+
+\item{identifying}{logical value indicating the extraction of identifying transtions. (Default: FALSE)}
 }
 \value{
 SQL query to be searched.

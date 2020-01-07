@@ -4,8 +4,16 @@
 \alias{fetchAnalytesInfo}
 \title{Fetch features of analytes}
 \usage{
-fetchAnalytesInfo(oswName, maxFdrQuery, oswMerged, analytes, filename,
-  runType, analyteInGroupLabel = FALSE)
+fetchAnalytesInfo(
+  oswName,
+  maxFdrQuery,
+  oswMerged,
+  analytes,
+  filename,
+  runType,
+  analyteInGroupLabel = FALSE,
+  identifying = FALSE
+)
 }
 \arguments{
 \item{oswName}{(char) path to the osw file.}
@@ -22,6 +30,8 @@ fetchAnalytesInfo(oswName, maxFdrQuery, oswMerged, analytes, filename,
 
 \item{analyteInGroupLabel}{(logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.
 FALSE for fetching analytes as PEPTIDE.MODIFIED_SEQUENCE and PRECURSOR.CHARGE from osw file.}
+
+\item{identifying}{logical value indicating the extraction of identifying transtions. (Default: FALSE)}
 }
 \value{
 (data-frames) Data-frame has following columns:

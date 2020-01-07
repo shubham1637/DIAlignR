@@ -221,6 +221,7 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
 #' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_Metabolomics".
 #' @param refRun (string)
 #' @param analyteInGroupLabel (logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.
+#' @param identifying logical value indicating the extraction of identifying transtions. (Default: FALSE)
 #' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
 #' @param nameCutPattern (string) regex expression to fetch mzML file name from RUN.FILENAME columns of osw files.
 #' @param maxFdrQuery (numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_MS2.QVALUE less than itself.
@@ -261,7 +262,7 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
 #' @export
 getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
                          runType = "DIA_Proteomics", refRun = NULL,
-                         analyteInGroupLabel = FALSE, oswMerged = TRUE, nameCutPattern = "(.*)(/)(.*)",
+                         analyteInGroupLabel = FALSE, identifying = FALSE, oswMerged = TRUE, nameCutPattern = "(.*)(/)(.*)",
                          maxFdrQuery = 0.05, maxFdrLoess = 0.01, analyteFDR = 1.00, spanvalue = 0.1,
                          normalization = "mean", simMeasure = "dotProductMasked",
                          XICfilter = "sgolay", SgolayFiltOrd = 4, SgolayFiltLen = 9,
@@ -301,7 +302,7 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
   ######### Get Precursors from the query and respectve chromatogram indices. ######
   oswFiles <- getOswFiles(dataPath, filenames, maxFdrQuery = maxFdrQuery, analyteFDR = analyteFDR,
                           oswMerged = oswMerged, analytes = NULL, runType = runType,
-                          analyteInGroupLabel = analyteInGroupLabel, mzPntrs = mzPntrs)
+                          analyteInGroupLabel = analyteInGroupLabel, identifying = identifying, mzPntrs = mzPntrs)
 
   # Report analytes that are not found
   refAnalytes <- getAnalytesName(oswFiles, analyteFDR, commonAnalytes = FALSE)

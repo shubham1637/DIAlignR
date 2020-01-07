@@ -71,6 +71,7 @@ mergeOswAnalytes_ChromHeader <- function(oswAnalytes, chromHead, analyteFDR =  1
 #' @param analytes (string) analyte is as PRECURSOR.GROUP_LABEL or as PEPTIDE.MODIFIED_SEQUENCE and PRECURSOR.CHARGE from osw file.
 #' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_Metabolomics".
 #' @param analyteInGroupLabel (logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.
+#' @param identifying logical value indicating the extraction of identifying transtions. (Default: FALSE)
 #' @param mzPntrs A list of mzRpwiz.
 #'  FALSE for fetching analytes as PEPTIDE.MODIFIED_SEQUENCE and PRECURSOR.CHARGE from osw file.
 #' @return (data-frames) Data-frame has following columns:
@@ -95,7 +96,7 @@ mergeOswAnalytes_ChromHeader <- function(oswAnalytes, chromHead, analyteFDR =  1
 #' @export
 getOswFiles <- function(dataPath, filenames, maxFdrQuery = 0.05, analyteFDR = 0.01, oswMerged = TRUE,
                          analytes = NULL, runType = "DIA_proteomics", analyteInGroupLabel = FALSE,
-                        mzPntrs = NULL){
+                        identifying = FALSE, mzPntrs = NULL ){
   oswFiles <- list()
   for(i in 1:nrow(filenames)){
     run <- rownames(filenames)[i]
@@ -108,7 +109,7 @@ getOswFiles <- function(dataPath, filenames, maxFdrQuery = 0.05, analyteFDR = 0.
     }
     # Get transition indices for MS2 fragment-ions.
     oswAnalytes <- fetchAnalytesInfo(oswName, maxFdrQuery, oswMerged, analytes = analytes,
-                                     filename = filenames$filename[i], runType, analyteInGroupLabel)
+                                     filename = filenames$filename[i], runType, analyteInGroupLabel, identifying = identifying)
 
     # Get chromatogram indices from the header file.
     if(is.null(mzPntrs)){

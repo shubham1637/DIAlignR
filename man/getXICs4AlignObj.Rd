@@ -4,9 +4,16 @@
 \alias{getXICs4AlignObj}
 \title{Extract XICs of all analytes from oswFiles}
 \usage{
-getXICs4AlignObj(dataPath, runs, oswFiles, analytes,
-  XICfilter = "sgolay", SgolayFiltOrd = 4, SgolayFiltLen = 9,
-  mzPntrs = NULL)
+getXICs4AlignObj(
+  dataPath,
+  runs,
+  oswFiles,
+  analytes,
+  XICfilter = "sgolay",
+  SgolayFiltOrd = 4,
+  SgolayFiltLen = 9,
+  mzPntrs = NULL
+)
 }
 \arguments{
 \item{dataPath}{(char) path to mzml and osw directory.}
