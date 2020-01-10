@@ -15,7 +15,8 @@ getXICs(
   runType = "DIA_proteomics",
   oswMerged = TRUE,
   nameCutPattern = "(.*)(/)(.*)",
-  analyteInGroupLabel = FALSE
+  analyteInGroupLabel = FALSE,
+  mzPntrs = NULL
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ getXICs(
 \item{nameCutPattern}{(string) regex expression to fetch mzML file name from RUN.FILENAME columns of osw files.}
 
 \item{analyteInGroupLabel}{(logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.}
+
+\item{mzPntrs}{A list of mzRpwiz.}
 }
 \value{
 A list of list. Each list contains XIC-group for that run. XIC-group is a list of dataframe that has elution time and intensity of fragment-ion XIC.

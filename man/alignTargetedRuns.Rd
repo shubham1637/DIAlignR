@@ -32,7 +32,8 @@ alignTargetedRuns(
   samples4gradient = 100,
   samplingTime = 3.4,
   RSEdistFactor = 3.5,
-  saveFiles = FALSE
+  saveFiles = FALSE,
+  mzPntrs = NULL
 )
 }
 \arguments{
@@ -92,6 +93,8 @@ cosine2Angle, dotProductMasked, euclideanDist, covariance and correlation.}
 \item{RSEdistFactor}{(numeric) This defines how much distance in the unit of rse remains a noBeef zone.}
 
 \item{saveFiles}{(logical) Must be selected from light, medium and heavy.}
+
+\item{mzPntrs}{A list of mzRpwiz.}
 }
 \value{
 Two tables of intensity and rention times for every analyte in each run.

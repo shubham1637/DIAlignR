@@ -25,7 +25,7 @@ test_that("test_getMZMLpointers",{
            "run1" = "hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt",
            "run2" = "hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt")
   outData <- getMZMLpointers(dataPath = dataPath, runs = runs)
-  expect_is(outData[["run0"]], "mzRpwiz")
-  expect_is(outData[["run1"]], "mzRpwiz")
-  expect_is(outData[["run2"]], "mzRpwiz")
+  expect_is(outData[["run0"]]$mz, "mzRpwiz")
+  expect_is(outData[["run1"]]$mz, "mzRpwiz")
+  expect_is(outData[["run2"]]$mz, "mzRpwiz")
 })

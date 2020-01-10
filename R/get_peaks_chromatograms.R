@@ -73,7 +73,7 @@ getXICs4AlignObj <- function(dataPath, runs, oswFiles, analytes, XICfilter = "sg
   names(XICs) <- names(runs)
   for(i in seq_along(runs)){
     runname = names(runs)[i]
-    message("Fetching XICs from run ", runs[[runname]])
+    message("Fetching XICs from ", runname, " ", runs[[runname]])
     XICs[[i]] <- lapply(seq_along(analytes), function(j){
       analyte <- analytes[j]
       chromIndices <- selectChromIndices(oswFiles, runname = runname, analyte = analyte)
@@ -82,7 +82,7 @@ getXICs4AlignObj <- function(dataPath, runs, oswFiles, analytes, XICfilter = "sg
         message("Skipping ", analyte)
         XIC_group <- NULL
       } else {
-        XIC_group <- extractXIC_group(mzPntrs[[runname]], chromIndices, XICfilter, SgolayFiltOrd, SgolayFiltLen)
+        XIC_group <- extractXIC_group(mzPntrs[[runname]]$mz, chromIndices, XICfilter, SgolayFiltOrd, SgolayFiltLen)
       }
       XIC_group
     })
@@ -116,6 +116,7 @@ getXICs4AlignObj <- function(dataPath, runs, oswFiles, analytes, XICfilter = "sg
 #' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
 #' @param nameCutPattern (string) regex expression to fetch mzML file name from RUN.FILENAME columns of osw files.
 #' @param analyteInGroupLabel (logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.
+#' @param mzPntrs A list of mzRpwiz.
 #' @return A list of list. Each list contains XIC-group for that run. XIC-group is a list of dataframe that has elution time and intensity of fragment-ion XIC.
 #'
 #' @seealso \code{\link{getOswFiles}, \link{getRunNames}}
@@ -127,7 +128,7 @@ getXICs4AlignObj <- function(dataPath, runs, oswFiles, analytes, XICfilter = "sg
 #' @export
 getXICs <- function(analytes, runs, dataPath = ".", maxFdrQuery = 1.0, XICfilter = "sgolay",
                     SgolayFiltOrd = 4, SgolayFiltLen = 9, runType = "DIA_proteomics",
-                    oswMerged = TRUE, nameCutPattern = "(.*)(/)(.*)", analyteInGroupLabel = FALSE){
+                    oswMerged = TRUE, nameCutPattern = "(.*)(/)(.*)", analyteInGroupLabel = FALSE, mzPntrs=NULL){
   if( (SgolayFiltLen %% 2) != 1){
     print("SgolayFiltLen can only be odd number")
     return(NULL)
@@ -153,7 +154,7 @@ getXICs <- function(analytes, runs, dataPath = ".", maxFdrQuery = 1.0, XICfilter
   # Get Chromatogram for each peptide in each run.
   message("Fetching Extracted-ion chromatograms from runs")
   XICs <- getXICs4AlignObj(dataPath, runs, oswFiles, analytesFound, XICfilter,
-                           SgolayFiltOrd, SgolayFiltLen)
+                           SgolayFiltOrd, SgolayFiltLen, mzPntrs=mzPntrs)
   names(XICs) <- filenames$runs
   XICs
 }

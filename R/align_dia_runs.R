@@ -41,6 +41,7 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c("transition_group_id", "
 #' @param samplingTime (numeric) Time difference between two data-points in each chromatogram. For hybrid and local alignment, samples are assumed to be equally time-spaced.
 #' @param RSEdistFactor (numeric) This defines how much distance in the unit of rse remains a noBeef zone.
 #' @param saveFiles (logical) Must be selected from light, medium and heavy.
+#' @param mzPntrs A list of mzRpwiz.
 #' @return Two tables of intensity and rention times for every analyte in each run.
 #' @seealso \code{\link{getRunNames}, \link{getOswFiles}, \link{getAnalytesName}, \link{getMappedRT}}
 #' @examples
@@ -57,20 +58,21 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c("transition_group_id", "
 #' @export
 alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabel = FALSE, oswMerged = TRUE,
                               runs = NULL, analytes = NULL, nameCutPattern = "(.*)(/)(.*)",
-                         maxFdrQuery = 0.05, maxFdrLoess = 0.01, analyteFDR = 0.01,
-                         spanvalue = 0.1, runType = "DIA_Proteomics",
-                         normalization = "mean", simMeasure = "dotProductMasked",
-                         XICfilter = "sgolay", SgolayFiltOrd = 4, SgolayFiltLen = 9,
-                         goFactor = 0.125, geFactor = 40,
-                         cosAngleThresh = 0.3, OverlapAlignment = TRUE,
-                         dotProdThresh = 0.96, gapQuantile = 0.5,
-                         hardConstrain = FALSE, samples4gradient = 100,
-                         samplingTime = 3.4,  RSEdistFactor = 3.5, saveFiles = FALSE){
+                              maxFdrQuery = 0.05, maxFdrLoess = 0.01, analyteFDR = 0.01,
+                              spanvalue = 0.1, runType = "DIA_Proteomics",
+                              normalization = "mean", simMeasure = "dotProductMasked",
+                              XICfilter = "sgolay", SgolayFiltOrd = 4, SgolayFiltLen = 9,
+                              goFactor = 0.125, geFactor = 40,
+                              cosAngleThresh = 0.3, OverlapAlignment = TRUE,
+                              dotProdThresh = 0.96, gapQuantile = 0.5,
+                              hardConstrain = FALSE, samples4gradient = 100,
+                              samplingTime = 3.4,  RSEdistFactor = 3.5, saveFiles = FALSE,
+                              mzPntrs = NULL){
   # Check if filter length is odd for Savitzky-Golay filter.
   if( (SgolayFiltLen %% 2) != 1){
     return(stop("SgolayFiltLen can only be odd number"))
   }
-
+  
   # Get filenames from .merged.osw file and check if names are consistent between osw and mzML files.
   filenames <- getRunNames(dataPath, oswMerged, nameCutPattern)
   if(!is.null(runs)){
@@ -82,11 +84,21 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
   }
   message("Following runs will be aligned:")
   print(filenames[, "runs"], sep = "\n")
-
+  
+  if(is.null(mzPntrs)){
+    ######### Collect pointers for each mzML file. #######
+    runs <- filenames$runs
+    names(runs) <- rownames(filenames)
+    # Collect all the pointers for each mzML file.
+    message("Collecting metadata from mzML files.")
+    mzPntrs <- getMZMLpointers(dataPath, runs)
+    message("Metadata is collected from mzML files.")
+  }
+  
   ######### Get Precursors from the query and respectve chromatogram indices. ######
   oswFiles <- getOswFiles(dataPath, filenames,  maxFdrQuery = maxFdrQuery, analyteFDR = analyteFDR,
-                          oswMerged = oswMerged, analytes = NULL, runType = runType, analyteInGroupLabel = analyteInGroupLabel)
-
+                          oswMerged = oswMerged, analytes = NULL, runType = runType, analyteInGroupLabel = analyteInGroupLabel, mzPntrs = mzPntrs)
+  
   refAnalytes <- getAnalytesName(oswFiles, analyteFDR, commonAnalytes = FALSE)
   if(!is.null(analytes)){
     analytesFound <- intersect(analytes, refAnalytes)
@@ -96,15 +108,7 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
     }
     refAnalytes <- analytesFound
   }
-
-  ######### Collect pointers for each mzML file. #######
-  runs <- filenames$runs
-  names(runs) <- rownames(filenames)
-  # Collect all the pointers for each mzML file.
-  message("Collecting metadata from mzML files.")
-  mzPntrs <- getMZMLpointers(dataPath, runs)
-  message("Metadata is collected from mzML files.")
-
+  
   ######### Initilize output tables. #######
   rtTbl <- matrix(NA, nrow = length(refAnalytes), ncol = length(runs))
   intesityTbl <- matrix(NA, nrow = length(refAnalytes), ncol = length(runs))
@@ -114,11 +118,11 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
   rownames(intesityTbl) <- refAnalytes; colnames(intesityTbl) <- names(runs)
   rownames(lwTbl) <- refAnalytes; colnames(lwTbl) <- names(runs)
   rownames(rwTbl) <- refAnalytes; colnames(rwTbl) <- names(runs)
-
+  
   ######### Container to save loess fits.  #######
   loessFits <- list()
   #alignedTables <- performRefAlignment(alignType, ...)
-
+  
   message("Performing reference-based alignment.")
   start_time <- Sys.time()
   for(analyteIdx in seq_along(refAnalytes)){
@@ -128,7 +132,7 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
     refPeak <- oswFiles[[refRunIdx]] %>%
       dplyr::filter(transition_group_id == analyte & peak_group_rank == 1) %>%
       dplyr::select(leftWidth, RT, rightWidth, Intensity)
-
+    
     # Get XIC_group from reference run. if missing, go to next analyte.
     ref <- names(runs)[refRunIdx]
     exps <- setdiff(names(runs), ref)
@@ -138,17 +142,17 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
       message("Skipping ", analyte)
       next
     } else {
-      XICs.ref <- extractXIC_group(mz = mzPntrs[[ref]], chromIndices = chromIndices,
+      XICs.ref <- extractXIC_group(mz = mzPntrs[[ref]]$mz, chromIndices = chromIndices,
                                    XICfilter = XICfilter, SgolayFiltOrd = SgolayFiltOrd,
                                    SgolayFiltLen = SgolayFiltLen)
     }
-
+    
     # Align all runs to reference run
     for(eXp in exps){
       # Get XIC_group from experiment run
       chromIndices <- selectChromIndices(oswFiles, runname = eXp, analyte = analyte)
       if(!is.null(chromIndices)){
-        XICs.eXp <- extractXIC_group(mzPntrs[[eXp]], chromIndices)
+        XICs.eXp <- extractXIC_group(mzPntrs[[eXp]]$mz, chromIndices)
         # Get the loess fit for hybrid alignment
         pair <- paste(ref, eXp, sep = "_")
         if(any(pair %in% names(loessFits))){
@@ -191,7 +195,7 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
   # Report the execution time for hybrid alignment step.
   end_time <- Sys.time()
   message("Execution time for alignment = ", end_time - start_time)
-
+  
   colnames(rtTbl) <- unname(runs[colnames(rtTbl)])
   colnames(intesityTbl) <- unname(runs[colnames(intesityTbl)])
   if(saveFiles){
@@ -245,6 +249,7 @@ alignTargetedRuns <- function(dataPath, alignType = "hybrid", analyteInGroupLabe
 #' @param samplingTime (numeric) Time difference between two data-points in each chromatogram. For hybrid and local alignment, samples are assumed to be equally time-spaced.
 #' @param RSEdistFactor (numeric) This defines how much distance in the unit of rse remains a noBeef zone.
 #' @param objType (char) Must be selected from light, medium and heavy.
+#' @param mzPntrs A list of mzRpwiz.
 #' @return A list of AlignObj. Each AlignObj is an S4 object. Three most-important slots are:
 #' \item{indexA_aligned}{(integer) aligned indices of reference run.}
 #' \item{indexB_aligned}{(integer) aligned indices of experiment run.}
@@ -270,12 +275,12 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
                          cosAngleThresh = 0.3, OverlapAlignment = TRUE,
                          dotProdThresh = 0.96, gapQuantile = 0.5,
                          hardConstrain = FALSE, samples4gradient = 100,
-                         samplingTime = 3.4,  RSEdistFactor = 3.5, objType = "light"){
+                         samplingTime = 3.4,  RSEdistFactor = 3.5, objType = "light", mzPntrs = NULL){
   if(length(runs) != 2){
     print("For pairwise alignment, two runs are required.")
     return(NULL)
   }
-
+  
   if( (SgolayFiltLen %% 2) != 1){
     print("SgolayFiltLen can only be odd number")
     return(NULL)
@@ -287,23 +292,25 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
   if(length(missingRun) != 0){
     return(stop(missingRun, " runs are not found."))
   }
-
+  
   message("Following runs will be aligned:")
   message(filenames[, "runs"], sep = "\n")
   
-  ######### Collect pointers for each mzML file. #######
-  runs <- filenames$runs
-  names(runs) <- rownames(filenames)
-  # Collect all the pointers for each mzML file.
-  message("Collecting metadata from mzML files.")
-  mzPntrs <- getMZMLpointers(dataPath, runs)
-  message("Metadata is collected from mzML files.")
-
+  if(is.null(mzPntrs)){
+    ######### Collect pointers for each mzML file. #######
+    runs <- filenames$runs
+    names(runs) <- rownames(filenames)
+    # Collect all the pointers for each mzML file.
+    message("Collecting metadata from mzML files.")
+    mzPntrs <- getMZMLpointers(dataPath, runs)
+    message("Metadata is collected from mzML files.")
+  }
+  
   ######### Get Precursors from the query and respectve chromatogram indices. ######
   oswFiles <- getOswFiles(dataPath, filenames, maxFdrQuery = maxFdrQuery, analyteFDR = analyteFDR,
                           oswMerged = oswMerged, analytes = NULL, runType = runType,
                           analyteInGroupLabel = analyteInGroupLabel, identifying = identifying, mzPntrs = mzPntrs)
-
+  
   # Report analytes that are not found
   refAnalytes <- getAnalytesName(oswFiles, analyteFDR, commonAnalytes = FALSE)
   analytesFound <- intersect(analytes, refAnalytes)
@@ -312,7 +319,7 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
     message(paste(analytesNotFound, "not found."))
   }
   analytes <- analytesFound
-
+  
   ####################### Get XICs ##########################################
   runs <- filenames$runs
   names(runs) <- rownames(filenames)
@@ -321,7 +328,7 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
   XICs <- getXICs4AlignObj(dataPath, runs, oswFiles, analytes, XICfilter = XICfilter,
                            SgolayFiltOrd = SgolayFiltOrd, SgolayFiltLen = SgolayFiltLen,
                            mzPntrs = mzPntrs)
-
+  
   ####################### Perfrom alignment ##########################################
   AlignObjs <- vector("list", length(analytes))
   names(AlignObjs) <- analytes
@@ -335,12 +342,12 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
     } else{
       refRunIdx <- which(filenames$runs == refRun)
     }
-
+    
     # Get XIC_group from reference run
     ref <- names(runs)[refRunIdx]
     exps <- setdiff(names(runs), ref)
     XICs.ref <- XICs[[ref]][[analyte]]
-
+    
     # Align experiment run to reference run
     for(eXp in exps){
       # Get XIC_group from experiment run
@@ -363,7 +370,7 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
                                 objType)
         AlignObjs[[analyte]] <- list()
         # Attach AlignObj for the analyte.
-          AlignObjs[[analyte]][[pair]] <- AlignObj
+        AlignObjs[[analyte]][[pair]] <- AlignObj
         # Attach intensities of reference XICs.
         AlignObjs[[analyte]][[runs[ref]]] <- XICs.ref
         # Attach intensities of experiment XICs.
@@ -377,7 +384,7 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", alignType = "hybrid",
       else {AlignObjs[[analyte]] <- NULL}
     }
   }
-
+  
   ####################### Return AlignedObjs ##########################################
   message("Alignment done. Returning AlignObjs")
   AlignObjs

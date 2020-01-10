@@ -54,11 +54,13 @@ getMZMLpointers <- function(dataPath, runs){
   for(mzMLindex in seq_along(runs)){
     run <- names(runs)[mzMLindex]
     mzmlName <- file.path(dataPath, "mzml", paste0(runs[run], ".chrom.mzML"))
-    mzPntrs[[mzMLindex]] <- tryCatch(expr = mzR::openMSfile(mzmlName, backend = "pwiz"),
+    mzPntrs[[mzMLindex]] <- list()
+    mzPntrs[[mzMLindex]]$mz <- tryCatch(expr = mzR::openMSfile(mzmlName, backend = "pwiz"),
                                      error = function(cnd) {
                                        conditionMessage(cnd)
                                        message("If error includes invalid cvParam accession 1002746, use FileConverter from OpenMS to decompress chromatograms")
                                        stop(cnd)})
+    
   }
   names(mzPntrs) <- names(runs)
   mzPntrs

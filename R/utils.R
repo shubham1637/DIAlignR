@@ -79,6 +79,38 @@ selectChromIndices <- function(oswFiles, runname, analyte){
   chromIndices
 }
 
+#' Find if an object exists in a list
+#' Searches name structure for name search parameter
+#' @param x A list object
+#' @param name Name of sub-components in list
+#' @return logical value if name is present in list
+isListObj <- function(x, name) {
+  pos <- match(name, names(x))
+  if (!is.na(pos)){ return(TRUE) } else { return(FALSE) }
+  for (el in x) {
+    if (class(el) == "list") {
+      out <- Recall(el, name)
+      if (!is.null(out)) return(TRUE)
+    } else {
+      return(FALSE)
+    }
+  }
+}
+
+#' Find and Extract an obj from a structured list
+#' @param x A list object
+#' @param name Name of sub-components in list
+#' @return returns the named object in list
+getListObj <- function(x, name) {
+  pos <- match(name, names(x))
+  if (!is.na(pos)) return(x[[pos]])
+  for (el in x) {
+    if (class(el) == "list") {
+      out <- Recall(el, name)
+      if (!is.null(out)) return(out)
+    }
+  }
+}
 
 testAlignObj <- function(analyteInGroupLabel = FALSE){
   if(analyteInGroupLabel){

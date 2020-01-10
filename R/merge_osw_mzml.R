@@ -111,14 +111,23 @@ getOswFiles <- function(dataPath, filenames, maxFdrQuery = 0.05, analyteFDR = 0.
     oswAnalytes <- fetchAnalytesInfo(oswName, maxFdrQuery, oswMerged, analytes = analytes,
                                      filename = filenames$filename[i], runType, analyteInGroupLabel, identifying = identifying)
 
+    
+    
+
     # Get chromatogram indices from the header file.
     if(is.null(mzPntrs)){
       mzmlName <- file.path(dataPath, "mzml", paste0(filenames$runs[i], ".chrom.mzML"))
       chromHead <- readChromatogramHeader(mzmlName)
     } else{
-      runname <- rownames(filenames)[i]
-      chromHead <- mzR::chromatogramHeader(mzPntrs[[runname]])
+      if ( isListObj(mzPntrs[[run]], "chromHead") ){
+        message('An mz object and chromHead was found in the mzPntrs object supplied, skipping readChromatogramHeader...')
+        chromHead <- getListObj( mzPntrs[[run]], 'chromHead')
+      } else {
+        runname <- rownames(filenames)[i]
+        chromHead <- mzR::chromatogramHeader(mzPntrs[[run]]$mz) 
+      }
     }
+    
     chromatogramIdAsInteger(chromHead)
     # Merge chromatogram indices with transition indices and save them.
     # Following function merges analytesInfo dataframe with the chromatogram Header.
