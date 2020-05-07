@@ -4,6 +4,7 @@ CHANGES IN VERSION 1.0.5 (May 07, 2020)
 + Removed decoy from features.
 + BugFix alignment if all intensities are zero.
 + Fixed printed stats.
++ Added chromatogram smoothing and area calculation in vignette.
 
 CHANGES IN VERSION 0.99.26 (April 21, 2020)
 ------------------------

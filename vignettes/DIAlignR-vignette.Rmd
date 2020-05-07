@@ -129,6 +129,24 @@ plotAlignmentPath(AlignObjOutput)
 ```
 
 
+
+## Chromatogram smoothing and Peak area
+Chromatogram group can be smoothed using Savitzky-Golay, Gaussian, Boxcar or loess smoothing.
+```{r, fig.width=7, fig.align='center', fig.height=3.5, message=FALSE}
+data("XIC_QFNNTDIVLLEDFQK_3_DIAlignR")
+XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["run0"]][["14299_QFNNTDIVLLEDFQK/3"]]
+XICs.sm <- smoothXICs(XICs, type = "sgolay", samplingTime = 3.42, kernelLen = 9, polyOrd = 3)
+plotXICgroup(XICs, Title = "Raw chromatograms")
+plotXICgroup(XICs.sm, Title = "Smoothed chromatograms")
+```
+
+Calculate area between peak-boundaries using areaIntegrator 
+```{r}
+time <- lapply(XICs, `[[`, 1)
+intensity <- lapply(XICs, `[[`, 2)
+areaIntegrator(time, intensity, left = 5203.7, right = 5268.5, integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE)
+```
+
 ## Citation
 Gupta S, Ahadi S, Zhou W, Röst H. "DIAlignR Provides Precise Retention Time Alignment Across Distant Runs in DIA and Targeted Proteomics." Mol Cell Proteomics. 2019 Apr;18(4):806-817. doi: https://doi.org/10.1074/mcp.TIR118.001132 
 
