@@ -451,7 +451,7 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
     })
     names(merged_xics) <- analytes_chr
     mergedXICs <- lapply(merged_xics, `[[`, 1)
-    alignedVecs <- lapply(merged_xics, `[[`, 2)[[1]]
+    alignedVecs <- lapply(merged_xics, `[[`, 2)[[which(analyte_chr == analytes_chr)]]
     list(mergedXICs, alignedVecs)
   })
   cluster
