@@ -21,6 +21,7 @@ test_that("test_getNodeRun",{
   params <- paramsDIAlignR()
   params[["keepFlanks"]] <- TRUE
   params[["XICfilter"]] <- "none"
+  params[["globalAlignment"]] <- "loess"
   params[["globalAlignmentFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"
   fileInfo <- getRunNames(dataPath = dataPath)
@@ -50,7 +51,7 @@ test_that("test_getNodeRun",{
   expect_is(mzPntrs[["temp"]], "mzRpwiz")
   expect_equal(features$temp[1,], childFeatures()[1,], tolerance = 1e-04)
   expect_equal(features$temp[c(2,3), c(1,3,4,8)],
-               data.frame(transition_group_id = c(9719L, 9720L), RT = 2600.75, intensity = c(14.31522, 18.25102),
+               data.frame(transition_group_id = c(9719L, 9720L), RT = 2594.85, intensity = c(11.52597, 20.94218),
                           m_score = c(1.041916e-03, 5.692077e-05), row.names = c(2L, 3L)), tolerance = 1e-04)
   expect_identical(fileInfo["temp", "chromatogramFile"], file.path(".", "mzml", "temp.chrom.mzML"))
   expect_identical(fileInfo["temp", "runName"], "temp")
