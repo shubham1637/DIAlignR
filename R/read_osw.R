@@ -380,14 +380,16 @@ getFeatures <- function(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics"
   features
 }
 
-dummyFeatures <- function(precursors, numMerge = 0L, startIdx = 1L){
-  stpIdx <- startIdx + numMerge - 1
-  masters <- paste0("master", startIdx:stpIdx)
+dummyFeatures <- function(precursors, masters, transitionIntensity){
+  if(transitionIntensity){
+    intensity = list(c(NA_real_, NA_real_))
+  } else {
+    intensity = NA_real_
+  }
   transition_group_ids <- .subset2(precursors, "transition_group_id")
-
   features <- lapply(masters, function(run) {
     data.table("transition_group_id" = rep(transition_group_ids, each = 5L),
-               "feature_id" = bit64::NA_integer64_, "RT" = NA_real_, "intensity" = NA_real_,
+               "feature_id" = bit64::NA_integer64_, "RT" = NA_real_, "intensity" = intensity,
                "leftWidth" = NA_real_, "rightWidth" = NA_real_, "peak_group_rank" = NA_integer_,
                "m_score" = NA_real_, key = "transition_group_id")
   })
@@ -498,7 +500,7 @@ fetchPeptidesInfo2 <- function(oswName, runType, context, runID){
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-07-01
-#' @importFrom data.table setnames setcolorder setkey
+#' @importFrom data.table setnames setcolorder setkeyv
 #' @inheritParams getPrecursors
 #' @param peptides (integer) Ids of peptides for which scores are required.
 #' @return (list of dataframes) dataframe has following columns:
@@ -536,7 +538,7 @@ getPeptideScores <- function(fileInfo, peptides, oswMerged = TRUE, runType = "DI
   setcolorder(peptidesInfo, c("peptide_id","run"))
   peptidesInfo <- peptidesInfo[list(peptides), on = "peptide_id"]
 
-  setkey(peptidesInfo, peptide_id)
+  setkeyv(peptidesInfo, "peptide_id")
   message(peptidesInfo[,.N], " peptides scores are fetched.")
   peptidesInfo
 }

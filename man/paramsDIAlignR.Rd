@@ -52,7 +52,7 @@ A list of parameters:
 \item{mergeTime}{(string) must be either "ref", "avg", "refStart" or "refEnd".}
 \item{keepFlanks}{(logical) TRUE: Flanking chromatogram is not removed.}
 \item{fraction}{(integer) indicates which fraction to align.}
-\item{fractionPercent}{(integer) percentage number of peptides to align.}
+\item{fractionNum}{(integer) Number of fractions to divide the alignment.}
 \item{lossy}{(logical) if TRUE, time and intensity are lossy-compressed in generated sqMass file.}
 }
 \description{

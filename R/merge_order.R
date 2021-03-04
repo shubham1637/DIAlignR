@@ -95,6 +95,36 @@ getNodeIDs <- function(tree){
 }
 
 
+#   tree <- ape::read.tree(text = "(run10:17283.43333,((run2:4113.166667,(run7:3396.25,(run4:2431.5,run5:2431.5)master10:964.75)master7:716.9166667)master3:2836.026515,((run8:2588.25,(run14:2033.5,run15:2033.5)master13:554.75)master5:1882.958333,((run9:2011.75,(run11:1854.5,run6:1854.5)master15:157.25)master8:1574.116667,((run0:2035,run3:2035)master11:1171.333333,(run13:2451.75,(run1:1542.5,run12:1542.5)master14:909.25)master12:754.5833333)master9:379.5333333)master6:885.3416667)master4:2477.984848)master2:10334.24015)master1;")
+cutTree <- function(tree, parts){
+  k1 <- stats::cutree(stats::as.hclust(tree), k = parts)
+  st <- ape::subtrees(tree)
+  o1 <- lapply(1:parts, function(i){
+    leaves <- names(which(k1 == i))
+    if(length(leaves) == 1) return (leaves)
+    for(j in seq_along(st)){
+      if(setequal(st[[j]]$tip.label, leaves)){
+        return(ape::reorder.phylo(st[[j]], "postorder"))
+      }
+    }
+  })
+  o1
+}
+
+ancesTree <- function(tree, stree){
+  vertices <- getNodeIDs(stree)
+  ord <- stree$edge[,2] # Traversal order
+  num_merge <- length(ord)/2
+  merge_start <- 2*(1:num_merge)-1
+  for(i in merge_start){
+    runA <- names(vertices)[vertices == ord[i]]
+    runB <- names(vertices)[vertices == ord[i+1]]
+    tree <- drop.tip(tree, tip = c(runA, runB), trim.internal = FALSE)
+  }
+  tree
+}
+
+
 #' Traverses up from leaves to the root
 #'
 #' @description {

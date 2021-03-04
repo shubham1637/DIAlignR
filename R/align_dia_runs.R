@@ -45,11 +45,11 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   start_time <- Sys.time()
   precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
-  if(params[["fractionPercent"]] != 100L){
+  if(params[["fractionNum"]] > 1L){
     idx <- getPrecursorSubset(precursors, params)
     precursors <- precursors[idx[1]:idx[2],]
     setkeyv(precursors, c("peptide_id", "transition_group_id"))
-    outFile <- paste(outFile, params[["fraction"]], params[["fractionPercent"]], sep = "_")
+    outFile <- paste(outFile, params[["fraction"]], params[["fractionNum"]], sep = "_")
   }
   outFile <- paste0(outFile,".tsv")
   end_time <- Sys.time()

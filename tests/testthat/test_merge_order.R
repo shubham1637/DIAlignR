@@ -51,15 +51,15 @@ test_that("test_traverseUp", {
   names(peptideScores) <- as.character(peptideIDs)
 
   features <- getFeatures(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics")
-  masterFeatures <- dummyFeatures(precursors, nrow(fileInfo)-1, 1L)
+  masterFeatures <- dummyFeatures(precursors, masters, FALSE)
   features <- do.call(c, list(features, masterFeatures))
 
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs)
-  masterChromIndex <- dummyChromIndex(precursors, nrow(fileInfo)-1, 1L)
+  masterChromIndex <- dummyChromIndex(precursors, masters)
   prec2chromIndex <- do.call(c, list(prec2chromIndex, masterChromIndex))
   adaptiveRTs <- new.env()
   refRuns <- new.env()
-  multipeptide <- getMultipeptide(precursors, features, numMerge = 0L, startIdx = 1L)
+  multipeptide <- getMultipeptide(precursors, features, masters = NULL)
 
   tree <- ape::read.tree(text = "(run1:7,run2:2)master1;")
   tree <- ape::reorder.phylo(tree, "postorder")
@@ -128,15 +128,15 @@ test_that("test_traverseDown", {
   names(peptideScores) <- as.character(peptideIDs)
 
   features <- getFeatures(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics")
-  masterFeatures <- dummyFeatures(precursors, nrow(fileInfo)-1, 1L)
+  masterFeatures <- dummyFeatures(precursors, masters, FALSE)
   features <- do.call(c, list(features, masterFeatures))
 
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs)
-  masterChromIndex <- dummyChromIndex(precursors, nrow(fileInfo)-1, 1L)
+  masterChromIndex <- dummyChromIndex(precursors, masters)
   prec2chromIndex <- do.call(c, list(prec2chromIndex, masterChromIndex))
   adaptiveRTs <- new.env()
   refRuns <- new.env()
-  multipeptide <- getMultipeptide(precursors, features, numMerge = 0L, startIdx = 1L)
+  multipeptide <- getMultipeptide(precursors, features, masters = NULL)
 
   tree <- ape::read.tree(text = "(run1:7,run2:2)master1;")
   tree <- ape::reorder.phylo(tree, "postorder")
@@ -184,7 +184,7 @@ test_that("test_alignToMaster", {
                            transition_ids	= I(list(27706:27711)), key = c("peptide_id", "transition_group_id"))
   peptideIDs <- 14383L
   peptideScores <- getPeptideScores(fileInfo, peptides = peptideIDs, TRUE, "DIA_Proteomics", "experiment-wide")
-  masters <- paste("master", 1:(nrow(fileInfo)-1), sep = "")
+  masters <- paste("master", 1:(nrow(fileInfo) + 1), sep = "")
   peptideScores <- lapply(peptideIDs, function(pep) {x <- peptideScores[.(pep)][,-c(1L)]
   x <- rbindlist(list(x, data.table("run" = masters, "score" = NA_real_, "pvalue" = NA_real_,
                                     "qvalue" = NA_real_)), use.names=TRUE)
@@ -192,15 +192,15 @@ test_that("test_alignToMaster", {
   names(peptideScores) <- as.character(peptideIDs)
 
   features <- getFeatures(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics")
-  masterFeatures <- dummyFeatures(precursors, nrow(fileInfo)-1, 1L)
+  masterFeatures <- dummyFeatures(precursors, masters, FALSE)
   features <- do.call(c, list(features, masterFeatures))
 
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs)
-  masterChromIndex <- dummyChromIndex(precursors, nrow(fileInfo)-1, 1L)
+  masterChromIndex <- dummyChromIndex(precursors, masters)
   prec2chromIndex <- do.call(c, list(prec2chromIndex, masterChromIndex))
   adaptiveRTs <- new.env()
   refRuns <- new.env()
-  multipeptide <- getMultipeptide(precursors, features, numMerge = 0L, startIdx = 1L)
+  multipeptide <- getMultipeptide(precursors, features, masters = NULL)
   tree <- ape::reorder.phylo(ape::read.tree(text = "(run1:7,run2:2)master1;"), "postorder")
 
   ropenms <- get_ropenms(condaEnv = envName, useConda=TRUE)

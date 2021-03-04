@@ -54,8 +54,7 @@ getRefRun <- function(peptideScores, applyFun=lapply){
 #' @inheritParams alignTargetedRuns
 #' @param precursors (data-frames) Contains precursors and associated transition IDs.
 #' @param features (list of data-frames) Contains features and their properties identified in each run.
-#' @param numMerge (integer) number of merged runs. Should be 0 for star alignment.
-#' @param startIdx (integer) suffix for merged runs' name.
+#' @param masters (characters) names of extra runs.
 #' @return (list) of dataframes having following columns:
 #' \item{transition_group_id}{(integer) a unique id for each precursor.}
 #' \item{run}{(string) run identifier.}
@@ -76,11 +75,11 @@ getRefRun <- function(peptideScores, applyFun=lapply){
 #' multipeptide[["9861"]]
 #' @seealso \code{\link{getPrecursors}, \link{getFeatures}}
 #' @export
-getMultipeptide <- function(precursors, features, applyFun=lapply, numMerge = 0L, startIdx = 0L){
+getMultipeptide <- function(precursors, features, applyFun=lapply, masters = NULL){
   peptideIDs <- unique(precursors$peptide_id)
   runs <- names(features)
   num_run = length(features)
-  if(numMerge == 0L){
+  if(is.null(masters)){
     multipeptide <- applyFun(seq_along(peptideIDs), function(i){
       # Get transition_group_id for a peptide
       analytes <- precursors[list(peptideIDs[i]), 1L][[1]]
@@ -95,8 +94,6 @@ getMultipeptide <- function(precursors, features, applyFun=lapply, numMerge = 0L
       newdf
     })
   } else{
-    stpIdx <- startIdx + numMerge - 1
-    masters <- paste0("master", startIdx:stpIdx)
     multipeptide <- applyFun(seq_along(peptideIDs), function(i){
       # Get transition_group_id for a peptide
       analytes <- precursors[list(peptideIDs[i]), 1L][[1]]
@@ -302,12 +299,12 @@ checkParams <- function(params){
     # Not used yet
   }
 
-  if(params[["fractionPercent"]] < 1 | params[["fractionPercent"]] > 100){
-    stop("fractionPercent must be between [1, 100]")
+  if(params[["fractionNum"]] < 1){
+    stop("Number of fractions must be greater than 1.")
   }
 
-  if(params[["fraction"]] < 1 | params[["fraction"]] > ceiling(100/params[["fractionPercent"]])){
-    stop("fraction must be between [1, ceiling(100/fractionPercent)]")
+  if(params[["fraction"]] < 1 | params[["fraction"]] > params[["fractionNum"]]){
+    stop("fraction must be between 1 and fractionNum.")
   }
 
   if(!any(params[["level"]] %in% c("Peptide", "Protein"))){
@@ -375,7 +372,7 @@ checkParams <- function(params){
 #' \item{mergeTime}{(string) must be either "ref", "avg", "refStart" or "refEnd".}
 #' \item{keepFlanks}{(logical) TRUE: Flanking chromatogram is not removed.}
 #' \item{fraction}{(integer) indicates which fraction to align.}
-#' \item{fractionPercent}{(integer) percentage number of peptides to align.}
+#' \item{fractionNum}{(integer) Number of fractions to divide the alignment.}
 #' \item{lossy}{(logical) if TRUE, time and intensity are lossy-compressed in generated sqMass file.}
 #' @seealso \code{\link{checkParams}, \link{alignTargetedRuns}}
 #' @examples
@@ -396,7 +393,7 @@ paramsDIAlignR <- function(){
                   hardConstrain = FALSE, samples4gradient = 100,
                   fillMethod = "spline", splineMethod = "natural", mergeTime = "avg", smoothPeakArea = FALSE,
                   keepFlanks = TRUE, wRef = 0.5, batchSize = 1000L, transitionIntensity = FALSE,
-                  fraction = 1L, fractionPercent = 100L, lossy = FALSE)
+                  fraction = 1L, fractionNum = 1L, lossy = FALSE)
   params
 }
 
@@ -515,9 +512,9 @@ getPrecursorSubset <- function(precursors, params){
   peptideIDs <- unique(precursors$peptide_id)
   len = length(peptideIDs)
   a = params[["fraction"]]
-  b = params[["fractionPercent"]]
-  pepStart <- (a-1)*floor(len*b*0.01)+1
-  pepEnd <- min(a*floor(len*b*0.01), len)
+  b = params[["fractionNum"]]
+  pepStart <- floor((a-1)*len/b)+1
+  pepEnd <- min(floor(a*len/b), len)
   r <- rle(precursors$peptide_id)
   if(a == 1) {
     pepStart = 1

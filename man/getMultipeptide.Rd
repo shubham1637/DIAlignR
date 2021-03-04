@@ -4,13 +4,7 @@
 \alias{getMultipeptide}
 \title{Get multipeptides}
 \usage{
-getMultipeptide(
-  precursors,
-  features,
-  applyFun = lapply,
-  numMerge = 0L,
-  startIdx = 0L
-)
+getMultipeptide(precursors, features, applyFun = lapply, masters = NULL)
 }
 \arguments{
 \item{precursors}{(data-frames) Contains precursors and associated transition IDs.}
@@ -19,9 +13,7 @@ getMultipeptide(
 
 \item{applyFun}{(function) value must be either lapply or BiocParallel::bplapply.}
 
-\item{numMerge}{(integer) number of merged runs. Should be 0 for star alignment.}
-
-\item{startIdx}{(integer) suffix for merged runs' name.}
+\item{masters}{(characters) names of extra runs.}
 }
 \value{
 (list) of dataframes having following columns:

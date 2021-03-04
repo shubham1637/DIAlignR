@@ -42,11 +42,11 @@ test_that("test_getNodeRun",{
   names(peptideScores) <- as.character(peptideIDs)
 
   features <- getFeatures(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics")
-  masterFeatures <- dummyFeatures(precursors, nrow(fileInfo)-1, 1L)
+  masterFeatures <- dummyFeatures(precursors, masters, FALSE)
   features <- do.call(c, list(features, masterFeatures))
-  multipeptide <- getMultipeptide(precursors, features, numMerge = 0L, startIdx = 1L)
+  multipeptide <- getMultipeptide(precursors, features, masters = NULL)
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs)
-  masterChromIndex <- dummyChromIndex(precursors, nrow(fileInfo)-1, 1L)
+  masterChromIndex <- dummyChromIndex(precursors, masters)
   prec2chromIndex <- do.call(c, list(prec2chromIndex, masterChromIndex))
   mergeName <- "master2"
   adaptiveRTs <- new.env()
@@ -101,6 +101,24 @@ test_that("test_getChildFeature",{
   i.eXp <- df.eXp[.(4618L), which = TRUE]
   outData <- getChildFeature(newXICs[[1]], newXICs[[2]][,3:5], df.ref, df.eXp,
                              i.ref, i.eXp, params)
+  df <- as.data.frame(childFeatures())
+  expect_equal(outData, df, tolerance = 1e-03)
+
+  data(masterXICs_DIAlignR, package="DIAlignR")
+  newXICs <- masterXICs_DIAlignR
+  params <- paramsDIAlignR()
+  params$transitionIntensity <- TRUE
+  dataPath <- system.file("extdata", package = "DIAlignR")
+  fileInfo <- getRunNames(dataPath = dataPath)
+  features <- getTransitions(fileInfo, maxFdrQuery = 1.00, runType = "DIA_Proteomics")
+  df.ref <- features[["run1"]]
+  i.ref <- df.ref[.(4618L), which = TRUE]
+  df.eXp <- features[["run2"]]
+  i.eXp <- df.eXp[.(4618L), which = TRUE]
+  outData <- getChildFeature(newXICs[[1]], newXICs[[2]][,3:5], df.ref, df.eXp,
+                             i.ref, i.eXp, params)
+  expect_equal(outData[1,"intensity"][[1]], c(58.25721, 68.23171, 47.26885, 21.85735, 21.03737, 13.05533), tolerance = 1e-03)
+  outData$intensity <- sapply(outData$intensity, sum)
   df <- as.data.frame(childFeatures())
   expect_equal(outData, df, tolerance = 1e-03)
 })

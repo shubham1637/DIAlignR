@@ -205,9 +205,7 @@ getChromatogramIndices <- function(fileInfo, precursors, mzPntrs, applyFun=lappl
   prec2chromIndex
 }
 
-dummyChromIndex <- function(precursors, numMerge = 0L, startIdx = 1L){
-  stpIdx <- startIdx + numMerge - 1
-  masters <- paste0("master", startIdx:stpIdx)
+dummyChromIndex <- function(precursors, masters){
   transition_group_ids <- .subset2(precursors, "transition_group_id")
   prec2chromIndex <- lapply(masters, function(run) {
     data.table("transition_group_id" = transition_group_ids,

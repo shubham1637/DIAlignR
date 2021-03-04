@@ -240,18 +240,18 @@ getChildFeature <- function(XICs, alignedVec, df.ref, df.eXp, i.ref, i.eXp, para
              trfrParentFeature(XICs, alignedVec[, c(2L, 3L)], df.eXp, i.eXp, params))
   fid <- c(.subset2(df.ref, "feature_id")[i.ref], .subset2(df.eXp, "feature_id")[i.eXp])
   peak_rank <- rep(NA_integer_, nrow(f)) # peak-rank
-  mutate_score <- f[, 5L]
-  mutate_score[is.na(f[, 4L])] <- NA_real_
+  mutate_score <- as.numeric(f[, 5L])
+  mutate_score[is.na(f[, 2L])] <- NA_real_ # Missing intensity.
 
   r <- 0L
-  while(any(is.na(peak_rank))  & r < 5L) {
+  while(any(is.na(peak_rank)) & !all(is.na(mutate_score)) & r < 5L) {
     idx <- which.min(mutate_score)
     r <- r+1L
     mutate_score[idx] <- NA_real_
     peak_rank[idx] <- r
-    pk <- c(f[idx, 3L], f[idx, 4L])
+    pk <- c(f[idx, 3L][[1]], f[idx, 4L][[1]])
     # Remove other peaks that have conflicting boundaries
-    rmv <- sapply(1:nrow(f), function(i) checkOverlap(pk, c(f[i, 3L], f[i, 4L])))
+    rmv <- sapply(1:nrow(f), function(i) checkOverlap(pk, c(f[i, 3L][[1]], f[i, 4L][[1]])))
     rmv[idx] <- FALSE
     mutate_score[rmv] <- NA_real_
   }
@@ -260,6 +260,7 @@ getChildFeature <- function(XICs, alignedVec, df.ref, df.eXp, i.ref, i.eXp, para
   analyte <- ifelse(length(i.ref) !=0, .subset2(df.ref, 1L)[i.ref[1]], .subset2(df.eXp, 1L)[i.eXp[1]])
   o <- order(peak_rank, na.last = NA)
   f <- as.data.frame(f[o,, drop = FALSE])
+  for(i in c(1,3,4,5)) f[, i] <- as.numeric(f[,i])
   colnames(f) <- c("RT", "intensity", "leftWidth", "rightWidth", "m_score")
   f <- cbind(data.frame("transition_group_id" = analyte, "feature_id" = fid[o]),
              f, "peak_group_rank" = peak_rank[o])
@@ -312,9 +313,10 @@ trfrParentFeature <- function(XICs, timeParent, df, i, params){
   RT <- timeParent[idx, 2L]
 
   # Calculate peak area
-  area <- sapply(seq_along(i), function(j) calculateIntensity(XICs, left[j], right[j],
+  area <- lapply(seq_along(i), function(j) calculateIntensity(XICs, left[j], right[j],
                   params[["integrationType"]], params[["baselineType"]],
-                  FALSE, params[["baseSubtraction"]]))
+                  FALSE, params[["baseSubtraction"]],  params[["transitionIntensity"]]))
+  if(!params[["transitionIntensity"]]) area <- unlist(area)
 
   matrix(c(RT, area, left, right, .subset2(df, "m_score")[i]), ncol = 5L)
 }
@@ -423,8 +425,8 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
 
     ##### Calculate the weights of XICs from runA and runB #####
     temp <- peptideScores[[rownum]]
-    pA <- temp$pvalue[temp$run == runA]
-    pB <- temp$pvalue[temp$run == runB]
+    pA <- temp$pvalue[which(temp$run == runA)]
+    pB <- temp$pvalue[which(temp$run == runB)]
     wA <- ifelse(length(pA) == 0 || is.na(pA), 0.3, -log10(pA)) # || allows short-circuit
     wB <- ifelse(length(pB) == 0 || is.na(pB), 0.3, -log10(pB)) # || allows short-circuit
     wA <- wA/(wA + wB)

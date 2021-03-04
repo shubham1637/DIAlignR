@@ -46,7 +46,7 @@ script1 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   end_time <- Sys.time()
   message("The execution time for calculating global alignment:")
   print(end_time - start_time)
-  save(features, globalFits, RSE, fileInfo, file = file.path(dataPath, paste0(outFile, "_script1.RData")))
+  save(features, globalFits, RSE, fileInfo, file = file.path(dataPath, paste0(outFile, "_script1.RData")), compress = FALSE)
   print("script1 is done.")
 }
 
@@ -87,11 +87,11 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   start_time <- Sys.time()
   precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
-  if(params[["fractionPercent"]] != 100L){
+  if(params[["fractionNum"]] > 1L){
     idx <- getPrecursorSubset(precursors, params)
     precursors <- precursors[idx[1]:idx[2],]
     setkeyv(precursors, c("peptide_id", "transition_group_id"))
-    outFile <- paste(outFile, params[["fraction"]], params[["fractionPercent"]], sep = "_")
+    outFile <- paste(outFile, params[["fraction"]], params[["fractionNum"]], sep = "_")
   }
   outFile <- paste0(outFile,".tsv")
   end_time <- Sys.time()
