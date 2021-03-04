@@ -41,11 +41,10 @@
 #' @export
 progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL, oswMerged = TRUE,
                           runs = NULL, newickTree = NULL, applyFun = lapply){
+  #### Check if all parameters make sense.  #########
   if(params[["chromFile"]] == "mzML"){
     if(is.null(ropenms)) stop("ropenms is required to write chrom.mzML files.")
   }
-
-  #### Check if all parameters make sense.  #########
   params <- checkParams(params)
 
   #### Get filenames from .osw file and check consistency between osw and mzML files. #################

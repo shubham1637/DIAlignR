@@ -279,6 +279,7 @@ traverseDown <- function(tree, dataPath, fileInfo, multipeptide, prec2chromIndex
     indices <- which(df$run == master1)
     refIdx <- indices[which(.subset2(df, "peak_group_rank")[indices] == 1L)]
     refIdx <- refIdx[which.min(.subset2(df, "m_score")[refIdx])]
+    if(length(refIdx) == 0) return(NULL)
     set(df, refIdx, 10L, 1L)
 
     ##### Set alignment rank for other precursors #####

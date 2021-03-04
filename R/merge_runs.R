@@ -241,7 +241,8 @@ getChildFeature <- function(XICs, alignedVec, df.ref, df.eXp, i.ref, i.eXp, para
   fid <- c(.subset2(df.ref, "feature_id")[i.ref], .subset2(df.eXp, "feature_id")[i.eXp])
   peak_rank <- rep(NA_integer_, nrow(f)) # peak-rank
   mutate_score <- as.numeric(f[, 5L])
-  mutate_score[is.na(f[, 2L])] <- NA_real_ # Missing intensity.
+  k1 <- sapply(f[, 2L], function(k) any(is.na(k))) # index of missing intensity
+  mutate_score[k1] <- NA_real_ # Missing intensity.
 
   r <- 0L
   while(any(is.na(peak_rank)) & !all(is.na(mutate_score)) & r < 5L) {
@@ -256,6 +257,7 @@ getChildFeature <- function(XICs, alignedVec, df.ref, df.eXp, i.ref, i.eXp, para
     mutate_score[rmv] <- NA_real_
   }
 
+  if(r == 0L) return(NULL) # No peak group can be ranked hence return NULL
   # Create data.frame from these top five features
   analyte <- ifelse(length(i.ref) !=0, .subset2(df.ref, 1L)[i.ref[1]], .subset2(df.eXp, 1L)[i.eXp[1]])
   o <- order(peak_rank, na.last = NA)

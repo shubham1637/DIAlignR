@@ -9,7 +9,7 @@ test_that("test_progAlignRuns", {
   params[["globalAlignment"]] <- "linear"
   BiocParallel::register(BiocParallel::MulticoreParam())
   params[["chromFile"]] <- "sqMass"
-  expect_warning(progAlignRuns(dataPath, params = params, outFile = "temp", ropenms = NULL, applyFun = BiocParallel::bplapply))
+  progAlignRuns(dataPath, params = params, outFile = "temp", ropenms = NULL, applyFun = BiocParallel::bplapply)
   outData <- data.table::fread("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE, integer64 = "integer64")
   expData <- data.table::fread("test3.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE, integer64 = "integer64")
   expect_identical(dim(outData), dim(expData))
@@ -33,7 +33,7 @@ test_that("test_progAlignRuns", {
   params[["globalAlignment"]] <- "linear"
   BiocParallel::register(BiocParallel::MulticoreParam())
   params[["chromFile"]] <- "mzML"
-  for(fun in c(lapply, BiocParallel::bplapply)){
+  for(fun in c(lapply)){
     expect_warning(progAlignRuns(dataPath, params = params, outFile = "temp", ropenms = ropenms, applyFun = fun))
     outData <- data.table::fread("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
     expData <- data.table::fread("test3.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)

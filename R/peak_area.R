@@ -34,6 +34,7 @@ calculateIntensity <- function(XICs, left, right, integrationType, baselineType,
   intensityList <- lapply(XICs, `[`, i =, j= 2)
   intensity <- areaIntegrator(time, intensityList, left, right, integrationType, baselineType,
                               fitEMG, baseSubtraction)
+  intensity[is.nan(intensity)] <- NA_real_
   if(transitionIntensity) return (intensity)
   sum(intensity, na.rm = FALSE)
 }
