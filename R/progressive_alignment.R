@@ -56,8 +56,8 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
 
   #### Get Precursors from the query and respectve chromatogram indices. ######
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
-  precursors <- getPrecursors(fileInfo, oswMerged, runType = params[["runType"]],
-                              context = params[["context"]], maxPeptideFdr = params[["maxPeptideFdr"]])
+  precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]],
+                              params[["maxPeptideFdr"]], params[["level"]])
 
   #### Get OpenSWATH peak-groups and their retention times. ##########
   if(params[["transitionIntensity"]]){
@@ -195,8 +195,8 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
 
   #### Get Precursors from the query and respectve chromatogram indices. ######
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
-  precursors <- getPrecursors(fileInfo, oswMerged, runType = params[["runType"]],
-                              context = params[["context"]], maxPeptideFdr = params[["maxPeptideFdr"]])
+  precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]],
+                              params[["maxPeptideFdr"]], params[["level"]])
 
   #### Get OpenSWATH peak-groups and their retention times. ##########
   if(params[["transitionIntensity"]]){
@@ -268,11 +268,13 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
 #'
 #' License: (c) Author (2021) + GPL-3
 #' Date: 2021-03-03
+#' @importFrom data.table data.table setkeyv rbindlist
 #' @import DBI
 #' @inheritParams progAlignRuns
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
 progSplit2 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, applyFun = lapply){
+  params <- checkParams(params)
   load(file = file.path(dataPath, paste0(outFile, "_prog1.RData")))
   trees <- cutTree(tree, params[["fractionNum"]])
   tree <- trees[[params[["fraction"]]]]
@@ -365,6 +367,7 @@ progSplit2 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
 progComb3 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, applyFun = lapply){
+  params <- checkParams(params)
   #### Read all rds and RData files #####
   load(file = file.path(dataPath, paste0(outFile, "_prog1.RData")))
   peptideIDs <- unique(precursors$peptide_id)
@@ -442,6 +445,7 @@ progComb3 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
 progSplit4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, applyFun = lapply){
+  params <- checkParams(params)
   load(file = file.path(dataPath, paste0(outFile, "_prog1.RData")))
   peptideIDs <- unique(precursors$peptide_id)
   filename <- file.path(dataPath, paste0(outFile, "_", params[["fraction"]], "_", params[["fractionNum"]], ".rds"))

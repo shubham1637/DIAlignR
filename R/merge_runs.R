@@ -78,7 +78,7 @@ getNodeRun <- function(runA, runB, mergeName, dataPath, fileInfo, features, mzPn
     iA <- which(temp[["run"]] == runA)
     iB <- which(temp[["run"]] == runB)
     idx <- which.min(.subset2(temp, "m_score")[c(iA, iB)])
-    idx <- ifelse(length(idx)==0, 1, c(iA, iB)[idx])
+    idx <- ifelse(length(idx)==0, c(iA, iB)[1], c(iA, iB)[idx])
     var2[i] <- .subset2(temp, "transition_group_id")[[idx]]
   }
   refRun <- data.table("var1" = var1, "var2" = as.character(var2))

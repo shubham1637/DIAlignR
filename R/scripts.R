@@ -145,7 +145,7 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   #### Convert features into multi-peptide #####
   message("Building multipeptide.")
   start_time <- Sys.time()
-  multipeptide <- getMultipeptide(precursors, features, applyFun)
+  multipeptide <- getMultipeptide(precursors, features, applyFun, NULL)
   message(length(multipeptide), " peptides are in the multipeptide.")
   end_time <- Sys.time()
   message("The execution time for building multipeptide:")
