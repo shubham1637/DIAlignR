@@ -94,7 +94,7 @@ getNodeRun <- function(runA, runB, mergeName, dataPath, fileInfo, features, mzPn
   ##### Get merged features, calculate intensities, left width, right width, m-score. #####
   # we can also run pyopenms feature finder on new chromatogram.
   message("Getting merged features for run ", mergeName)
-  childFeatures <- lapply(seq_along(peptides), function(i){
+  childFeatures <- applyFun(seq_along(peptides), function(i){
     analytes <- as.integer(names(mergedXICs[[i]]))
     alignedVec <- alignedVecs[[i]]
     childFeature <- lapply(seq_along(mergedXICs[[i]]), function(j){

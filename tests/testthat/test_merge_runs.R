@@ -104,9 +104,21 @@ test_that("test_getChildFeature",{
   df <- as.data.frame(childFeatures())
   expect_equal(outData, df, tolerance = 1e-03)
 
-  data(masterXICs_DIAlignR, package="DIAlignR")
-  newXICs <- masterXICs_DIAlignR
-  params <- paramsDIAlignR()
+  # Case2
+  df.ref <- data.table::data.table(transition_group_id = 14665L, feature_id = bit64::as.integer64("6702615365967536760"),
+                                   RT=4996.956, intensity=25.24766, leftWidth=4970.4, rightWidth=5038.794,
+                                   peak_group_rank=1L, m_score=0.0002879308)
+  i.ref <- 1L
+  df.eXp <- data.table::data.table(transition_group_id = 14665L, feature_id = bit64::NA_integer64_, RT=NA_real_,
+                                  intensity=NA_real_, leftWidth=NA_real_, rightWidth=NA_real_,
+                                  peak_group_rank=NA_integer_, m_score=NA_real_)
+  i.eXp <- numeric(0)
+  alignedVec <- matrix(c(4970.400, 4976.175, 4973.288, 4996.956, 4999.225, 4998.091,5038.794, 5039.737, 5039.266), ncol = 3, byrow = TRUE)
+  outData <- getChildFeature(list(matrix(c(NA_real_,NA_real_), ncol = 2)), alignedVec, df.ref, df.eXp,
+                             i.ref, i.eXp, params)
+  expect_equal(outData, NULL)
+
+  # Case3
   params$transitionIntensity <- TRUE
   dataPath <- system.file("extdata", package = "DIAlignR")
   fileInfo <- getRunNames(dataPath = dataPath)
