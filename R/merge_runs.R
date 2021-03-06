@@ -468,6 +468,13 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
       B2p <- XICs.eXp.pep[[1]][nrow(XICs.eXp.pep[[1]]),1]
     }
 
+    nope <- any(sapply(seq_along(XICs.ref.pep), function(i) any(is.na(XICs.ref.pep[[i]])))) ||
+      any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))
+    if(nope){
+      message("Missing values in the chromatogram of ", paste0(analytes_chr, sep = " "), "in run ",
+              fileInfo[runA, "runName"], " or ", fileInfo[runB, "runName"])
+      return(list(vector(mode = "list", length = length(analytes_chr)), NULL)) # Missing values in chromatogram
+    }
     #### Merge chromatograms  ####
     merged_xics <- getChildXICpp(XICs.ref.pep, XICs.eXp.pep, params[["kernelLen"]], params[["polyOrd"]],
                   params[["alignType"]], adaptiveRT, params[["normalization"]],

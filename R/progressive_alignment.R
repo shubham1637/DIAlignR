@@ -199,6 +199,7 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
                               params[["maxPeptideFdr"]], params[["level"]])
 
   #### Get OpenSWATH peak-groups and their retention times. ##########
+  start_time <- Sys.time()
   if(params[["transitionIntensity"]]){
     features <- getTransitions(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
   } else{
@@ -206,6 +207,7 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   }
   message("The execution time for getting features:")
   end_time <- Sys.time()
+  print(end_time - start_time)
 
   ##### Get distances among runs based on the number of high-quality features. #####
   tmp <- applyFun(features, function(df)
