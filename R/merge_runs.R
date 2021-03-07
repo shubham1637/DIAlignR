@@ -463,18 +463,18 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
     B1p <- getPredict(globalFit, XICs.ref.pep[[1]][1,1], params[["globalAlignment"]])
     len <- nrow(XICs.ref.pep[[1]])
     B2p <- getPredict(globalFit, XICs.ref.pep[[1]][len,1], params[["globalAlignment"]])
-    if(is.na(B1p) || is.na(B2p)){
-      B1p <- XICs.eXp.pep[[1]][1,1]
-      B2p <- XICs.eXp.pep[[1]][nrow(XICs.eXp.pep[[1]]),1]
+    if(is.na(B1p) || is.na(B2p) || B1p <=0 || B2p <= 0){
+      B1p <- 100
+      B2p <- 1 # B1p > B2p  => no constraining
     }
-
     nope <- any(sapply(seq_along(XICs.ref.pep), function(i) any(is.na(XICs.ref.pep[[i]])))) ||
-      any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))
+            any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))
     if(nope){
       message("Missing values in the chromatogram of ", paste0(analytes_chr, sep = " "), "in run ",
-              fileInfo[runA, "runName"], " or ", fileInfo[runB, "runName"])
+                  fileInfo[runA, "runName"], " or ", fileInfo[runB, "runName"])
       return(list(vector(mode = "list", length = length(analytes_chr)), NULL)) # Missing values in chromatogram
-    }
+      }
+
     #### Merge chromatograms  ####
     merged_xics <- getChildXICpp(XICs.ref.pep, XICs.eXp.pep, params[["kernelLen"]], params[["polyOrd"]],
                   params[["alignType"]], adaptiveRT, params[["normalization"]],

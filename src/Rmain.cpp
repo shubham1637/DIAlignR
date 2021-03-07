@@ -809,6 +809,7 @@ List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd,
     t1NN[i] = t1[keep[i]];
     t2NN[i] = t2[keep[i]];
   }
+
   std::vector<double> temp(keep.size());
   for(int j = 0; j <intensity1NN.size(); j++){
     intensity1NN[j] = temp;
@@ -898,13 +899,13 @@ List otherChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd, N
                      std::vector<double> childTime, double wRef = 0.5, std::string splineMethod = "natural"){
   NumericVector v = mat(_, 0);
   std::vector<double> t1 = Rcpp::as<std::vector<double>>(v);
-  std::replace_if(t1.begin(), t1.end(), [](double a){return a!= a;}, -1);
+  std::replace_if(t1.begin(), t1.end(), [](double a){return a!= a;}, -1); // Remove NA values
   v = mat(_, 1);
   std::vector<double> t2 = Rcpp::as<std::vector<double>>(v);
-  std::replace_if(t2.begin(), t2.end(), [](double a){return a!= a;}, -1);
+  std::replace_if(t2.begin(), t2.end(), [](double a){return a!= a;}, -1); // Remove NA values
   v = mat(_, 2);
   std::vector<double> t3 = Rcpp::as<std::vector<double>>(v);
-  std::replace_if(t3.begin(), t3.end(), [](double a){return a!= a;}, -1);
+  std::replace_if(t3.begin(), t3.end(), [](double a){return a!= a;}, -1); // Remove NA values
 
   std::vector<std::vector<double> > time1 = getTime(l1);
   std::vector<std::vector<double> > intensity1 = getIntensity(l1);

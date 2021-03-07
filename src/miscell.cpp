@@ -1,7 +1,6 @@
 #include <stdexcept>
 #include <cmath>
 #include "miscell.h"
-
 namespace DIAlign
 {
 void xicIntersect(std::vector<std::vector<double> > &time,
@@ -232,13 +231,20 @@ void mergeIntensity(std::vector<std::vector<double>> & A,
 void addFlankToLeft(const std::vector<double> & t, std::vector<double> & tN, std::vector<double> & tA,
                     const std::vector<std::vector<double>> & inten, std::vector<std::vector<double>> & intenN,
                     std::vector<int> & flank){
+  // Find the length of left_flank in flank
   auto it = std::adjacent_find(flank.begin(), flank.end(), [](int l, int r){return l+1<r;});
   int length = (it == flank.end()) ? it-flank.begin() : it-flank.begin()+1;
   std::vector<double> t_flank(length);
-  double t_new = tN[0] - t[length];
+  // Copy the left_flank time for aligned chromatogram and subtract delta t
+  double t_new = tN[0] - t[length]; // delta t to be used in left_flank
   std::copy(t.begin(), t.begin()+length, t_flank.begin());
   std::transform(t_flank.begin(), t_flank.end(), t_flank.begin(),
                  std::bind2nd(std::plus<double>(), t_new));
+  if(t_flank[0] <= 0) {
+    flank.erase(flank.begin(), flank.begin()+length);
+    return;
+  } // Extrapolation resulted in negative time. Hence skip.
+  // Insert time and intensity in the aligned chromatogram
   tN.insert(tN.begin(), t_flank.begin(), t_flank.end());
   std::copy(t_flank.begin(), t_flank.end(), tA.begin());
   for(int i = 0; i< intenN.size(); i++){
