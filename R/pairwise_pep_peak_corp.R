@@ -271,7 +271,7 @@ getAlignedTimesFast <- function(XICs.ref, XICs.eXp, globalFit, adaptiveRT, param
   B1p <- getPredict(globalFit, XICs.ref[[1]][1,1], params[["globalAlignment"]])
   len <- nrow(XICs.ref[[1]])
   B2p <- getPredict(globalFit, XICs.ref[[1]][len,1], params[["globalAlignment"]])
-  if(is.na(B1p) || is.na(B2p)){
+  if(is.na(B1p) || is.na(B2p) || B1p <=0 || B2p <= 0 || is.nan(B1p) || is.nan(B2p)){
     B1p <- XICs.eXp[[1]][1,1]
     B2p <- XICs.eXp[[1]][nrow(XICs.eXp[[1]]),1]
   }

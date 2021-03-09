@@ -43,7 +43,7 @@ params[["kernelLen"]] <- 11L
 params$globalAlignmentFdr <- 0.001
 params[["batchSize"]] <- 1000L
 BiocParallel::register(BiocParallel::MulticoreParam(workers = 6, log = FALSE, threshold = "INFO", stop.on.error = TRUE))
-alignTargetedRuns2(dataPath = ".", params = params, outFile = "te1.tsv", ids = ids, applyFun = BiocParallel::bplapply)
+alignTargetedRuns2(dataPath = ".", params = params, outFile = "star", ids = ids, applyFun = BiocParallel::bplapply)
 }
 }
 \seealso{

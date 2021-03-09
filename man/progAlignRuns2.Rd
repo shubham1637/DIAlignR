@@ -50,7 +50,7 @@ params$batchSize <- 10000L
 params$globalAlignmentFdr <- 0.001
 BiocParallel::register(BiocParallel::MulticoreParam(workers = 6, log = FALSE, threshold = "INFO", stop.on.error = TRUE))
 ropenms <- get_ropenms(condaEnv = "TricEnvr")
-progAlignRuns2(dataPath = ".", params = params, outFile = "prog.tsv", ropenms = ropenms, ids = ids, applyFun = BiocParallel::bplapply)
+progAlignRuns2(dataPath = ".", params = params, outFile = "prog", ropenms = ropenms, ids = ids, applyFun = BiocParallel::bplapply)
 }
 }
 \seealso{
