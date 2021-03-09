@@ -377,6 +377,7 @@ perBatch <- function(iBatch, peptideIDs, multipeptide, refRuns, precursors, prec
   strt <- ((iBatch-1)*batchSize+1)
   stp <- min((iBatch*batchSize), length(peptideIDs))
   ##### Get XICs for the batch across all runs #####
+  # Put XICs into memory and create a new mzPntrs2
   XICs <- lapply(strt:stp, function(rownum){
     ##### Get transition_group_id for that peptideID #####
     idx <- precursors[.(peptideIDs[rownum]),  which = TRUE]

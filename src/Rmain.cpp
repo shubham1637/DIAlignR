@@ -781,7 +781,7 @@ List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd,
     MASK.data.resize(MASK.n_row*MASK.n_col, 0.0);
     double A1 = time1[0][0], A2 = time1[0][MASK.n_row-1];
     double B1 = time2[0][0], B2 = time2[0][MASK.n_col-1];
-    if(B2p > B1p) calcNoBeefMask(MASK, A1, A2, B1, B2, B1p, B2p, noBeef, hardConstrain);
+    if(B2p > B1p || B1p <= 0 || B2p <= 0) calcNoBeefMask(MASK, A1, A2, B1, B2, B1p, B2p, noBeef, hardConstrain);
     auto maxIt = max_element(std::begin(s.data), std::end(s.data));
     double maxVal = *maxIt;
     constrainSimilarity(s, MASK, -2.0*maxVal/samples4gradient);
@@ -854,13 +854,30 @@ List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd,
     chrom[i] = Rcpp::cbind(t, v);
   }
 
-  // Replace -1 with NA_real_
+
+  // Remove leading and trailing missing value from alignedChildTime
   interpolateZero(alignedChildTime);
+  flank = getNegIndices(alignedChildTime);
+  if(flank.size()!=0){
+    int l = alignedChildTime.size() - flank.size();
+    std::vector<double> a(l), b(l), c(l);
+    for(int i =0, j = 0; i < alignedChildTime.size(); i++){
+      if(!(alignedChildTime[i] < 0)){
+        a[j] = t1[i];
+        b[j] = t2[i];
+        c[j] = alignedChildTime[i];
+        ++j;
+      }
+    }
+    t1 = std::move(a);
+    t2 = std::move(b);
+    alignedChildTime = std::move(c);
+  }
   Rcpp::NumericVector A= Rcpp::wrap(t1);
   Rcpp::NumericVector B= Rcpp::wrap(t2);
   Rcpp::NumericVector C= Rcpp::wrap(alignedChildTime);
   for(int i = 0; i<A.length(); i++){
-    A[i] = (A[i] < 0) ? NA_REAL : ::Rf_fround(A[i], 3);
+    A[i] = (A[i] < 0) ? NA_REAL : ::Rf_fround(A[i], 3); // Replace -1 with NA_real_
     B[i] = (B[i] < 0) ? NA_REAL : ::Rf_fround(B[i], 3);
     C[i] = (C[i] < 0) ? NA_REAL : ::Rf_fround(C[i], 3);
   }

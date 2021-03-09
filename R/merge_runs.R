@@ -73,7 +73,7 @@ getNodeRun <- function(runA, runB, mergeName, dataPath, fileInfo, features, mzPn
     if(length(iA)+length(iB) > 0){
       set(temp, idx, c(2L, 3L, 4L),
           list(max(temp$score[c(iA, iB)], -1000, na.rm = TRUE),
-               min(temp$pvalue[c(iA, iB)], 1.0, na.rm = TRUE), min(temp$qvalue[c(iA, iB)], 1.0, na.rm = TRUE)))}
+               min(temp$pvalue[c(iA, iB)], 0.99, na.rm = TRUE), min(temp$qvalue[c(iA, iB)], 0.99, na.rm = TRUE)))}
     temp <- multipeptide[[i]]
     iA <- which(temp[["run"]] == runA)
     iB <- which(temp[["run"]] == runB)
@@ -429,8 +429,8 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
     temp <- peptideScores[[rownum]]
     pA <- temp$pvalue[which(temp$run == runA)]
     pB <- temp$pvalue[which(temp$run == runB)]
-    wA <- ifelse(length(pA) == 0 || is.na(pA), 0.3, -log10(pA)) # || allows short-circuit
-    wB <- ifelse(length(pB) == 0 || is.na(pB), 0.3, -log10(pB)) # || allows short-circuit
+    wA <- ifelse(length(pA) == 0 || is.na(pA), 0.004, -log10(pA)) # || allows short-circuit
+    wB <- ifelse(length(pB) == 0 || is.na(pB), 0.004, -log10(pB)) # || allows short-circuit
     wA <- wA/(wA + wB)
 
     ##### Decide the reference run from runA and runB. #####
@@ -463,15 +463,15 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
     B1p <- getPredict(globalFit, XICs.ref.pep[[1]][1,1], params[["globalAlignment"]])
     len <- nrow(XICs.ref.pep[[1]])
     B2p <- getPredict(globalFit, XICs.ref.pep[[1]][len,1], params[["globalAlignment"]])
-    if(is.na(B1p) || is.na(B2p) || B1p <=0 || B2p <= 0){
-      B1p <- 100
-      B2p <- 1 # B1p > B2p  => no constraining
+    if(is.na(B1p) || is.na(B2p) || B1p <=0 || B2p <= 0 || is.nan(B1p) || is.nan(B2p)){
+      B1p <- XICs.eXp.pep[[1]][1,1]
+      B2p <- XICs.eXp.pep[[1]][nrow(XICs.eXp.pep[[1]]),1]
     }
     nope <- any(sapply(seq_along(XICs.ref.pep), function(i) any(is.na(XICs.ref.pep[[i]])))) ||
             any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))
     if(nope){
-      message("Missing values in the chromatogram of ", paste0(analytes_chr, sep = " "), "in run ",
-                  fileInfo[runA, "runName"], " or ", fileInfo[runB, "runName"])
+      message("Missing values in the chromatogram of ", paste0(analytes_chr, sep = " "), "in ",
+              runA, " or ", runB)
       return(list(vector(mode = "list", length = length(analytes_chr)), NULL)) # Missing values in chromatogram
       }
 
