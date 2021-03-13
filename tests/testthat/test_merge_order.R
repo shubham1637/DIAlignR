@@ -26,7 +26,6 @@ test_that("test_getNodeIDs", {
 })
 
 test_that("test_traverseUp", {
-  skip_if_no_pyopenms()
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
   params[["keepFlanks"]] <- TRUE
@@ -34,7 +33,6 @@ test_that("test_traverseUp", {
   params[["globalAlignmentFdr"]] <- 0.05
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
-  params[["chromFile"]] <- "mzML"
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   mzPntrs <- list2env(getMZMLpointers(fileInfo))
   precursors <- data.table(transition_group_id = 4618L, peptide_id = 14383L,
@@ -63,9 +61,8 @@ test_that("test_traverseUp", {
 
   tree <- ape::read.tree(text = "(run1:7,run2:2)master1;")
   tree <- ape::reorder.phylo(tree, "postorder")
-  ropenms <- get_ropenms(condaEnv = envName, useConda=TRUE)
   msg <- capture_messages(traverseUp(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIndex, precursors,
-                                     params, adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms))
+                                     params, adaptiveRTs, refRuns, multipeptide, peptideScores, NULL))
   expect_equal(msg, c("run1 + run2 = master1\n",
                     "Getting merged chromatograms for run master1\n",
                     "Geting global alignment of run1 and run2,",
@@ -77,34 +74,34 @@ test_that("test_traverseUp", {
                     "Created all master runs.\n"))
 
   expect_setequal(ls(mzPntrs), c("run0", "run1", "run2", "master1"))
-  expect_is(mzPntrs[["master1"]], "mzRpwiz")
+  expect_is(mzPntrs[["master1"]], "SQLiteConnection")
   expect_equal(features$master1[1,],  data.table(transition_group_id = 4618L,
                     feature_id = bit64::as.integer64(7675762503084486466),
                     RT = 5237.8, intensity = 229.707813, leftWidth = 5217.35, rightWidth = 5261.7,
                     peak_group_rank = 1L, m_score = 5.692e-05, key = "transition_group_id"), tolerance = 1e-04)
-  expect_identical(fileInfo["master1", "chromatogramFile"], file.path(dataPath, "xics", "master1.chrom.mzML"))
+  expect_identical(fileInfo["master1", "chromatogramFile"], file.path(dataPath, "xics", "master1.chrom.sqMass"))
   expect_identical(fileInfo["master1", "runName"], "master1")
   expect_identical(prec2chromIndex$master1[,"transition_group_id"][[1]], 4618L)
-  expect_identical(prec2chromIndex$master1[,"chromatogramIndex"][[1]][[1]], 1:6)
+  expect_identical(prec2chromIndex$master1[,"chromatogramIndex"][[1]][[1]], 0:5)
   expect_equal(adaptiveRTs[["run1_run2"]], 77.0036, tolerance = 1e-04)
   expect_equal(adaptiveRTs[["run2_run1"]], 76.25354, tolerance = 1e-04)
   expect_identical(refRuns[["master1"]][[1]], 1L)
   expect_identical(refRuns[["master1"]][[2]], "4618")
 
   data(masterXICs_DIAlignR, package="DIAlignR")
-  outData <- mzR::chromatograms(mzR::openMSfile(file.path(dataPath, "xics", "master1.chrom.mzML"), backend = "pwiz"))
+  outData <- extractXIC_group2(mzPntrs[["master1"]], 0:5)
+  for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
   for(i in seq_along(outData)){
-    expect_equal(outData[[i]][[1]], masterXICs_DIAlignR[[1]][[i]][[1]], tolerance = 1e-04)
-    expect_equal(outData[[i]][[2]], masterXICs_DIAlignR[[1]][[i]][[2]], tolerance = 1e-04)
+    expect_equal(outData[[i]][,1], masterXICs_DIAlignR[[1]][[i]][[1]], tolerance = 1e-04)
+    expect_equal(outData[[i]][,2], masterXICs_DIAlignR[[1]][[i]][[2]], tolerance = 1e-04)
   }
   outData <- readRDS(file.path(dataPath, "master1_av.rds"), refhook = NULL)
   for(i in 1:3) expect_equal(outData[[1]][,i], masterXICs_DIAlignR[[2]][,i+2], tolerance = 1e-04)
   file.remove(file.path(dataPath, "master1_av.rds"))
-  file.remove(file.path(dataPath, "xics", "master1.chrom.mzML"))
+  file.remove(file.path(dataPath, "xics", "master1.chrom.sqMass"))
 })
 
 test_that("test_traverseDown", {
-  skip_if_no_pyopenms()
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
   params[["maxPeptideFdr"]] <- 0.05
@@ -113,7 +110,6 @@ test_that("test_traverseDown", {
   params[["globalAlignmentFdr"]] <- 0.05
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
-  params[["chromFile"]] <- "mzML"
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   mzPntrs <- list2env(getMZMLpointers(fileInfo))
   precursors <- getPrecursors(fileInfo, oswMerged = TRUE, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]])
@@ -140,9 +136,8 @@ test_that("test_traverseDown", {
 
   tree <- ape::read.tree(text = "(run1:7,run2:2)master1;")
   tree <- ape::reorder.phylo(tree, "postorder")
-  ropenms <- get_ropenms(condaEnv = envName, useConda=TRUE)
   expect_warning(traverseUp(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIndex, precursors,
-             params, adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms))
+             params, adaptiveRTs, refRuns, multipeptide, peptideScores, NULL))
 
   df1 <- data.table::copy(multipeptide[["7040"]])
   df2 <- data.table::copy(multipeptide[["9861"]])
@@ -155,6 +150,7 @@ test_that("test_traverseDown", {
   df3$alignment_rank[which(df3$run == "master1")[1]] <- 1L
   expect_equal(multipeptide[["14383"]], df3)
 
+  for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
   df2$alignment_rank[c(29L, 30L, 33L, 34L)] <- 1L
   df2$alignment_rank[which(df2$run == "master1")[1:2]] <- 1L
   expect_equal(multipeptide[["9861"]][-33L,], df2[-33L,])
@@ -165,17 +161,15 @@ test_that("test_traverseDown", {
 
   expect_equal(multipeptide[["7040"]], df1)
   file.remove(file.path(dataPath, "master1_av.rds"))
-  file.remove(file.path(dataPath, "xics", "master1.chrom.mzML"))
+  file.remove(file.path(dataPath, "xics", "master1.chrom.sqMass"))
 })
 
 test_that("test_alignToMaster", {
-  skip_if_no_pyopenms()
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
   params[["keepFlanks"]] <- TRUE
   params[["XICfilter"]] <- "none"; params[["kernelLen"]] <- 0L
   params[["globalAlignmentFdr"]] <- 0.05
-  params[["chromFile"]] <- "mzML"
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   mzPntrs <- list2env(getMZMLpointers(fileInfo))
   precursors <- data.table(transition_group_id = 4618L, peptide_id = 14383L,
@@ -203,9 +197,8 @@ test_that("test_alignToMaster", {
   multipeptide <- getMultipeptide(precursors, features, masters = NULL)
   tree <- ape::reorder.phylo(ape::read.tree(text = "(run1:7,run2:2)master1;"), "postorder")
 
-  ropenms <- get_ropenms(condaEnv = envName, useConda=TRUE)
   traverseUp(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIndex, precursors, params,
-    adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms)
+    adaptiveRTs, refRuns, multipeptide, peptideScores, NULL)
   alignedVecs <- readRDS(file = file.path(dataPath, "master1_av.rds"))
   adaptiveRT <- max(adaptiveRTs[["run1_run2"]], adaptiveRTs[["run2_run1"]])
   multipeptide[["14383"]]$alignment_rank[which(multipeptide[["14383"]]$run == "master1")[1]] <- 1L
@@ -221,6 +214,7 @@ test_that("test_alignToMaster", {
   df$alignment_rank[which(df$run == "run2")[1]] <- 1L
   expect_equal(multipeptide[["14383"]], df)
 
+  for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
   file.remove(file.path(dataPath, "master1_av.rds"))
-  file.remove(file.path(dataPath, "xics", "master1.chrom.mzML"))
+  file.remove(file.path(dataPath, "xics", "master1.chrom.sqMass"))
 })

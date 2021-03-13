@@ -72,7 +72,25 @@ createSqMass <- function(filename, XICs, transitionIDs, lossy){
   invisible(NULL)
 }
 
+sqMassQuery <- function(ids){
+  ids1 <- ids[!is.na(ids)]
+  ids1 <- paste0(ids1, collapse = ",")
+  query <- paste0("SELECT CHROMATOGRAM_ID, COMPRESSION, DATA_TYPE, DATA
+                 FROM DATA
+                 WHERE CHROMATOGRAM_ID IN (", ids1, ")
+                 ORDER BY CHROMATOGRAM_ID ASC, DATA_TYPE DESC;", sep = "")
+}
 
+createTemp <- function(conDb, chromIndices){
+    con <- DBI::dbConnect(RSQLite::SQLite(), dbname=":memory:")
+    query <- "CREATE TABLE DATA(CHROMATOGRAM_ID INT, COMPRESSION INT, DATA_TYPE INT, DATA BLOB NOT NULL);"
+    DBI::dbExecute(con, query)
+    query <- sqMassQuery(chromIndices)
+    df <- DBI::dbGetQuery(conDb, query)
+    DBI::dbWriteTable(conn=con, name="DATA", df, append=TRUE, row.names = FALSE)
+    DBI::dbExecute(con, "CREATE INDEX data_chr_idx ON DATA(CHROMATOGRAM_ID);")
+    con
+}
 #' Uncompress a Blob object
 #'
 #' compression is one of 0 = no, 1 = zlib, 2 = np-linear,

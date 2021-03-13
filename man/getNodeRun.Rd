@@ -99,7 +99,7 @@ getNodeRun(runA = "run2", runB = "run0", mergeName = mergeName, dataPath = ".", 
 file.remove(file.path(".", "xics", paste0(mergeName, ".chrom.sqMass")))
 file.remove(list.files(".", pattern = "*_av.rds", full.names = TRUE))
 }
-rm(mzPntrs)
+for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 }
 \seealso{
 \code{\link{childXICs}, \link{getChildXICs}, \link{traverseUp}}

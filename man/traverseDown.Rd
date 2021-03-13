@@ -82,9 +82,9 @@ multipeptide <- getMultipeptide(precursors, features)
 multipeptide <- traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs, precursors,
  adaptiveRTs, refRuns, params)
 # Cleanup
-rm(mzPntrs)
+for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
-file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\\\.chrom\\\\.mzML$", full.names = TRUE))
+file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\\\.chrom\\\\.sqMass$", full.names = TRUE))
 }
 }
 \seealso{

@@ -88,9 +88,9 @@ multipeptide[["14383"]]$alignment_rank[multipeptide[["14383"]]$run == "master1"]
 multipeptide <- alignToMaster(ref = "master1", eXp = "run1", alignedVecs, refRuns[["master1"]][,1], adaptiveRT,
  multipeptide, prec2chromIndex, mzPntrs, fileInfo, precursors, params)
 # Cleanup
-rm(mzPntrs)
+for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 file.remove(file.path(dataPath, "master1_av.rds"))
-file.remove(file.path(dataPath, "xics", "master1.chrom.mzML"))
+file.remove(file.path(dataPath, "xics", "master1.chrom.sqMass"))
 }
 }
 \seealso{

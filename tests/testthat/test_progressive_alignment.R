@@ -23,32 +23,6 @@ test_that("test_progAlignRuns", {
   file.remove(file.path(dataPath, "temp.temp.RData"))
   file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
   file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
-  skip_if_no_pyopenms()
-  dataPath <- system.file("extdata", package = "DIAlignR")
-  params <- paramsDIAlignR()
-  params[["maxPeptideFdr"]] <- 0.05
-  params[["kernelLen"]] <- 9L
-  ropenms <- get_ropenms(condaEnv =  envName)
-  params[["context"]] <- "experiment-wide"
-  params[["globalAlignment"]] <- "linear"
-  BiocParallel::register(BiocParallel::MulticoreParam())
-  params[["chromFile"]] <- "mzML"
-  for(fun in c(lapply)){
-    expect_warning(progAlignRuns(dataPath, params = params, outFile = "temp", ropenms = ropenms, applyFun = fun))
-    outData <- data.table::fread("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-    expData <- data.table::fread("test3.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-    expect_identical(dim(outData), dim(expData))
-    expect_identical(colnames(outData), colnames(expData))
-    expect_identical(outData[["peptide_id"]], expData[["peptide_id"]])
-    expect_identical(outData[["precursor"]], expData[["precursor"]])
-    expect_identical(outData[["run"]], expData[["run"]])
-    for(i in 4:14) expect_equal(outData[[i]], expData[[i]], tolerance = 1e-05)
-    file.remove("temp.tsv")
-    file.remove(file.path(dataPath, "master.merged.osw"))
-    file.remove(file.path(dataPath, "temp.temp.RData"))
-    file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
-    file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.mzML$", full.names = TRUE))
-  }
 })
 
 test_that("test_progAlignRuns2", {

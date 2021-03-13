@@ -352,7 +352,7 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", refRun = NULL, oswMerge
 #' @importFrom data.table set
 #' @inheritParams checkParams
 #' @param rownum (integer) represnts the index of the multipepetide to be aligned.
-#' @param peptideIDs (integer) vector of peptideIDs.
+#' @param peptides (integer) vector of peptide IDs.
 #' @param multipeptide (list) contains multiple data-frames that are collection of features
 #'  associated with analytes. This is an output of \code{\link{getMultipeptide}}.
 #' @param refRuns (data-frame) output of \code{\link{getRefRun}}. Must have two columsn : transition_group_id and run.
@@ -368,45 +368,46 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", refRun = NULL, oswMerge
 #' @seealso \code{\link{alignTargetedRuns}, \link{alignToRef}, \link{getAlignedTimes}, \link{getMultipeptide}}
 #' @examples
 #' dataPath <- system.file("extdata", package = "DIAlignR")
-perBatch <- function(iBatch, peptideIDs, multipeptide, refRuns, precursors, prec2chromIndex,
+perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2chromIndex,
                      fileInfo, mzPntrs, params, globalFits, RSE, applyFun = lapply){
-  if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
-  if(params[["chromFile"]] =="sqMass") fetchXIC = extractXIC_group2
+  # if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
+  fetchXICs = extractXIC_group2
   message("Processing Batch ", iBatch)
   batchSize <- params[["batchSize"]]
   strt <- ((iBatch-1)*batchSize+1)
-  stp <- min((iBatch*batchSize), length(peptideIDs))
-  ##### Get XICs for the batch across all runs #####
-  # Put XICs into memory and create a new mzPntrs2
-  XICs <- lapply(strt:stp, function(rownum){
-    ##### Get transition_group_id for that peptideID #####
-    idx <- precursors[.(peptideIDs[rownum]),  which = TRUE]
-    analytes <- precursors[idx, "transition_group_id"][[1]]
-    xics <- lapply(names(mzPntrs), function(run){
-      chromIndices <- .subset2(prec2chromIndex[[run]], "chromatogramIndex")[idx]
-      if(any(is.na(unlist(chromIndices))) | is.null(unlist(chromIndices))) return(NULL)
-      temp <- lapply(chromIndices, function(i1) fetchXIC(mzPntrs[[run]], i1))
-      names(temp) <- as.character(analytes)
-      temp
-    })
-    names(xics) <- names(mzPntrs)
-    xics
-  })
+  stp <- min((iBatch*batchSize), length(peptides))
+  runs <- rownames(fileInfo)
+
+  ##### Get XICs into memory for the batch across all runs #####
+  pIdx <- lapply(peptides[strt:stp], function(pep) which(precursors$peptide_id == pep))
+  analytesA <- lapply(pIdx, function(i) .subset2(precursors, "transition_group_id")[i])
+  chromIndices <- lapply(runs, function(run) lapply(pIdx, function(i) .subset2(prec2chromIndex[[run]], "chromatogramIndex")[i]))
+  cons <- lapply(seq_along(runs), function(i) createTemp(mzPntrs[[runs[i]]], unlist(chromIndices[[i]])))
+  names(cons) <- names(chromIndices) <- runs
 
   ##### Get aligned multipeptide for the batch #####
   invisible(applyFun(strt:stp, function(rownum){
-    peptide <- peptideIDs[rownum]
+    peptide <- peptides[rownum]
     DT <- multipeptide[[rownum]]
     ref <- refRuns[rownum, "run"][[1]]
-
     idx <- (rownum - (iBatch-1)*batchSize)
-    XICs.ref <- XICs[[idx]][[ref]]
+    analytes <- analytesA[[idx]]
+
+    XICs <- lapply(seq_along(runs), function(i){
+      cI <- chromIndices[[i]][[idx]]
+      if(any(is.na(unlist(cI))) | is.null(unlist(cI))) return(NULL)
+      temp <- lapply(cI, function(i1) fetchXICs(cons[[i]], i1))
+      names(temp) <- as.character(analytes)
+      temp
+    })
+    names(XICs) <- runs
+
+    XICs.ref <- XICs[[ref]]
     if(is.null(XICs.ref)){
       message("Chromatogram indices for peptide ", peptide, " are missing in ", fileInfo[ref, "runName"])
       message("Skipping peptide ", peptide, " across all runs.")
       return(invisible(NULL))
     }
-
     ##### Set alignment rank for all precrusors of the peptide in the reference run #####
     analytes <- as.integer(names(XICs.ref))
     refIdx <- which(DT[["run"]] == ref & DT[["peak_group_rank"]] == 1)
@@ -425,7 +426,7 @@ perBatch <- function(iBatch, peptideIDs, multipeptide, refRuns, precursors, prec
     ##### Align all runs to reference run and set their alignment rank #####
     exps <- setdiff(rownames(fileInfo), ref)
     invisible(
-      lapply(exps, alignToRef, ref, refIdx, fileInfo, XICs[[idx]], XICs.ref, params,
+      lapply(exps, alignToRef, ref, refIdx, fileInfo, XICs, XICs.ref, params,
              DT, globalFits, RSE)
     )
 

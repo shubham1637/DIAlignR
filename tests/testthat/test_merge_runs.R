@@ -15,9 +15,7 @@ childFeatures <- function(){
 }
 
 test_that("test_getNodeRun",{
-  skip_if_no_pyopenms()
   dir.create("xics")
-  ropenms <- get_ropenms(condaEnv = envName, useConda=TRUE)
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
   params[["maxPeptideFdr"]] <- 0.05
@@ -26,7 +24,6 @@ test_that("test_getNodeRun",{
   params[["globalAlignment"]] <- "loess"
   params[["globalAlignmentFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"
-  params[["chromFile"]] <- "mzML"
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   mzPntrs <- list2env(getMZMLpointers(fileInfo))
 
@@ -36,7 +33,7 @@ test_that("test_getNodeRun",{
   peptideScores <- getPeptideScores(fileInfo, peptides = peptideIDs, TRUE, "DIA_Proteomics", "experiment-wide")
   masters <- paste("master", 1:(nrow(fileInfo)-1), sep = "")
   peptideScores <- lapply(peptideIDs, function(pep) {x <- peptideScores[.(pep)][,-c(1L)]
-  x <- rbindlist(list(x, data.table("run" = masters, "score" = NA_real_, "pvalue" = NA_real_,
+  x <- data.table::rbindlist(list(x, data.table("run" = masters, "score" = NA_real_, "pvalue" = NA_real_,
                                     "qvalue" = NA_real_)), use.names=TRUE)
   setkeyv(x, "run"); x})
   names(peptideScores) <- as.character(peptideIDs)
@@ -58,15 +55,16 @@ test_that("test_getNodeRun",{
                  "Chromatogram indices for 7040 are missing.")
 
   expect_identical(ls(mzPntrs), c("master2", "run0", "run1", "run2"))
-  expect_is(mzPntrs[["master2"]], "mzRpwiz")
+  expect_is(mzPntrs[["master2"]], "SQLiteConnection")
+  for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
   expect_equal(features$master2[3,], childFeatures()[1,], tolerance = 1e-04)
   expect_equal(features$master2[c(9, 15), c(1,3,4,8)],
                data.table(transition_group_id = c(9719L, 9720L), RT = 2594.85, intensity = c(14.62899, 20.94305),
                           m_score = c(1.041916e-03, 5.692077e-05), key = "transition_group_id"), tolerance = 1e-04)
-  expect_identical(fileInfo["master2", "chromatogramFile"], file.path(".", "xics", "master2.chrom.mzML"))
+  expect_identical(fileInfo["master2", "chromatogramFile"], file.path(".", "xics", "master2.chrom.sqMass"))
   expect_identical(fileInfo["master2", "runName"], "master2")
   expect_identical(prec2chromIndex$master2[,"transition_group_id"][[1]], c(32L, 9719L, 9720L, 4618L))
-  expect_identical(prec2chromIndex$master2[,"chromatogramIndex"][[1]], list(rep(NA_integer_, 6), 1:6, 7:12, 13:18))
+  expect_identical(prec2chromIndex$master2[,"chromatogramIndex"][[1]], list(rep(NA_integer_, 6), 0:5, 6:11, 12:17))
   expect_equal(adaptiveRTs[["run1_run2"]], 77.0036, tolerance = 1e-04)
   expect_equal(adaptiveRTs[["run2_run1"]], 76.25354, tolerance = 1e-04)
   expect_identical(refRuns[["master2"]], data.table("var1" = c(2L,1L,1L), "var2" = c("32","9720","4618")))
@@ -75,16 +73,17 @@ test_that("test_getNodeRun",{
   expect_equal(peptideScores[["14383"]][2,"pvalue"][[1]], 5.603183e-05, tolerance = 1e-04)
 
   data(masterXICs_DIAlignR, package="DIAlignR")
-  outData <- mzR::chromatograms(mzR::openMSfile(file.path(".", "xics", "master2.chrom.mzML"), backend = "pwiz"))
-  outData <- outData[13:18] # transition_group_id = 4618
+  con <- DBI::dbConnect(RSQLite::SQLite(), dbname = file.path(".", "xics", "master2.chrom.sqMass"))
+  outData <- extractXIC_group2(con, 12:17)
+  DBI::dbDisconnect(con)
   for(i in 1:6){
-    expect_equal(outData[[i]][[1]], masterXICs_DIAlignR[[1]][[i]][[1]], tolerance = 1e-04)
-    expect_equal(outData[[i]][[2]], masterXICs_DIAlignR[[1]][[i]][[2]], tolerance = 1e-04)
+    expect_equal(outData[[i]][,1], masterXICs_DIAlignR[[1]][[i]][[1]], tolerance = 1e-04)
+    expect_equal(outData[[i]][,2], masterXICs_DIAlignR[[1]][[i]][[2]], tolerance = 1e-04)
   }
   outData <- readRDS("master2_av.rds", refhook = NULL)
   for(i in 1:3) expect_equal(outData[[3]][,i], masterXICs_DIAlignR[[2]][,i+2], tolerance = 1e-04)
   file.remove("master2_av.rds")
-  file.remove(file.path("xics", "master2.chrom.mzML"))
+  file.remove(file.path("xics", "master2.chrom.sqMass"))
   unlink("xics", recursive = TRUE)
 })
 
@@ -161,7 +160,6 @@ test_that("test_trfrParentFeature",{
 test_that("test_getChildXICs",{
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
-  params[["chromFile"]] <- "mzML"
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   features <- getFeatures(fileInfo, maxFdrQuery = 1.00, runType = "DIA_Proteomics")
   mzPntrs <- getMZMLpointers(fileInfo)
@@ -178,12 +176,11 @@ test_that("test_getChildXICs",{
   params <- paramsDIAlignR()
   params[["kernelLen"]] <- 0L
   params[["polyOrd"]] <- 4L
-  params[["chromFile"]] <- "mzML"
   params[["keepFlanks"]] <- TRUE
   params[["globalAlignment"]] <- "linear"
   outData <- getChildXICs(runA = "run2", runB="run1", fileInfo, features, mzPntrs, precursors,
                prec2chromIndex, refRun, peptideScores, params)
-  rm(mzPntrs)
+  for(con in mzPntrs) DBI::dbDisconnect(con)
   expData <- masterXICs_DIAlignR
   expect_identical(names(outData[[1]][[1]]), "4618")
   expect_identical(dim(outData[[2]][[1]]), c(204L, 3L))

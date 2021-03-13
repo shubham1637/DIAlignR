@@ -53,11 +53,7 @@ extractXIC_group <- function(mz, chromIndices){
 #' DBI::dbDisconnect(con)
 #' }
 extractXIC_group2 <- function(con, chromIndices){
-  ids1 <- paste0(chromIndices, collapse = ", ")
-  query <- paste0("SELECT CHROMATOGRAM_ID, COMPRESSION, DATA_TYPE, DATA
-                 FROM DATA
-                 WHERE CHROMATOGRAM_ID IN (", ids1, ")
-                 ORDER BY CHROMATOGRAM_ID ASC, DATA_TYPE DESC;", sep = "")
+  query <- sqMassQuery(chromIndices)
   results <- DBI::dbGetQuery(con, query)
   XIC_group <- lapply(seq_along(chromIndices), function(i){
     cbind("time" = uncompressVec(results[["DATA"]][[2*i-1]],

@@ -7,7 +7,6 @@ test_that("test_alignTargetedRuns",{
   params[["XICfilter"]] <- "none"
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
-  params[["chromFile"]] <- "sqMass"
   expect_message(
     alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                       runs = NULL, applyFun = lapply)
@@ -32,7 +31,6 @@ test_that("test_alignTargetedRuns",{
   params[["batchSize"]] <- 10L
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
-  params[["chromFile"]] <- "mzML"
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                       runs = runs, applyFun = lapply)
   outData <- read.table("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
@@ -53,7 +51,6 @@ test_that("test_alignTargetedRuns",{
   params[["XICfilter"]] <- "none"
   params[["context"]] <- "experiment-wide"
   params[["transitionIntensity"]] <- TRUE
-  params[["chromFile"]] <- "mzML"
   params[["globalAlignment"]] <- "linear"
   expect_message(
     alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
@@ -118,7 +115,6 @@ test_that("test_alignTargetedRuns_metabolomics",{
   params[["globalAlignmentFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"
   params[["runType"]] <- "DIA_Metabolomics"
-  params[["chromFile"]] <- "mzML"
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp_metabo", params = params,
                       oswMerged = TRUE, runs = NULL, applyFun = lapply)
   outData <- read.table("temp_metabo.tsv", sep = "\t", header = TRUE)
@@ -141,7 +137,6 @@ test_that("test_alignToRef",{
   params$kernelLen <- 13L
   params[["globalAlignment"]] <- "linear"
   params[["globalAlignmentFdr"]] <- 0.05
-  params[["chromFile"]] <- "mzML"
   fileInfo <- getRunNames(dataPath, oswMerged = TRUE, params)
   precursors <- getPrecursors(fileInfo, oswMerged= TRUE, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]])
   precursors <- precursors[precursors$peptide_id %in% c("7040", "9861", "14383"),]
@@ -178,13 +173,14 @@ test_that("test_alignToRef",{
   expect_equal(df[c(5,6), alignment_rank], c(1L, NA_integer_))
 
   # Case 3
+  params[["chromFile"]] <- "mzML"
   chromIndices <- prec2chromIndex[["run1"]][c(2,3), chromatogramIndex]
   mz <- mzR::openMSfile(file.path(dataPath, "xics","hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML"))
-  XICs.ref <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i))
+  XICs.ref <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i+1)) # sqMass file indices start with 0, mzML start with 1
   names(XICs.ref) <- c("9719", "9720")
   chromIndices <- prec2chromIndex[["run2"]][c(2,3), chromatogramIndex]
   mz <- mzR::openMSfile(file.path(dataPath, "xics","hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML"))
-  xics <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i))
+  xics <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i+1)) # sqMass file indices start with 0, mzML start with 1
   names(xics) <- c("9719", "9720")
   XICs <- list(); XICs[["run2"]] <- xics
   df <- multipeptide_DIAlignR[["9861"]]
@@ -193,8 +189,8 @@ test_that("test_alignToRef",{
 
   expect_equal(df[10,alignment_rank],1L)
   expect_equal(df[9,], data.table("transition_group_id" = 9719L, feature_id = bit64::NA_integer64_,
-                                       RT = 2607.05, intensity = 11.80541,  leftWidth = 2591.431, rightWidth = 2625.569, peak_group_rank = NA_integer_,
-                                       m_score = NA_real_, run = "run2", alignment_rank = 1, key = "run"),
+                      RT = 2607.05, intensity = 11.80541,  leftWidth = 2591.431, rightWidth = 2625.569, peak_group_rank = NA_integer_,
+                      m_score = NA_real_, run = "run2", alignment_rank = 1, key = "run"),
                tolerance = 1e-06)
 
   # Case 4
@@ -210,7 +206,6 @@ test_that("test_perBatch",{
   params[["context"]] <- "experiment-wide"
   params$kernelLen <- 13L
   params[["globalAlignmentFdr"]] <- 0.05
-  params[["chromFile"]] <- "mzML"
   params[["maxPeptideFdr"]] <- 0.05
   params$batchSize <- 1L
   fileInfo <- getRunNames(dataPath, oswMerged = TRUE, params)

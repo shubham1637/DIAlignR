@@ -52,7 +52,7 @@
 #' file.remove(file.path(".", "xics", paste0(mergeName, ".chrom.sqMass")))
 #' file.remove(list.files(".", pattern = "*_av.rds", full.names = TRUE))
 #' }
-#' rm(mzPntrs)
+#' for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 getNodeRun <- function(runA, runB, mergeName, dataPath, fileInfo, features, mzPntrs, prec2chromIndex,
                        precursors, params, adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms, applyFun = lapply){
   peptides <- unique(precursors$peptide_id)
@@ -360,7 +360,7 @@ trfrParentFeature <- function(XICs, timeParent, df, i, params){
 #' refRun <- data.frame(rep(1L, length(peptideIDs)), var2)
 #' mergedXICs <- getChildXICs(runA = "run1", runB = "run2", fileInfo, features, mzPntrs,
 #'   precursors, prec2chromIndex, refRun, peptideScores, params)
-#' rm(mzPntrs)
+#' for(con in mzPntrs) DBI::dbDisconnect(con)
 #' @export
 getChildXICs <- function(runA, runB, fileInfo, features, mzPntrs, precursors, prec2chromIndex, refRun,
                          peptideScores, params, applyFun = lapply){
@@ -390,40 +390,36 @@ getChildXICs <- function(runA, runB, fileInfo, features, mzPntrs, precursors, pr
 parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, mzPntrs, params,
                     peptideScores, refRun, globalFit1, globalFit2, adaptiveRT1, adaptiveRT2, applyFun){
   batchSize <- params[["batchSize"]]
-  if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
-  if(params[["chromFile"]] =="sqMass") fetchXIC = extractXIC_group2
+  #if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
+  fetchXIC = extractXIC_group2
   strt <- ((iBatch-1)*batchSize+1)
   stp <- min((iBatch*batchSize), length(peptides))
-  ##### Get XICs for the batch from both runs #####
-  XICs <- lapply(strt:stp, function(rownum){
-    ##### Get transition_group_id for that peptideID #####
-    idx <- which(precursors$peptide_id == peptides[rownum])
-    analytes <- .subset2(precursors, "transition_group_id")[idx]
-    ##### Get XIC_group from runA and runB. If missing, add NULL #####
-    chromIndices.A <- prec2chromIndex[[runA]][["chromatogramIndex"]][idx]
-    chromIndices.B <- prec2chromIndex[[runB]][["chromatogramIndex"]][idx]
-    nope <- any(is.na(c(unlist(chromIndices.A), unlist(chromIndices.B))))
-    nope <- nope | is.null(unlist(chromIndices.A)) | is.null(unlist(chromIndices.B))
-    if(nope) return(NULL)
-    XICs.A <- lapply(chromIndices.A, function(i1) fetchXIC(mzPntrs[[runA]], i1))
-    XICs.B <- lapply(chromIndices.B, function(i1) fetchXIC(mzPntrs[[runB]], i1))
-    names(XICs.A) <- names(XICs.B) <- as.character(analytes)
-    list(XICs.A, XICs.B)
-  })
+  cons <- vector(mode = "list", length = 2L)
+  #### Create a temporary database to store chromatogram for the batch ####
+  pIdx <- lapply(peptides[strt:stp], function(pep) which(precursors$peptide_id == pep))
+  analytes <- lapply(pIdx, function(i) .subset2(precursors, "transition_group_id")[i])
+  chromIndices.A <- lapply(pIdx, function(i) prec2chromIndex[[runA]][["chromatogramIndex"]][i])
+  chromIndices.B <- lapply(pIdx, function(i) prec2chromIndex[[runB]][["chromatogramIndex"]][i])
+  cons[[1]] <- createTemp(mzPntrs[[runA]], unlist(chromIndices.A))
+  cons[[2]] <- createTemp(mzPntrs[[runB]], unlist(chromIndices.B))
 
   ##### Get child XICs for the batch from both runs #####
   cluster <- applyFun(strt:stp, function(rownum){
     peptide <- peptides[rownum]
     idx <- (rownum - (iBatch-1)*batchSize)
-    if(is.null(XICs[[idx]])){
+    ##### Get XIC_group from runA and runB. If missing, add NULL #####
+    cI.A <- chromIndices.A[[idx]]
+    cI.B <- chromIndices.B[[idx]]
+    nope <- any(is.na(c(unlist(cI.A), unlist(cI.B))))
+    nope <- nope | is.null(unlist(cI.A)) | is.null(unlist(cI.B))
+    if(nope) {
       warning("Chromatogram indices for ", peptide, " are missing.")
       message("Skipping peptide ", peptide, ".")
-      analytes <- precursors[.(peptide), "transition_group_id"][[1]]
-      return(list(vector(mode = "list", length = length(analytes)), NULL))
-    } else {
-      XICs.A <- XICs[[idx]][[1]]
-      XICs.B <- XICs[[idx]][[2]]
+      return(list(vector(mode = "list", length = length(analytes[[idx]])), NULL))
     }
+    XICs.A <- lapply(cI.A, function(i1) fetchXIC(cons[[1]], i1))
+    XICs.B <- lapply(cI.B, function(i1) fetchXIC(cons[[2]], i1))
+    names(XICs.A) <- names(XICs.B) <- as.character(analytes[[idx]])
 
     ##### Calculate the weights of XICs from runA and runB #####
     temp <- peptideScores[[rownum]]
@@ -473,7 +469,7 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
       message("Missing values in the chromatogram of ", paste0(analytes_chr, sep = " "), "in ",
               runA, " or ", runB)
       return(list(vector(mode = "list", length = length(analytes_chr)), NULL)) # Missing values in chromatogram
-      }
+    }
 
     #### Merge chromatograms  ####
     merged_xics <- getChildXICpp(XICs.ref.pep, XICs.eXp.pep, params[["kernelLen"]], params[["polyOrd"]],
@@ -497,5 +493,6 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
     merged_xics[[1]] <- merged_xics[[1]][match(analytes_chr, names(merged_xics[[1]]))]
     merged_xics # 1st element has list of precursors. 2nd element has aligned time vectors.
   })
+  for(con in cons) DBI::dbDisconnect(con)
   cluster
 }

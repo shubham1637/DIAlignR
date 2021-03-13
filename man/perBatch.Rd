@@ -6,7 +6,7 @@
 \usage{
 perBatch(
   iBatch,
-  peptideIDs,
+  peptides,
   multipeptide,
   refRuns,
   precursors,
@@ -20,7 +20,7 @@ perBatch(
 )
 }
 \arguments{
-\item{peptideIDs}{(integer) vector of peptideIDs.}
+\item{peptides}{(integer) vector of peptide IDs.}
 
 \item{multipeptide}{(list) contains multiple data-frames that are collection of features
 associated with analytes. This is an output of \code{\link{getMultipeptide}}.}

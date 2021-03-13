@@ -92,10 +92,10 @@ tree <- ape::reorder.phylo(tree, "postorder")
 ropenms <- get_ropenms(condaEnv = "envName", useConda=TRUE)
 multipeptide <- traverseUp(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIndex, precursors, params,
  adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms)
-rm(mzPntrs)
+for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 # Cleanup
 file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
-file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\\\.chrom\\\\.mzML$", full.names = TRUE))
+file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\\\.chrom\\\\.sqMass$", full.names = TRUE))
 }
 }
 \seealso{

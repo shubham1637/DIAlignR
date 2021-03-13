@@ -71,7 +71,7 @@ var2 <- as.character(sapply(peptideIDs, function(p) precursors$transition_group_
 refRun <- data.frame(rep(1L, length(peptideIDs)), var2)
 mergedXICs <- getChildXICs(runA = "run1", runB = "run2", fileInfo, features, mzPntrs,
   precursors, prec2chromIndex, refRun, peptideScores, params)
-rm(mzPntrs)
+for(con in mzPntrs) DBI::dbDisconnect(con)
 }
 \seealso{
 \code{\link{childXICs}, \link{getNodeRun}}

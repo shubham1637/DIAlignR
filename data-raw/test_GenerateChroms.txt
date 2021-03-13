@@ -24,3 +24,8 @@ sudo docker images --no-trunc hroest/openms-executables-nightly
 sha256:c6080fdc682480104dd67f6f1cb1dd0b5d3b22d73350a4abe42d49a4be6cc9a9
 
 sudo docker run --rm -v `pwd`:/data --user $(id -u):$(id -g) hroest/openms-executables-nightly /bin/bash -c "OpenSwathMzMLFileCacher -in data/hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML -out data/hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt.chrom.sqMass -threads 6"
+
+sudo docker run --rm -v `pwd`:/data --user $(id -u):$(id -g) hroest/openms-executables-nightly /bin/bash -c "OpenSwathMzMLFileCacher -in data/PestMix1_8Step8Plasma1SWATH20-50.chrom.mzML -out data/PestMix1_8Step8Plasma1SWATH20-50.chrom.sqMass -lossy_compression false -threads 6"
+
+
+

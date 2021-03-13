@@ -184,10 +184,10 @@ ancesTree <- function(tree, stree){
 #' ropenms <- get_ropenms(condaEnv = "envName", useConda=TRUE)
 #' multipeptide <- traverseUp(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIndex, precursors, params,
 #'  adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms)
-#' rm(mzPntrs)
+#' for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 #' # Cleanup
 #' file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
-#' file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.mzML$", full.names = TRUE))
+#' file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
 #' }
 traverseUp <- function(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIndex, precursors,
                        params, adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms, applyFun = lapply){
@@ -256,9 +256,9 @@ traverseUp <- function(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIn
 #' multipeptide <- traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs, precursors,
 #'  adaptiveRTs, refRuns, params)
 #' # Cleanup
-#' rm(mzPntrs)
+#' for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 #' file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
-#' file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.mzML$", full.names = TRUE))
+#' file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
 #' }
 traverseDown <- function(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs, precursors,
                          adaptiveRTs, refRuns, params, applyFun = lapply){
@@ -387,9 +387,9 @@ traverseDown <- function(tree, dataPath, fileInfo, multipeptide, prec2chromIndex
 #' multipeptide <- alignToMaster(ref = "master1", eXp = "run1", alignedVecs, refRuns[["master1"]][,1], adaptiveRT,
 #'  multipeptide, prec2chromIndex, mzPntrs, fileInfo, precursors, params)
 #' # Cleanup
-#' rm(mzPntrs)
+#' for(run in names(mzPntrs)) DBI::dbDisconnect(mzPntrs[[run]])
 #' file.remove(file.path(dataPath, "master1_av.rds"))
-#' file.remove(file.path(dataPath, "xics", "master1.chrom.mzML"))
+#' file.remove(file.path(dataPath, "xics", "master1.chrom.sqMass"))
 #' }
 alignToMaster <- function(ref, eXp, alignedVecs, refRun, adaptiveRT, multipeptide, prec2chromIndex,
                           mzPntrs, fileInfo, precursors, params, applyFun = lapply){
