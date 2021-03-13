@@ -434,6 +434,7 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
     updateOnalignTargetedRuns(rownum)
   })
   )
+  for(con in cons) DBI::dbDisconnect(con)
   invisible(NULL)
 }
 

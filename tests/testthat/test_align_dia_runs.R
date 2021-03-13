@@ -197,7 +197,7 @@ test_that("test_alignToRef",{
   df <- data.table::copy(multipeptide_DIAlignR[["7040"]])
   expect_message(alignToRef(eXp = "run2", ref = "run1", refIdx = integer(0), fileInfo, NULL, NULL,
                             params, df, globalFits, RSE))
-
+  for(con in mzPntrs) DBI::dbDisconnect(con)
 })
 
 test_that("test_perBatch",{
@@ -245,4 +245,5 @@ test_that("test_perBatch",{
   data.table::set(df, 9L, c(3L,4L,5L,6L), list(2607.05, 11.80541, 2591.431, 2625.569))
   df$alignment_rank[c(1,2,5,6,9,10)] <- 1L
   expect_equal(df, multipeptide[["9861"]], tolerance = 1e-06)
+  for(con in mzPntrs) DBI::dbDisconnect(con)
 })
