@@ -512,8 +512,9 @@ alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
              message("\nError in the alignment of ", paste0(analytes, sep = " "), "in runs ",
                      fileInfo[ref, "runName"], " and ", fileInfo[eXp, "runName"])
              warning(e)
-             return(invisible(NULL))
+             return(NULL)
            })
+  if(is.null(tAligned)) return(invisible(NULL))
   tryCatch(expr = setAlignmentRank(df, refIdx, eXp, tAligned, XICs.eXp, params, adaptiveRT),
              error = function(e){
              message("\nError in setting alignment rank of ", paste0(analytes, sep = " "), "in runs ",
@@ -523,6 +524,7 @@ alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
            })
 
   tempi <- eXpIdx[which(df$alignment_rank[eXpIdx] == 1L)]
+  if(length(tempi) == 0L) return(invisible(NULL))
   setOtherPrecursors(df, tempi, XICs.eXp, analytes, params)
   if(params[["recalIntensity"]]) reIntensity(df, eXp, XICs.eXp, params)
   invisible(NULL)
