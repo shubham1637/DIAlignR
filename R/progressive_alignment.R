@@ -14,13 +14,8 @@
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-07-10
 #' @importFrom data.table data.table setkeyv rbindlist
-#' @inheritParams checkParams
 #' @inheritParams alignTargetedRuns
-#' @param dataPath (string) path to xics and osw directory.
-#' @param outFile (string) name of the output file.
 #' @param ropenms (pyopenms module) get this python module through \code{\link{get_ropenms}}. Required only for chrom.mzML files.
-#' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
-#' @param runs (string) names of xics file without extension.
 #' @param newickTree (string) guidance tree in newick format. Look up \code{\link{getTree}}.
 #' @return (None)
 #' @seealso \code{\link{alignTargetedRuns}}
@@ -40,7 +35,7 @@
 #' }
 #' @export
 progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL, oswMerged = TRUE,
-                          runs = NULL, newickTree = NULL, applyFun = lapply){
+                          runs = NULL, peps = NULL, newickTree = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   if(params[["chromFile"]] == "mzML"){
     if(is.null(ropenms)) stop("ropenms is required to write chrom.mzML files.")
@@ -58,6 +53,11 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]],
                               params[["maxPeptideFdr"]], params[["level"]])
+  if(!is.null(peps)){
+    precursors <- precursors[peptide_id %in% peps, ]
+    if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
+    setkeyv(precursors, c("peptide_id", "transition_group_id"))
+  }
 
   #### Get OpenSWATH peak-groups and their retention times. ##########
   if(params[["transitionIntensity"]]){

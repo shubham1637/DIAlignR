@@ -70,6 +70,29 @@ test_that("test_alignTargetedRuns",{
   }
   file.remove("temp.tsv")
 
+  dataPath <- system.file("extdata", package = "DIAlignR")
+  params <- paramsDIAlignR()
+  params[["context"]] <- "experiment-wide"
+  peps <- c(8496L, 15879L, 19800L)
+  params[["transitionIntensity"]] <- TRUE
+  alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
+                    refRun = "hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt",
+                    runs = NULL, peps = peps, applyFun = lapply)
+  outData <- read.table("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+  expData <- read.table("test4.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+  expect_identical(dim(outData), dim(expData))
+  expect_identical(colnames(outData), colnames(expData))
+  expect_identical(outData[["peptide_id"]], expData[["peptide_id"]])
+  expect_identical(outData[["precursor"]], expData[["precursor"]])
+  expect_identical(outData[["run"]], expData[["run"]])
+  expect_equal(outData[["RT"]], expData[["RT"]], tolerance = 1e-04)
+  x <- sapply(outData[["intensity"]], function(a) sum(as.numeric(strsplit(a, split = ",")[[1]])), USE.NAMES = FALSE)
+  y <- sapply(expData[["intensity"]], function(a) sum(as.numeric(strsplit(a, split = ",")[[1]])), USE.NAMES = FALSE)
+  expect_equal(x, y, tolerance = 1e-04)
+  for(i in 6:10){
+    expect_equal(outData[[i]], expData[[i]], tolerance = 1e-04)
+  }
+  file.remove("temp.tsv")
 })
 
 test_that("test_getAlignObjs",{
@@ -223,7 +246,7 @@ test_that("test_perBatch",{
   RSE[["run1_run2"]] <- RSE[["run1_run0"]] <- 38.6594179136227/params$RSEdistFactor
   globalFits <- lapply(globalFits, extractFit, params[["globalAlignment"]])
 
-  # Case 1
+  # Case 1 Missing chromatograms
   df <- data.table::copy(multipeptide[["7040"]])
   expect_message(perBatch(iBatch = 1L, peptideIDs, multipeptide, refRuns, precursors,
                              prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE))

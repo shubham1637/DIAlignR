@@ -4,16 +4,7 @@
 \alias{calculateIntensity}
 \title{Calculates area of a peak in XIC group}
 \usage{
-calculateIntensity(
-  XICs,
-  left,
-  right,
-  integrationType,
-  baselineType,
-  fitEMG = FALSE,
-  baseSubtraction = TRUE,
-  transitionIntensity = FALSE
-)
+calculateIntensity(XICs, left, right, params)
 }
 \arguments{
 \item{XICs}{(list) list of extracted ion chromatograms of a precursor.}
@@ -22,20 +13,10 @@ calculateIntensity(
 
 \item{right}{(numeric) right boundary of the peak.}
 
-\item{integrationType}{(string) method to ompute the area of a peak contained in XICs. Must be
-from "intensity_sum", "trapezoid", "simpson".}
-
-\item{baselineType}{(string) method to estimate the background of a peak contained in XICs. Must be
-from "base_to_base", "vertical_division_min", "vertical_division_max".}
-
-\item{fitEMG}{(logical) enable/disable exponentially modified gaussian peak model fitting.}
-
-\item{baseSubtraction}{(logical) TRUE: remove background from peak signal using estimated noise levels.}
-
-\item{transitionIntensity}{(logical) TRUE: return intensity of each transition, FALSE: return sum of all transitions.}
+\item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
 }
 \value{
-(numeric)
+area (numeric)
 }
 \description{
 Retention time from reference run is mapped to experiment run using AlignObj.
@@ -49,7 +30,7 @@ calculateIntensity(XICs, 5220, 5261, integrationType = "intensity_sum",
 }
 }
 \seealso{
-\code{\link{getMultipeptide}, \link{setAlignmentRank}}
+\code{\link{areaIntegrator}, \link{setAlignmentRank}}
 }
 \author{
 Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}

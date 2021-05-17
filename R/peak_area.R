@@ -7,20 +7,13 @@
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-04-13
-#'
+#' @inheritParams checkParams
 #' @param XICs (list) list of extracted ion chromatograms of a precursor.
 #' @param left (numeric) left boundary of the peak.
 #' @param right (numeric) right boundary of the peak.
-#' @param integrationType (string) method to ompute the area of a peak contained in XICs. Must be
-#'  from "intensity_sum", "trapezoid", "simpson".
-#' @param baselineType (string) method to estimate the background of a peak contained in XICs. Must be
-#'  from "base_to_base", "vertical_division_min", "vertical_division_max".
-#' @param fitEMG (logical) enable/disable exponentially modified gaussian peak model fitting.
-#' @param baseSubtraction (logical) TRUE: remove background from peak signal using estimated noise levels.
-#' @param transitionIntensity (logical) TRUE: return intensity of each transition, FALSE: return sum of all transitions.
-#' @return (numeric)
+#' @return area (numeric)
 #' @keywords internal
-#' @seealso \code{\link{getMultipeptide}, \link{setAlignmentRank}}
+#' @seealso \code{\link{areaIntegrator}, \link{setAlignmentRank}}
 #' @examples
 #' data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
 #' XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
@@ -28,27 +21,44 @@
 #' calculateIntensity(XICs, 5220, 5261, integrationType = "intensity_sum",
 #'  baselineType = "base_to_base", fitEMG = FALSE)
 #' }
-calculateIntensity <- function(XICs, left, right, integrationType, baselineType,
-                               fitEMG = FALSE, baseSubtraction = TRUE, transitionIntensity = FALSE){
+calculateIntensity <- function(XICs, left, right, params){
   time <- lapply(XICs, `[`, i =, j =1)
   intensityList <- lapply(XICs, `[`, i =, j= 2)
-  intensity <- areaIntegrator(time, intensityList, left, right, integrationType, baselineType,
-                              fitEMG, baseSubtraction)
+  if(params[["smoothPeakArea"]]){
+    kL <- params[["kernelLen"]]
+    pO <- params[["polyOrd"]]
+  } else{
+    kL <- 0L
+    pO <- 1L
+  }
+  intensity <- areaIntegrator(time, intensityList, left, right,  params[["integrationType"]], params[["baselineType"]],
+                              FALSE, params[["baseSubtraction"]], kL, pO)
   intensity[is.nan(intensity)] <- NA_real_
-  if(transitionIntensity) return (intensity)
+  if(params[["transitionIntensity"]]) return (intensity)
   sum(intensity, na.rm = FALSE)
 }
 
 
 newRow <- function(df, xics, left, right, rt, analyte, Run, params){
-  intensity <- calculateIntensity(xics, left, right, params[["integrationType"]], params[["baselineType"]],
-                                  params[["fitEMG"]], params[["baseSubtraction"]], params[["transitionIntensity"]])
+  intensity <- calculateIntensity(xics, left, right, params)
   intensity <- ifelse(params[["transitionIntensity"]], list(intensity), intensity)
   idx <- which(df$run == Run & df$transition_group_id == analyte)
   idx <- idx[is.na(.subset2(df, "peak_group_rank")[idx])]
   # idx <- df[run == Run & transition_group_id == analyte, .I[is.na(peak_group_rank)][1], by = run]$V1
   if(length(idx) == 0) return(invisible(NULL))
   set(df, idx[1L], c(3L, 4L, 5L, 6L, 10L), list(rt, intensity, left, right, 1L))
+  invisible(NULL)
+}
+
+
+reIntensity <- function(df, Run, XICs, params){
+  idx <- df[run == Run & alignment_rank == 1, which = TRUE]
+  for(i in idx){
+    analyte_chr <- as.character(.subset2(df, "transition_group_id")[[i]])
+    area <- calculateIntensity(XICs[[analyte_chr]], .subset2(df, "leftWidth")[[i]], .subset2(df, "rightWidth")[[i]],
+                               params)
+    data.table::set(df, i, "intensity", area)
+  }
   invisible(NULL)
 }
 
@@ -116,11 +126,7 @@ recalculateIntensity <- function(peakTable, dataPath = ".", oswMerged = TRUE, pa
         if(params[["chromFile"]] =="sqMass") fetchXIC = extractXIC_group2
         XICs <- fetchXIC(mzPntrs[[run]], chromIndices = chromIndices)
       }
-      if(params[["smoothPeakArea"]]){
-        XICs <- smoothXICs(XICs, type = params[["XICfilter"]], kernelLen = params[["kernelLen"]], polyOrd = params[["polyOrd"]])
-      }
-      area <- calculateIntensity(XICs, df[1, "leftWidth"], df[1, "rightWidth"],  integrationType = params[["integrationType"]],
-                                 baselineType = params[["baselineType"]], fitEMG = params[["fitEMG"]], baseSubtraction = params[["baseSubtraction"]])
+      area <- calculateIntensity(XICs, df[1, "leftWidth"], df[1, "rightWidth"], params)
       newArea[[run]][i] <- area
     }
   }
@@ -138,22 +144,9 @@ recalculateIntensity <- function(peakTable, dataPath = ".", oswMerged = TRUE, pa
   newArea
 }
 
-reIntensity <- function(df, Run, XICs, params){
-  idx <- df[run == Run & alignment_rank == 1, which = TRUE]
-  for(i in idx){
-    analyte_chr <- as.character(.subset2(df, "transition_group_id")[[i]])
-    area <- calculateIntensity(XICs[[analyte_chr]], .subset2(df, "leftWidth")[[i]], .subset2(df, "rightWidth")[[i]],
-                               params[["integrationType"]], params[["baselineType"]], params[["fitEMG"]])
-    data.table::set(df, i, "intensity", area)
-  }
-  invisible(NULL)
-}
-
-reIntensity2 <- function(df, Run, XICs, params){
-  XICs.s <- lapply(XICs, smoothXICs, type = params[["XICfilter"]], kernelLen = params[["kernelLen"]],
-                       polyOrd = params[["polyOrd"]])
-  names(XICs.s) <- names(XICs)
-  if(params[["smoothPeakArea"]]) XICs <- XICs.s
-  if(params[["recalIntensity"]]) reIntensity(df, Run, XICs, params)
-  invisible(NULL)
+reIntensity2 <- function(df, idx, XICs, pk, params){
+  area <- calculateIntensity(XICs, pk[1], pk[2], params)
+  set(df, i = idx, 4L, area)
+  set(df, i = idx, 5L, pk[1])
+  set(df, i = idx, 6L, pk[2])
 }

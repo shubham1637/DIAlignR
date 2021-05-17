@@ -11,6 +11,7 @@ progAlignRuns(
   ropenms = NULL,
   oswMerged = TRUE,
   runs = NULL,
+  peps = NULL,
   newickTree = NULL,
   applyFun = lapply
 )
@@ -27,6 +28,8 @@ progAlignRuns(
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
 
 \item{runs}{(string) names of xics file without extension.}
+
+\item{peps}{(integer) ids of peptides to be aligned. If NULL, align all peptides.}
 
 \item{newickTree}{(string) guidance tree in newick format. Look up \code{\link{getTree}}.}
 

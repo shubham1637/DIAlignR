@@ -1,9 +1,13 @@
 Package: DIAlignR
 Type: Package
 Title: Dynamic Programming Based Alignment of MS2 Chromatograms
-Version: 1.99.18
-Author: Shubham Gupta <shubham.1637@gmail.com>, Hannes Rost <hannes.rost@utoronto.ca>
-Maintainer: Shubham Gupta <shubham.1637@gmail.com>
+Version: 2.1.0
+Authors@R: c(person(given = "Shubham", family = "Gupta", role = c("aut", "cre"),
+           email = "shubham.1637@gmail.com",
+           comment = c(ORCID = "0000-0003-3500-8152")),
+           person(given = "Hannes", family = "Rost", role = c("aut"),
+           email = "hannes.rost@utoronto.ca",
+           comment = c(ORCID = "0000-0003-0990-7488")))
 Description: To obtain unbiased proteome coverage from a biological sample, mass-spectrometer is operated in 
     Data Independent Acquisition (DIA) mode. Alignment of these DIA runs establishes consistency 
     and less missing values in complete data-matrix. This package implements dynamic programming with

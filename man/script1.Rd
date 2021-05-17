@@ -22,7 +22,7 @@ script1(
 
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
 
-\item{runs}{(a vector of string) names of xics file without extension.}
+\item{runs}{(string) names of xics file without extension.}
 
 \item{applyFun}{(function) value must be either lapply or BiocParallel::bplapply.}
 }

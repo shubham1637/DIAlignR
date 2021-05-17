@@ -13,7 +13,8 @@
 #' @param dataPath (string) path to xics and osw directory.
 #' @param outFile (string) name of the output file.
 #' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
-#' @param runs (a vector of string) names of xics file without extension.
+#' @param runs (string) names of xics file without extension.
+#' @param peps (integer) ids of peptides to be aligned. If NULL, align all peptides.
 #' @param refRun (string) reference for alignment. If no run is provided, m-score is used to select reference run.
 #' @param applyFun (function) value must be either lapply or BiocParallel::bplapply.
 #' @return An output table with following columns: precursor, run, intensity, RT, leftWidth, rightWidth,
@@ -30,7 +31,7 @@
 #'
 #' @export
 alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
-                              runs = NULL, refRun = NULL, applyFun = lapply){
+                              runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
 
@@ -45,6 +46,11 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   start_time <- Sys.time()
   precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
+  if(!is.null(peps)){
+    precursors <- precursors[peptide_id %in% peps, ]
+    if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
+    setkeyv(precursors, c("peptide_id", "transition_group_id"))
+  }
   if(params[["fractionNum"]] > 1L){
     idx <- getPrecursorSubset(precursors, params)
     precursors <- precursors[idx[1]:idx[2],]
@@ -365,7 +371,7 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", refRun = NULL, oswMerge
 #' @param globalFits (list) each element is either of class lm or loess. This is an output of \code{\link{getGlobalFits}}.
 #' @param RSE (list) Each element represents Residual Standard Error of corresponding fit in globalFits.
 #' @return invisible NULL
-#' @seealso \code{\link{alignTargetedRuns}, \link{alignToRef}, \link{getAlignedTimes}, \link{getMultipeptide}}
+#' @seealso \code{\link{alignTargetedRuns}, \link{alignToRef}, \link{getAlignedTimesFast}, \link{getMultipeptide}}
 #' @examples
 #' dataPath <- system.file("extdata", package = "DIAlignR")
 perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2chromIndex,
@@ -403,7 +409,7 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
     names(XICs) <- runs
 
     XICs.ref <- XICs[[ref]]
-    if(is.null(XICs.ref)){
+    if(is.null(XICs.ref) || any(vapply(XICs.ref, missingInXIC, FALSE, USE.NAMES = FALSE))){
       message("Chromatogram indices for peptide ", peptide, " are missing in ", fileInfo[ref, "runName"])
       message("Skipping peptide ", peptide, " across all runs.")
       return(invisible(NULL))
@@ -419,9 +425,6 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
     }
     set(DT, i = refIdx, 10L, 1L)
     setOtherPrecursors(DT, refIdx, XICs.ref, analytes, params)
-
-    # Update multipeptide reference intensity if recal is true
-    if(params[["recalIntensity"]]) reIntensity(DT, ref, XICs.ref, params)
 
     ##### Align all runs to reference run and set their alignment rank #####
     exps <- setdiff(rownames(fileInfo), ref)
@@ -454,9 +457,10 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
 #' @inherit perBatch return
 #' @param eXp (string) name of the run to be aligned to reference run. Must be in the rownames of fileInfo.
 #' @param ref (string) name of the reference run. Must be in the rownames of fileInfo.
-#' @param analyte_chr (string) Precursor ID of the requested analyte.
-#' @param XICs.ref.s (list of dataframes) Smoothed fragment-ion chromatograms of the analyte_chr from the reference run.
-#' @param df (dataframe) a collection of features related to analyte_chr.
+#' @param refIdx (integer) index of the reference feature in df.
+#' @param XICs (list of dataframes) fragment-ion chromatograms of the analytes for all runs.
+#' @param XICs.ref (list of dataframes) fragment-ion chromatograms of the analyte_chr from the reference run.
+#' @param df (dataframe) a collection of features related to the peptide
 #' @seealso \code{\link{alignTargetedRuns}, \link{perBatch}, \link{setAlignmentRank}, \link{getMultipeptide}}
 #' @examples
 #' dataPath <- system.file("extdata", package = "DIAlignR")
@@ -472,7 +476,6 @@ alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
     set(df, tempi, 10L, 1L)
     if(is.null(XICs.eXp)) return(invisible(NULL))
     setOtherPrecursors(df, tempi, XICs.eXp, analytes, params)
-    if(params[["recalIntensity"]]) reIntensity2(df, eXp, XICs.eXp, params)
     return(invisible(NULL))
   }
 
@@ -500,8 +503,8 @@ alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
   globalFit <- globalFits[[pair]]
   adaptiveRT <- params[["RSEdistFactor"]]*RSE[[pair]]
 
-  if(any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))){
-    message("Missing values in the chromatogram of ", paste0(analytes, sep = " "), "in run ",
+  if(missingInXIC(XICs.eXp.pep)){
+    message("Missing values in the chromatogram of ", paste0(analytes, sep = " "), "precursors in run ",
              fileInfo[eXp, "runName"])
     return(invisible(NULL)) # Missing values in chromatogram
   }
@@ -509,14 +512,15 @@ alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
   tAligned <- tryCatch(expr = getAlignedTimesFast(XICs.ref.pep, XICs.eXp.pep, globalFit, adaptiveRT,
                                                   params),
              error = function(e){
-             message("\nError in the alignment of ", paste0(analytes, sep = " "), "in runs ",
+             message("\nError in the alignment of ", paste0(analytes, sep = " "), "precursors in runs ",
                      fileInfo[ref, "runName"], " and ", fileInfo[eXp, "runName"])
              warning(e)
-             return(invisible(NULL))
+             return(NULL)
            })
+  if(is.null(tAligned)) return(invisible(NULL))
   tryCatch(expr = setAlignmentRank(df, refIdx, eXp, tAligned, XICs.eXp, params, adaptiveRT),
              error = function(e){
-             message("\nError in setting alignment rank of ", paste0(analytes, sep = " "), "in runs ",
+             message("\nError in setting alignment rank of ", paste0(analytes, sep = " "), "precursors in runs ",
                      fileInfo[eXp, "runName"], " and ", fileInfo[eXp, "runName"])
              warning(e)
              return(invisible(NULL))
@@ -524,6 +528,5 @@ alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
 
   tempi <- eXpIdx[which(df$alignment_rank[eXpIdx] == 1L)]
   setOtherPrecursors(df, tempi, XICs.eXp, analytes, params)
-  if(params[["recalIntensity"]]) reIntensity(df, eXp, XICs.eXp, params)
   invisible(NULL)
 }

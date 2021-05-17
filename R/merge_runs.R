@@ -261,12 +261,11 @@ getChildFeature <- function(XICs, alignedVec, df.ref, df.eXp, i.ref, i.eXp, para
   # Create data.frame from these top five features
   analyte <- ifelse(length(i.ref) !=0, .subset2(df.ref, 1L)[i.ref[1]], .subset2(df.eXp, 1L)[i.eXp[1]])
   o <- order(peak_rank, na.last = NA)
-  f <- as.data.frame(f[o,, drop = FALSE])
-  for(i in c(1,3,4,5)) f[, i] <- as.numeric(f[,i])
-  colnames(f) <- c("RT", "intensity", "leftWidth", "rightWidth", "m_score")
-  f <- cbind(data.frame("transition_group_id" = analyte, "feature_id" = fid[o]),
-             f, "peak_group_rank" = peak_rank[o])
-  f[,c(1:6, 8L, 7L)]
+  f <- f[o,, drop = FALSE]
+  list("transition_group_id" = rep(analyte, nrow(f)), "feature_id" = fid[o],
+       "RT" = as.numeric(f[,1]), "intensity"= f[,2],
+       "leftWidth" = as.numeric(f[,3]), "rightWidth"  = as.numeric(f[,4]),
+       "peak_group_rank" = peak_rank[o], "m_score" = as.numeric(f[,5]))
 }
 
 #' Transform features to child time-domain
@@ -315,9 +314,7 @@ trfrParentFeature <- function(XICs, timeParent, df, i, params){
   RT <- timeParent[idx, 2L]
 
   # Calculate peak area
-  area <- lapply(seq_along(i), function(j) calculateIntensity(XICs, left[j], right[j],
-                  params[["integrationType"]], params[["baselineType"]],
-                  FALSE, params[["baseSubtraction"]],  params[["transitionIntensity"]]))
+  area <- lapply(seq_along(i), function(j) calculateIntensity(XICs, left[j], right[j], params))
   if(!params[["transitionIntensity"]]) area <- unlist(area)
 
   matrix(c(RT, area, left, right, .subset2(df, "m_score")[i]), ncol = 5L)

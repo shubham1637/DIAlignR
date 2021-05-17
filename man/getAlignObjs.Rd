@@ -17,7 +17,7 @@ getAlignObjs(
 \arguments{
 \item{analytes}{(vector of integers) transition_group_ids for which features are to be extracted.}
 
-\item{runs}{(a vector of string) names of xics file without extension.}
+\item{runs}{(string) names of xics file without extension.}
 
 \item{dataPath}{(string) path to xics and osw directory.}
 

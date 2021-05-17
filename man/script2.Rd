@@ -23,7 +23,7 @@ script2(
 
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
 
-\item{runs}{(a vector of string) names of xics file without extension.}
+\item{runs}{(string) names of xics file without extension.}
 
 \item{refRun}{(string) reference for alignment. If no run is provided, m-score is used to select reference run.}
 

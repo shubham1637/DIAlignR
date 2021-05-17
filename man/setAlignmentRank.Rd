@@ -7,12 +7,16 @@
 setAlignmentRank(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT)
 }
 \arguments{
-\item{df}{(dataframe) a collection of features related to analyte_chr.}
+\item{df}{(dataframe) a collection of features related to the peptide}
+
+\item{refIdx}{(integer) index of the reference feature in df.}
 
 \item{eXp}{(string) name of the run to be aligned to reference run. Must be in the rownames of fileInfo.}
 
 \item{tAligned}{(list) the first element corresponds to the aligned reference time,
 the second element is the aligned experiment time.}
+
+\item{XICs}{(list of dataframes) fragment-ion chromatograms of the analytes for all runs.}
 
 \item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
 

@@ -100,7 +100,7 @@ test_that("test_getChildFeature",{
   i.eXp <- df.eXp[.(4618L), which = TRUE]
   outData <- getChildFeature(newXICs[[1]], newXICs[[2]][,3:5], df.ref, df.eXp,
                              i.ref, i.eXp, params)
-  df <- as.data.frame(childFeatures())
+  df <- lapply(childFeatures(), identity)
   expect_equal(outData, df, tolerance = 1e-03)
 
   # Case2
@@ -128,9 +128,9 @@ test_that("test_getChildFeature",{
   i.eXp <- df.eXp[.(4618L), which = TRUE]
   outData <- getChildFeature(newXICs[[1]], newXICs[[2]][,3:5], df.ref, df.eXp,
                              i.ref, i.eXp, params)
-  expect_equal(outData[1,"intensity"][[1]], c(58.25721, 68.23171, 47.26885, 21.85735, 21.03737, 13.05533), tolerance = 1e-03)
+  expect_equal(outData[["intensity"]][[1]], c(58.25721, 68.23171, 47.26885, 21.85735, 21.03737, 13.05533), tolerance = 1e-03)
   outData$intensity <- sapply(outData$intensity, sum)
-  df <- as.data.frame(childFeatures())
+  df <- lapply(childFeatures(), identity)
   expect_equal(outData, df, tolerance = 1e-03)
 })
 
