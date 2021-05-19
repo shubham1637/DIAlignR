@@ -146,7 +146,5 @@ recalculateIntensity <- function(peakTable, dataPath = ".", oswMerged = TRUE, pa
 
 reIntensity2 <- function(df, idx, XICs, pk, params){
   area <- calculateIntensity(XICs, pk[1], pk[2], params)
-  set(df, i = idx, 4L, area)
-  set(df, i = idx, 5L, pk[1])
-  set(df, i = idx, 6L, pk[2])
+  data.table::set(df, i = idx, c(4L,5L,6L), list(area,pk[1],pk[2]))
 }
