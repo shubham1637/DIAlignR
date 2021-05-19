@@ -176,6 +176,9 @@ setAlignmentRank <- function(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT
     if(any(.subset2(df, "m_score")[idx] <= params[["alignedFDR"]], na.rm = TRUE)){
       idx <- idx[which.min(.subset2(df, "m_score")[idx])]
       set(df, i = idx, "alignment_rank", 1L)
+      if(params[["recalIntensity"]] && checkOverlap(c(left, right), c(.subset2(df, "leftWidth")[[idx]], .subset2(df, "rightWidth")[[idx]]))){
+        reIntensity2(df, idx, XICs[[analyte_chr]], c(left, right), params)
+      }
       return(invisible(NULL))
     }
   }
@@ -187,16 +190,15 @@ setAlignmentRank <- function(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT
   invisible(NULL)
 }
 
-# df should have features from one run only.
 setOtherPrecursors <- function(df, refIdx, XICs, analytes, params){
   Run <- .subset2(df, "run")[[refIdx]]
   if(length(refIdx) == 0 | is.null(refIdx)) return(NULL)
-
   precRef <- .subset2(df, "transition_group_id")[[refIdx]]
   pk <- c(.subset2(df, "leftWidth")[refIdx], .subset2(df, "rightWidth")[refIdx])
 
   # If other precursors have overlapping feature then set their alignment rank to 1.
   for(analyte in setdiff(analytes, precRef)){
+    analyte_chr <- as.character(analyte)
     idx <- which(df[["run"]] == Run & df[["transition_group_id"]] == analyte)
     if(length(idx)!=0){
       idx <- idx[sapply(idx, function(i) {
@@ -206,11 +208,12 @@ setOtherPrecursors <- function(df, refIdx, XICs, analytes, params){
     }
     if((length(idx)==0 | all(is.na(idx))) & params[["fillMissing"]]){
       # Create a feature for missing precursor
-      analyte_chr <- as.character(analyte)
       newRow(df, XICs[[analyte_chr]], pk[1], pk[2], .subset2(df, "RT")[refIdx], analyte, Run, params)
     } else{
       idx <- idx[which.max(pmin(pk[2], .subset2(df, "rightWidth")[idx]) - pmax(pk[1], .subset2(df, "leftWidth")[idx]))]
       set(df, i = idx, 10L, 1L)  # set alignment rank (10L) for already present feature
+      # If there is an overlaping peak, re-integrate area
+      if(params[["recalIntensity"]]) reIntensity2(df, idx, XICs[[analyte_chr]], pk, params)
     }
   }
   invisible(NULL)

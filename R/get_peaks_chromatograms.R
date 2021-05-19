@@ -69,9 +69,9 @@ xicIntersect <- function(xics){
   strt <- max(sapply(time, function(v) v[1]))
   end <- min(sapply(time, function(v) v[length(v)]))
   newXICs <- lapply(seq_along(xics), function(i){
-    st = which(time[[i]] == strt)
-    en = which(time[[i]] == end)
-    xics[[i]][st:en,]
+    st <- which(time[[i]] == strt)
+    en <- which(time[[i]] == end)
+    xics[[i]][seq(st, en),]
   })
   newXICs
 }

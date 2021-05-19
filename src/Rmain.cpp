@@ -238,6 +238,7 @@ double getBaseGapPenaltyCpp(const NumericMatrix& sim, std::string SimType, doubl
 //' ORCID: 0000-0003-3500-8152
 //' License: (c) Author (2019) + MIT
 //' Date: 2019-03-08
+//' @inheritParams sgolayCpp
 //' @param l1 (list) A list of time vectors.
 //' @param l2 (list) A list of intensity vectors.
 //' @param left (numeric) left boundary of the peak.
@@ -252,18 +253,26 @@ double getBaseGapPenaltyCpp(const NumericMatrix& sim, std::string SimType, doubl
 //' @examples
 //' data("XIC_QFNNTDIVLLEDFQK_3_DIAlignR", package = "DIAlignR")
 //' XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
-//' l1 <- lapply(XICs, `[[`, 1)
-//' l2 <- lapply(XICs, `[[`, 2)
+//' l1 <- lapply(XICs, `[[`, 1) # time
+//' l2 <- lapply(XICs, `[[`, 2) # intensity
 //' areaIntegrator(l1, l2, left = 5203.7, right = 5268.5, "intensity_sum", "base_to_base", FALSE, TRUE)
 //' # 66.10481 69.39996 46.53095 16.34266 13.13564 13.42331
+//' areaIntegrator(l1, l2, left = 5203.7, right = 5268.5, kernelLen = 9L, "intensity_sum", "base_to_base", FALSE, TRUE)
+//' # 65.01449 71.74432 52.73518 23.84420 17.61869 16.48190
 //' @export
 // [[Rcpp::export]]
-NumericVector areaIntegrator(Rcpp::List l1, Rcpp::List l2, double left, double right,
-                      std::string integrationType, std::string baselineType, bool fitEMG, bool baseSubtraction){
+NumericVector areaIntegrator(Rcpp::List l1, Rcpp::List l2, double left, double right, std::string integrationType,
+                             std::string baselineType, bool fitEMG, bool baseSubtraction, int kernelLen=0, int polyOrd=3){
   std::vector<std::vector<double> > vov1 = list2VecOfVec(l1);
   std::vector<std::vector<double> > vov2 = list2VecOfVec(l2);
   if(std::isnan(left) or std::isnan(right)) return NumericVector::create(NA_REAL);
   if(not ((right - left) > 1e-02)) return NumericVector::create(NA_REAL);
+  // Smooth chromatograms
+  if(kernelLen != 0){
+    SavitzkyGolayFilter sgolay(kernelLen, polyOrd);
+    sgolay.setCoeff();
+    for(int i = 0; i<vov2.size(); i++) sgolay.smoothChroms(vov2[i]);
+  }
   std::vector<std::vector<double> > set = peakGroupArea(vov1, vov2, left, right, integrationType, baselineType, fitEMG= false, baseSubtraction);
   // double area = 0.0;
   // for(auto const& i : set[0]) area+= i;

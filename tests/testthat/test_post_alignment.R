@@ -112,6 +112,23 @@ test_that("test_setAlignmentRank", {
   # case 10
   # bit64 does not return NA, instead returns 9218868437227407266 https://stackoverflow.com/a/27283100/6484844
   expect_error(setAlignmentRank(df, refIdx = integer(0), eXp = "run2", tAligned, XICs.eXp, params, adaptiveRT))
+
+  # case 11
+  df <- data.table::data.table(multipeptide_DIAlignR[["14383"]])
+  df$alignment_rank[1] <- 1L; df$m_score[5] <- 0.03
+  params$recalIntensity <- TRUE
+  setAlignmentRank(df, refIdx = 1L, eXp = "run2", tAligned, XICs.eXp, params, adaptiveRT)
+  expect_equal(df[5,c(3:6, 10)], data.table(RT = 5240.79, intensity = 99.77859, leftWidth = 5203.7, rightWidth = 5251.5, alignment_rank = 1L),
+               tolerance = 1e-06)
+
+  # case 12
+  df <- data.table::data.table(multipeptide_DIAlignR[["14383"]])
+  df$alignment_rank[1] <- 1L; df$m_score[5] <- 0.03
+  df$RT[5] <- 5175; df$leftWidth[5] <- 5150; df$rightWidth[5] <- 5200
+  params$recalIntensity <- TRUE
+  setAlignmentRank(df, refIdx = 1L, eXp = "run2", tAligned, XICs.eXp, params, adaptiveRT)
+  expect_equal(df[5,c(3:6, 10)], data.table(RT = 5175, intensity = 255.496, leftWidth = 5150, rightWidth = 5200, alignment_rank = 1L),
+               tolerance = 1e-06)
 })
 
 test_that("test_setOtherPrecursors", {
@@ -143,42 +160,18 @@ test_that("test_setOtherPrecursors", {
   setOtherPrecursors(df, 10L, XICs.eXp, analytes = c(9719L, 9720L), params)
   expect_equal(df[,alignment_rank], c(rep(NA_integer_, 8), 1L, rep(NA_integer_, 3)))
 
-  df[6L, alignment_rank := 1L]
-  setOtherPrecursors(df, 6L, XICs.eXp, analytes = c(9719L, 9720L), params)
-  expect_equal(df[,alignment_rank], c(rep(NA_integer_, 4), 1L, 1L, NA_integer_, NA_integer_, 1L, rep(NA_integer_, 3)))
-})
-
-test_that("test_reIntensity", {
-  data(multipeptide_DIAlignR, package="DIAlignR")
-  data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
-  params <- paramsDIAlignR()
-  XICs.eXp <- list()
-  df <- data.table::data.table(multipeptide_DIAlignR[["14383"]])
-  XICs.eXp[["4618"]] <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
-
-  reIntensity(df, "run2", XICs.eXp, params)
-  expect_equal(df[5,intensity], 255.496)
-
-  df[5, alignment_rank:= 1L]
-  reIntensity(df, "run2", XICs.eXp, params)
-  expect_equal(df[5L, intensity], 211.3709, tolerance = 1e-05)
-
-  dataPath <- system.file("extdata", package = "DIAlignR")
-  mz <- mzR::openMSfile(file.path(dataPath, "xics","hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML"))
-  df <- data.table::data.table(multipeptide_DIAlignR[["9861"]])
+  mz <- mzR::openMSfile(file.path(dataPath, "xics","hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML"))
   chromIndices <- list(c(43, 44, 45, 46, 47, 48), c(49, 50, 51, 52, 53, 54))
   XICs.eXp <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i))
   names(XICs.eXp) <- c("9719", "9720")
 
-  df$alignment_rank[c(6L,10L)] <- 1L
-  reIntensity(df, "run2", XICs.eXp, params)
-  expect_equal(df[6L, intensity], 52.95950)
-  expect_equal(df[10L, intensity], 24.50702, tolerance = 1e-05)
+  df[6L, alignment_rank := 1L]
+  setOtherPrecursors(df, 6L, XICs.eXp, analytes = c(9719L, 9720L), params)
+  expect_equal(df[,alignment_rank], c(rep(NA_integer_, 4), 1L, 1L, NA_integer_, NA_integer_, 1L, rep(NA_integer_, 3)))
 
-  mz <- mzR::openMSfile(file.path(dataPath, "xics","hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML"))
-  XICs.ref <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i))
-  names(XICs.ref) <- c("9719", "9720")
-
-  reIntensity(df, "run1", XICs.ref, params)
-  expect_equal(df[6L, intensity], 20.11727)
+  params$recalIntensity <- TRUE
+  data.table::set(df, i = 5L, 10L, NA_integer_)
+  setOtherPrecursors(df, 6L, XICs.eXp, analytes = c(9719L, 9720L), params)
+  expect_equal(df[5,c(3:6, 10)], data.table(RT = 2586.12, intensity = 19.30421, leftWidth = 2564.094, rightWidth = 2605.06, alignment_rank = 1L),
+               tolerance = 1e-06)
 })

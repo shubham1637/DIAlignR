@@ -30,22 +30,25 @@ test_that("test_calculateIntensity", {
   df <- data.frame(time, intensity)
   left <- 2.472833334
   right <- 3.022891666
-  outData <- calculateIntensity(list(df), left, right, integrationType = "intensity_sum",
-                                baselineType = "base_to_base", fitEMG = FALSE)
+  params <- paramsDIAlignR()
+  outData <- calculateIntensity(list(df), left, right, params)
   expect_equal(outData, 6645331.33866)
 
   df <- cbind(time, intensity)
-  outData <- calculateIntensity(list(df), left, right, integrationType = "intensity_sum",
-                              baselineType = "base_to_base", fitEMG = FALSE)
+  outData <- calculateIntensity(list(df), left, right, params)
   expect_equal(outData, 6645331.33866)
 
-  outData <- calculateIntensity(list(df, df), left, right, integrationType = "trapezoid",
-                                baselineType = "vertical_division_min", fitEMG = FALSE)
+  params$baselineType <- "vertical_division_min"; params$integrationType <- "trapezoid"
+  outData <- calculateIntensity(list(df, df), left, right, params)
   expect_equal(outData, 2*71063.59368, tolerance = 0.01)
 
-  outData <- calculateIntensity(list(df, df), left, right, integrationType = "trapezoid",
-                                baselineType = "vertical_division_min", fitEMG = FALSE, transitionIntensity = TRUE)
+  params$transitionIntensity <- TRUE
+  outData <- calculateIntensity(list(df, df), left, right, params)
   expect_equal(outData, rep(71063.59368, 2), tolerance = 0.01)
+
+  params$smoothPeakArea <- TRUE
+  outData <- calculateIntensity(list(df, df), left, right, params)
+  expect_equal(outData, rep(70842.3, 2), tolerance = 0.01)
 })
 
 
@@ -65,4 +68,41 @@ test_that("test_recalculateIntensity", {
                           stringsAsFactors=FALSE)
   expect_equal(outData[, "intensity"], expOutput[, "intensity"], tolerance = 0.001)
   expect_identical(outData[,c(1,2)], expOutput[,c(1,2)])
+})
+
+
+
+test_that("test_reIntensity", {
+  data(multipeptide_DIAlignR, package="DIAlignR")
+  data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
+  params <- paramsDIAlignR()
+  XICs.eXp <- list()
+  df <- data.table::data.table(multipeptide_DIAlignR[["14383"]])
+  XICs.eXp[["4618"]] <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
+
+  reIntensity(df, "run2", XICs.eXp, params)
+  expect_equal(df[5,intensity], 255.496)
+
+  df[5, alignment_rank:= 1L]
+  reIntensity(df, "run2", XICs.eXp, params)
+  expect_equal(df[5L, intensity], 211.3709, tolerance = 1e-05)
+
+  dataPath <- system.file("extdata", package = "DIAlignR")
+  mz <- mzR::openMSfile(file.path(dataPath, "xics","hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML"))
+  df <- data.table::data.table(multipeptide_DIAlignR[["9861"]])
+  chromIndices <- list(c(43, 44, 45, 46, 47, 48), c(49, 50, 51, 52, 53, 54))
+  XICs.eXp <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i))
+  names(XICs.eXp) <- c("9719", "9720")
+
+  df$alignment_rank[c(6L,10L)] <- 1L
+  reIntensity(df, "run2", XICs.eXp, params)
+  expect_equal(df[6L, intensity], 52.95950)
+  expect_equal(df[10L, intensity], 24.50702, tolerance = 1e-05)
+
+  mz <- mzR::openMSfile(file.path(dataPath, "xics","hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.chrom.mzML"))
+  XICs.ref <- lapply(chromIndices, function(i) extractXIC_group(mz, chromIndices = i))
+  names(XICs.ref) <- c("9719", "9720")
+
+  reIntensity(df, "run1", XICs.ref, params)
+  expect_equal(df[6L, intensity], 20.11727)
 })

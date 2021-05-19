@@ -524,3 +524,8 @@ getPrecursorSubset <- function(precursors, params){
   pepEnd <- sum(r$lengths[1:which(r$value== peptideIDs[pepEnd])])
   c(pepStart, pepEnd)
 }
+
+
+missingInXIC <- function(XICs){
+  any(sapply(seq_along(XICs), function(i) any(is.na(XICs[[i]]))))
+}

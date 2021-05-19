@@ -80,8 +80,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // areaIntegrator
-NumericVector areaIntegrator(Rcpp::List l1, Rcpp::List l2, double left, double right, std::string integrationType, std::string baselineType, bool fitEMG, bool baseSubtraction);
-RcppExport SEXP _DIAlignR_areaIntegrator(SEXP l1SEXP, SEXP l2SEXP, SEXP leftSEXP, SEXP rightSEXP, SEXP integrationTypeSEXP, SEXP baselineTypeSEXP, SEXP fitEMGSEXP, SEXP baseSubtractionSEXP) {
+NumericVector areaIntegrator(Rcpp::List l1, Rcpp::List l2, double left, double right, std::string integrationType, std::string baselineType, bool fitEMG, bool baseSubtraction, int kernelLen, int polyOrd);
+RcppExport SEXP _DIAlignR_areaIntegrator(SEXP l1SEXP, SEXP l2SEXP, SEXP leftSEXP, SEXP rightSEXP, SEXP integrationTypeSEXP, SEXP baselineTypeSEXP, SEXP fitEMGSEXP, SEXP baseSubtractionSEXP, SEXP kernelLenSEXP, SEXP polyOrdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -93,7 +93,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type baselineType(baselineTypeSEXP);
     Rcpp::traits::input_parameter< bool >::type fitEMG(fitEMGSEXP);
     Rcpp::traits::input_parameter< bool >::type baseSubtraction(baseSubtractionSEXP);
-    rcpp_result_gen = Rcpp::wrap(areaIntegrator(l1, l2, left, right, integrationType, baselineType, fitEMG, baseSubtraction));
+    Rcpp::traits::input_parameter< int >::type kernelLen(kernelLenSEXP);
+    Rcpp::traits::input_parameter< int >::type polyOrd(polyOrdSEXP);
+    rcpp_result_gen = Rcpp::wrap(areaIntegrator(l1, l2, left, right, integrationType, baselineType, fitEMG, baseSubtraction, kernelLen, polyOrd));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -267,7 +269,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_DIAlignR_getGlobalAlignMaskCpp", (DL_FUNC) &_DIAlignR_getGlobalAlignMaskCpp, 6},
     {"_DIAlignR_constrainSimCpp", (DL_FUNC) &_DIAlignR_constrainSimCpp, 3},
     {"_DIAlignR_getBaseGapPenaltyCpp", (DL_FUNC) &_DIAlignR_getBaseGapPenaltyCpp, 3},
-    {"_DIAlignR_areaIntegrator", (DL_FUNC) &_DIAlignR_areaIntegrator, 8},
+    {"_DIAlignR_areaIntegrator", (DL_FUNC) &_DIAlignR_areaIntegrator, 10},
     {"_DIAlignR_sgolayCpp", (DL_FUNC) &_DIAlignR_sgolayCpp, 3},
     {"_DIAlignR_getAlignedTimesCpp", (DL_FUNC) &_DIAlignR_getAlignedTimesCpp, 19},
     {"_DIAlignR_alignChromatogramsCpp", (DL_FUNC) &_DIAlignR_alignChromatogramsCpp, 20},
