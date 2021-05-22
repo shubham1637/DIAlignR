@@ -360,10 +360,8 @@ fetchFeaturesFromRun <- function(filename, runID, maxFdrQuery = 1.00, runType = 
 #' @examples
 #' dataPath <- system.file("extdata", package = "DIAlignR")
 #' fileInfo <- getRunNames(dataPath = dataPath)
-#' \dontrun{
 #' features <- getFeatures(fileInfo, maxFdrQuery = 1.00, runType = "DIA_Proteomics")
 #' dim(features[[2]]) # 938  8
-#' }
 #' @export
 getFeatures <- function(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics", applyFun = lapply){
   features <- applyFun(1:nrow(fileInfo), function(i){

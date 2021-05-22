@@ -36,10 +36,8 @@ Get a list of data-frame of OpenSwath features that contains retention time, int
 \examples{
 dataPath <- system.file("extdata", package = "DIAlignR")
 fileInfo <- getRunNames(dataPath = dataPath)
-\dontrun{
 features <- getFeatures(fileInfo, maxFdrQuery = 1.00, runType = "DIA_Proteomics")
 dim(features[[2]]) # 938  8
-}
 }
 \seealso{
 \code{\link{getRunNames}, \link{fetchPrecursorsInfo}}
