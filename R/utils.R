@@ -529,3 +529,17 @@ getPrecursorSubset <- function(precursors, params){
 missingInXIC <- function(XICs){
   any(sapply(seq_along(XICs), function(i) any(is.na(XICs[[i]]))))
 }
+
+distMatrix <- function(features, params, applyFun = lapply){
+  ##### Get distances among runs based on the number of high-quality features. #####
+  tmp <- applyFun(features, function(df)
+    df[df[["m_score"]] <= params[["analyteFDR"]] & df[["peak_group_rank"]] == 1L, "transition_group_id"][[1]])
+  #tmp <- tmp[order(names(tmp), decreasing = FALSE)]
+  allIDs <- unique(unlist(tmp, recursive = FALSE, use.names = TRUE))
+  allIDs <- sort(allIDs)
+  simMat <- crossprod(table(utils::stack(tmp))) # Number of common peaks in each pair
+  distMat <- length(allIDs) - simMat
+  distMat <- distMat/length(allIDs)
+  #distMat <- stats::dist(distMat, method = "manhattan")
+  as.dist(distMat, diag = FALSE, upper = FALSE)
+}

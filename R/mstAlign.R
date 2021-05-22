@@ -137,18 +137,10 @@ mstAlignRuns <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRU
   message("The execution time for fetching features:")
   print(end_time - start_time)
 
-  ##### Get distances among runs based on the number of high-quality features. #####
-  tmp <- applyFun(features, function(df)
-    df[df[["m_score"]] <= params[["analyteFDR"]] & df[["peak_group_rank"]] == 1, "transition_group_id"][[1]])
-  tmp <- tmp[order(names(tmp), decreasing = FALSE)]
-  allIDs <- unique(unlist(tmp, recursive = FALSE, use.names = TRUE))
-  allIDs <- sort(allIDs)
-  distMat <- length(allIDs) - crossprod(table(utils::stack(tmp)))
-  distMat <- stats::dist(distMat, method = "manhattan")
-
   #### Get the Minimum Spanning Tree. ####
   start_time <- Sys.time()
   if(is.null(mstNet)){
+    distMat <- distMatrix(features, params, applyFun)
     mstNet <- getMST(distMat)
     message("Minimum spanning tree is ")
     print(paste(paste(mstNet[,1], collapse = ' '), paste(mstNet[,2], collapse = ' '), sep = '\n'))
@@ -380,10 +372,12 @@ alignToRefMST <- function(iNet, net, fileInfo, XICs, params, analytes,
   }
 
   # No high quality feature, hence, alignment is needed.
-  # check is alignment rank is set in reference
+  # check is alignment rank is set in reference.
   refIdx <- which(df[["run"]] == ref)
-  refIdx <- refIdx[which.min(df$m_score[refIdx])]
-  if(length(refIdx) == 0L || all(is.na(.subset2(df, "alignment_rank")[refIdx]))) return(invisible(NULL))
+  refIdx <- refIdx[which(.subset2(df, 10L)[refIdx] == 1L)]
+  if(length(refIdx) == 0L) return(invisible(NULL))
+  ss <- .subset2(df, "m_score")[refIdx]
+  refIdx <- ifelse(all(is.na(ss)), refIdx[1], refIdx[which.min(ss)])
 
   ### if XICs are missing, go to next run. ####
   XICs.ref <- XICs[[ref]]
@@ -434,6 +428,7 @@ alignToRefMST <- function(iNet, net, fileInfo, XICs, params, analytes,
            })
 
   tempi <- eXpIdx[which(df$alignment_rank[eXpIdx] == 1L)]
+  if(length(tempi) == 0L) return(invisible(NULL))
   setOtherPrecursors(df, tempi, XICs.eXp, analytes, params)
   invisible(NULL)
 }

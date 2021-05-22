@@ -67,21 +67,14 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   }
   end_time <- Sys.time()
 
-  ##### Get distances among runs based on the number of high-quality features. #####
-  tmp <- applyFun(features, function(df)
-       df[df[["m_score"]] <= params[["analyteFDR"]] & df[["peak_group_rank"]] == 1, "transition_group_id"][[1]])
-  tmp <- tmp[order(names(tmp), decreasing = FALSE)]
-  allIDs <- unique(unlist(tmp, recursive = FALSE, use.names = TRUE))
-  allIDs <- sort(allIDs)
-  distMat <- length(allIDs) - crossprod(table(utils::stack(tmp)))
-  distMat <- stats::dist(distMat, method = "manhattan")
-
   #### Get the guidance tree. ####
   start_time <- Sys.time()
-  if(is.null(newickTree)){
-    tree <- getTree(distMat) # Check validity of tree: Names are run and master only.
-  } else{
-    tree <- ape::read.tree(text = newickTree)
+  distMat <- distMatrix(features, params, applyFun)
+  tree <- getTree(distMat) # Check validity of tree: Names are run and master only.
+  if(!is.null(newickTree)){
+    tree2 <- ape::read.tree(text = newickTree)
+    tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
+    tree <- ape::reorder.phylo(tree, "postorder")
   }
 
   #### Get Peptide scores, pvalue and qvalues. ######
@@ -209,21 +202,14 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   end_time <- Sys.time()
   print(end_time - start_time)
 
-  ##### Get distances among runs based on the number of high-quality features. #####
-  tmp <- applyFun(features, function(df)
-    df[df[["m_score"]] <= params[["analyteFDR"]] & df[["peak_group_rank"]] == 1, "transition_group_id"][[1]])
-  tmp <- tmp[order(names(tmp), decreasing = FALSE)]
-  allIDs <- unique(unlist(tmp, recursive = FALSE, use.names = TRUE))
-  allIDs <- sort(allIDs)
-  distMat <- length(allIDs) - crossprod(table(utils::stack(tmp)))
-  distMat <- stats::dist(distMat, method = "manhattan")
-
   #### Get the guidance tree. ####
   start_time <- Sys.time()
-  if(is.null(newickTree)){
-    tree <- getTree(distMat) # Check validity of tree: Names are run and master only.
-  } else{
-    tree <- ape::read.tree(text = newickTree)
+  distMat <- distMatrix(features, params, applyFun)
+  tree <- getTree(distMat) # Check validity of tree: Names are run and master only.
+  if(!is.null(newickTree)){
+    tree2 <- ape::read.tree(text = newickTree)
+    tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
+    tree <- ape::reorder.phylo(tree, "postorder")
   }
 
   filename <- file.path(dataPath, paste0(outFile, "_prog1.RData"))

@@ -26,8 +26,9 @@ test_that("test_mstAlignRuns",{
   params[["context"]] <- "experiment-wide"
   peps <- c(8496L, 15879L, 19800L)
   params[["transitionIntensity"]] <- TRUE
+  tree <- cbind(c("run2", "run2"), c("run1", "run0"))
   mstAlignRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
-               runs = NULL, peps = peps, applyFun = lapply)
+               runs = NULL, peps = peps, mstNet = tree, applyFun = lapply)
   outData <- read.table("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
   expData <- read.table("test4.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
   expect_identical(dim(outData), dim(expData))

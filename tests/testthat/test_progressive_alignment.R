@@ -11,7 +11,7 @@ test_that("test_progAlignRuns", {
   params[["chromFile"]] <- "sqMass"
   progAlignRuns(dataPath, params = params, outFile = "temp", ropenms = NULL, applyFun = BiocParallel::bplapply)
   outData <- data.table::fread("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE, integer64 = "integer64")
-  expData <- data.table::fread("test3.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE, integer64 = "integer64")
+  expData <- data.table::fread("test6.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE, integer64 = "integer64")
   expect_identical(dim(outData), dim(expData))
   expect_identical(colnames(outData), colnames(expData))
   expect_identical(outData[["peptide_id"]], expData[["peptide_id"]])
@@ -36,7 +36,8 @@ test_that("test_progAlignRuns2", {
   params[["transitionIntensity"]] <- TRUE
   params[["fractionNum"]] <- 2L
   params[["fraction"]] <- 1L
-  progTree1(dataPath, params, outFile = "temp")
+  text1 <- "(run1:0.08857142857,(run0:0.06857142857,run2:0.06857142857)master2:0.02)master1;"
+  progTree1(dataPath, params, outFile = "temp", newickTree = text1)
   expect_warning(progSplit2(dataPath, params, outFile = "temp"))
   params[["fraction"]] <- 2L
   progSplit2(dataPath, params, outFile = "temp")

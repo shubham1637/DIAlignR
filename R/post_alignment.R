@@ -162,7 +162,7 @@ setAlignmentRank <- function(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT
   right <- tAligned[,2][which.min(abs(tAligned[,1] - rightRef))]
   eXpRT <- tAligned[,2][which.min(abs(tAligned[,1] - refRT))]
   # TODO. Save for the edge cases. or use wider chromatogram.
-  if(any(length(left)==0, length(right)==0, length(eXpRT)==0)){
+  if(any(length(left)==0, length(right)==0, length(eXpRT)==0, is.na(left), is.na(right))){
     return(invisible(NULL)) # Can happen if XICs have all zero intensities.
   }
 
