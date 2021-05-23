@@ -531,6 +531,34 @@ missingInXIC <- function(XICs){
 }
 
 distMatrix <- function(features, params, applyFun = lapply){
+  if(TRUE){
+    distMat <- distMat.RT(features, params, applyFun)
+  } else{
+    distMat <- distMat.count(features, params, applyFun)
+  }
+  stats::as.dist(distMat, diag = FALSE, upper = FALSE)
+}
+
+distMat.RT <- function(features, params, applyFun = lapply){
+  runs <- names(features)
+  distMat <- sapply(runs, function(ref){
+    c(applyFun(runs, function(eXp){
+      RUNS_RT <- tryCatch(expr = getRTdf(features, ref, eXp, params[["analyteFDR"]]),
+                          error = function(c) matrix(c(0,0), nrow=1L)
+      )
+      n <- nrow(RUNS_RT)
+      d <- 1.0
+      if(n > 2L){
+        r <- stats::cor(RUNS_RT[,RT.ref], RUNS_RT[,RT.eXp], method = "pearson")
+        d <- min(1, (1-r*r)*(n-1)/(n-2))
+      }
+      d
+    }))
+  })
+  as.matrix(distMat)
+}
+
+distMat.count <- function(features, params, applyFun = lapply){
   ##### Get distances among runs based on the number of high-quality features. #####
   tmp <- applyFun(features, function(df)
     df[df[["m_score"]] <= params[["analyteFDR"]] & df[["peak_group_rank"]] == 1L, "transition_group_id"][[1]])
@@ -541,5 +569,5 @@ distMatrix <- function(features, params, applyFun = lapply){
   distMat <- length(allIDs) - simMat
   distMat <- distMat/length(allIDs)
   #distMat <- stats::dist(distMat, method = "manhattan")
-  as.dist(distMat, diag = FALSE, upper = FALSE)
+  distMat
 }
