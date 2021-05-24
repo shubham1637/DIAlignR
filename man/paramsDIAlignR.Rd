@@ -12,7 +12,8 @@ A list of parameters:
 \item{chromFile}{(string) must either be "mzML" or "sqMass".}
 \item{maxFdrQuery}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_MS2.QVALUE less than itself.}
 \item{maxPeptideFdr}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_PEPTIDE.QVALUE less than itself.}
-\item{analyteFDR}{(numeric) defines the upper limit of FDR on a precursor to be considered for multipeptide.}
+\item{analyteFDR}{(numeric) the upper limit of feature FDR to be it considered for building tree.}
+\item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared" or "count.}
 \item{context}{(string) used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".}
 \item{unalignedFDR}{(numeric) must be between 0 and maxFdrQuery. Features below unalignedFDR are
  considered for quantification even without the RT alignment.}
