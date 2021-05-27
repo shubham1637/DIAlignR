@@ -239,7 +239,7 @@ void addFlankToLeft(const std::vector<double> & t, std::vector<double> & tN, std
   double t_new = tN[0] - t[length]; // delta t to be used in left_flank
   std::copy(t.begin(), t.begin()+length, t_flank.begin());
   std::transform(t_flank.begin(), t_flank.end(), t_flank.begin(),
-                 std::bind2nd(std::plus<double>(), t_new));
+                 [&](double &i){return i+t_new;});
   if(t_flank[0] <= 0) {
     flank.erase(flank.begin(), flank.begin()+length);
     return;
@@ -271,7 +271,7 @@ void addFlankToRight(const std::vector<double> & t, std::vector<double> & tN, st
   std::vector<double> t_flank(np - flankStart +1);
   std::copy(t.begin()+flankStart, t.begin()+np+1, t_flank.begin());
   std::transform(t_flank.begin(), t_flank.end(), t_flank.begin(),
-                 std::bind2nd(std::plus<double>(), t_new));
+                 [&](double &i){return i+t_new;});
   tN.insert(tN.end(), t_flank.begin(), t_flank.end());
   std::copy(t_flank.begin(), t_flank.end(), tA.begin()+flankStart);
   for(int i = 0; i< intenN.size(); i++){
