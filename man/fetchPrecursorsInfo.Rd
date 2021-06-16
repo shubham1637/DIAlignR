@@ -10,13 +10,14 @@ fetchPrecursorsInfo(
   selectIDs = NULL,
   context = "global",
   maxPeptideFdr = 0.05,
-  level = "Peptide"
+  level = "Peptide",
+  useIdentifying = FALSE
 )
 }
 \arguments{
 \item{filename}{(string) Should be from the RUN.FILENAME column from osw files.}
 
-\item{runType}{(string) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".}
+\item{runType}{(string) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".}
 
 \item{selectIDs}{(integer) a vector of integers.}
 
@@ -25,6 +26,8 @@ fetchPrecursorsInfo(
 \item{maxPeptideFdr}{(numeric) A numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_PEPTIDE.QVALUE less than itself.}
 
 \item{level}{(string) Apply maxPeptideFDR on Protein as well if specified as "Protein". Default: "Peptide".}
+
+\item{useIdentifying}{(logical) Set TRUE to use identifying transitions in alignment. (DEFAULT: FALSE)}
 }
 \value{
 (data-frames) Data-frame has following columns:

@@ -8,6 +8,7 @@ fetchFeaturesFromRun(
   filename,
   runID,
   maxFdrQuery = 1,
+  maxIPFFdrQuery = 1,
   runType = "DIA_Proteomics"
 )
 }
@@ -18,7 +19,9 @@ fetchFeaturesFromRun(
 
 \item{maxFdrQuery}{(numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_MS2.QVALUE less than itself.}
 
-\item{runType}{(char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".}
+\item{maxIPFFdrQuery}{(numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_IPF.QVALUE less than itself. (For PTM IPF use)}
+
+\item{runType}{(char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".}
 }
 \value{
 (data-frames) Data-frame has following columns:

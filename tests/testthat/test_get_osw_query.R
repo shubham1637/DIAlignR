@@ -45,6 +45,34 @@ test_that("test_getPrecursorsQuery",{
       WHERE PRECURSOR.DECOY = 0
       ORDER BY peptide_id, transition_group_id, transition_id;"
   expect_identical(outData, expOutput)
+
+  ## Test IPF
+  outData_ipf <- getPrecursorsQuery(runType = "DIA_IPF")
+  expOutput_ipf <- "SELECT DISTINCT PRECURSOR.ID AS transition_group_id,
+      TRANSITION_PRECURSOR_MAPPING.TRANSITION_ID AS transition_id,
+      PEPTIDE.ID AS peptide_id,
+      PEPTIDE.MODIFIED_SEQUENCE AS sequence,
+      PRECURSOR.CHARGE AS charge,
+      PRECURSOR.GROUP_LABEL AS group_label
+      --TRANSITION.DETECTING AS detecting,
+	    --TRANSITION.IDENTIFYING AS identifying
+      FROM PRECURSOR
+      INNER JOIN TRANSITION_PRECURSOR_MAPPING ON TRANSITION_PRECURSOR_MAPPING.PRECURSOR_ID = PRECURSOR.ID
+      INNER JOIN TRANSITION ON TRANSITION.ID = TRANSITION_PRECURSOR_MAPPING.TRANSITION_ID
+      INNER JOIN PRECURSOR_PEPTIDE_MAPPING ON PRECURSOR_PEPTIDE_MAPPING.PRECURSOR_ID = PRECURSOR.ID
+      INNER JOIN PEPTIDE ON PRECURSOR_PEPTIDE_MAPPING.PEPTIDE_ID = PEPTIDE.ID
+      INNER JOIN (
+      SELECT PEPTIDE_ID
+      FROM SCORE_PEPTIDE
+      WHERE SCORE_PEPTIDE.CONTEXT = $CONTEXT AND SCORE_PEPTIDE.QVALUE < $FDR
+      ) AS SCORE_PEPTIDE ON SCORE_PEPTIDE.PEPTIDE_ID = PEPTIDE.ID
+      WHERE PRECURSOR.DECOY = 0
+      AND (
+      TRANSITION.DETECTING=TRUE
+      OR TRANSITION.IDENTIFYING=$USE_IDENTIFYING --- #identifying
+          )
+      ORDER BY peptide_id, transition_group_id, transition_id;"
+  expect_identical(outData_ipf, expOutput_ipf)
 })
 
 test_that("test_getFeaturesQuery",{
@@ -72,6 +100,40 @@ test_that("test_getFeaturesQuery",{
     WHERE PRECURSOR.DECOY = 0 AND RUN.ID = $runID
     ORDER BY transition_group_id, peak_group_rank;"
   expect_identical(outData, expOutput)
+
+  ## Test IPF
+  outData_ipf <- getFeaturesQuery(runType = "DIA_IPF")
+  expOutput_ipf <- "SELECT PRECURSOR.ID AS transition_group_id,
+    FEATURE.ID AS feature_id,
+    FEATURE.EXP_RT AS RT,
+    FEATURE_MS2.AREA_INTENSITY AS intensity,
+    FEATURE.LEFT_WIDTH AS leftWidth,
+    FEATURE.RIGHT_WIDTH AS rightWidth,
+    SCORE_MS2.RANK AS peak_group_rank,
+    SCORE_MS2.QVALUE AS ms2_m_score,
+    SCORE_IPF.QVALUE AS m_score
+    FROM PRECURSOR
+    INNER JOIN PRECURSOR_PEPTIDE_MAPPING ON PRECURSOR_PEPTIDE_MAPPING.PRECURSOR_ID = PRECURSOR.ID
+    INNER JOIN FEATURE ON FEATURE.PRECURSOR_ID = PRECURSOR.ID
+    INNER JOIN RUN ON RUN.ID = FEATURE.RUN_ID
+    LEFT JOIN (
+        SELECT FEATURE_ID, AREA_INTENSITY
+        FROM FEATURE_MS2
+    ) AS FEATURE_MS2 ON FEATURE_MS2.FEATURE_ID = FEATURE.ID
+    INNER JOIN (
+        SELECT FEATURE_ID, RANK, QVALUE
+        FROM SCORE_MS2
+        WHERE SCORE_MS2.QVALUE < $FDR
+        ) AS SCORE_MS2 ON SCORE_MS2.FEATURE_ID = FEATURE.ID
+    INNER JOIN (
+        SELECT FEATURE_ID, QVALUE, PEPTIDE_ID
+        FROM SCORE_IPF
+        WHERE SCORE_IPF.QVALUE < $IPF_FDR
+        ) AS SCORE_IPF ON SCORE_IPF.FEATURE_ID = FEATURE.ID
+    WHERE PRECURSOR.DECOY = 0 AND RUN.ID = $runID
+    AND SCORE_IPF.PEPTIDE_ID+1 = PRECURSOR_PEPTIDE_MAPPING.PEPTIDE_ID
+    ORDER BY transition_group_id, peak_group_rank;"
+  expect_identical(outData_ipf, expOutput_ipf)
 })
 
 test_that("test_getPrecursorsQueryID",{

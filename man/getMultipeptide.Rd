@@ -4,7 +4,13 @@
 \alias{getMultipeptide}
 \title{Get multipeptides}
 \usage{
-getMultipeptide(precursors, features, applyFun = lapply, masters = NULL)
+getMultipeptide(
+  precursors,
+  features,
+  runType = "DIA_Proteomics",
+  applyFun = lapply,
+  masters = NULL
+)
 }
 \arguments{
 \item{precursors}{(data-frames) Contains precursors and associated transition IDs.}
