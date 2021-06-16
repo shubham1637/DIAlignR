@@ -129,10 +129,10 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   #### Container to save Global alignments.  #######
   message("Calculating global alignments.")
   start_time <- Sys.time()
-  globalFits <- DIAlignR:::getGlobalFits(refRuns, features, fileInfo, params[["globalAlignment"]],
+  globalFits <- getGlobalFits(refRuns, features, fileInfo, params[["globalAlignment"]],
                               params[["globalAlignmentFdr"]], params[["globalAlignmentSpan"]], applyFun)
-  RSE <- applyFun(globalFits, DIAlignR:::getRSE, params[["globalAlignment"]])
-  globalFits <- applyFun(globalFits, DIAlignR:::extractFit, params[["globalAlignment"]])
+  RSE <- applyFun(globalFits, getRSE, params[["globalAlignment"]])
+  globalFits <- applyFun(globalFits, extractFit, params[["globalAlignment"]])
   rm(features)
   end_time <- Sys.time()
   message("The execution time for calculating global alignment:")

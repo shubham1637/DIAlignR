@@ -165,19 +165,13 @@ fetchPrecursorsInfo <- function(filename, runType = "DIA_Proteomics", selectIDs 
   }
 
   # Run query to get peptides, their coordinates and scores.
-  if (runType=="DIA_IPF"){
-    precursorsInfo <- tryCatch(expr = { output <- DBI::dbSendQuery(con, statement = query)
-    if(all && runType != "DIA_Metabolomics") {DBI::dbBind(output, list("CONTEXT"=context, "FDR"=maxPeptideFdr, "USE_IDENTIFYING"=useIdentifying))}
-    DBI::dbFetch(output)},
-    finally = {DBI::dbClearResult(output)
-      DBI::dbDisconnect(con)})
-  } else {
-    precursorsInfo <- tryCatch(expr = { output <- DBI::dbSendQuery(con, statement = query)
-                       if(all && runType != "DIA_Metabolomics") {DBI::dbBind(output, list("CONTEXT"=context, "FDR"=maxPeptideFdr))}
-                                          DBI::dbFetch(output)},
-                               finally = {DBI::dbClearResult(output)
-                               DBI::dbDisconnect(con)})
-  }
+  precursorsInfo <- tryCatch(expr = { output <- DBI::dbSendQuery(con, statement = query)
+                     if(all && !(runType %in% c("DIA_Metabolomics", "DIA_IPF"))) {DBI::dbBind(output, list("CONTEXT"=context, "FDR"=maxPeptideFdr))}
+                     else if(all && runType == "DIA_IPF") {DBI::dbBind(output, list("USE_IDENTIFYING"=useIdentifying, "CONTEXT"=context, "FDR"=maxPeptideFdr))}
+                                        DBI::dbFetch(output)},
+                             finally = {DBI::dbClearResult(output)
+                             DBI::dbDisconnect(con)})
+
   # Each precursor has only one row.
   setDT(precursorsInfo)
   precursorsInfo[, `:=`(transition_ids = list(transition_id)),
@@ -374,7 +368,8 @@ fetchFeaturesFromRun <- function(filename, runID, maxFdrQuery = 1.00, maxIPFFdrQ
 #' \item{leftWidth}{(numeric) as in FEATURE.LEFT_WIDTH of osw files.}
 #' \item{rightWidth}{(numeric) as in FEATURE.RIGHT_WIDTH of osw files.}
 #' \item{peak_group_rank}{(integer) rank of each feature associated with transition_group_id.}
-#' \item{m_score}{(numeric) q-value of each feature associated with transition_group_id.}
+#' \item{m_score}{(numeric) q-value of each feature associated with transition_group_id. (If using 'DIA_IPF' runType, this will represent IPF's QVALUE)}
+#' \item{ms2_m_score}{(numeric) MS2 q-value of each feature associated with transition_group_id. (Will only be present if using 'DIA_IPF' runType)}
 #'
 #' @seealso \code{\link{getRunNames}, \link{fetchPrecursorsInfo}}
 #' @examples
