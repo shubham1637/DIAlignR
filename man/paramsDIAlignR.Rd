@@ -8,9 +8,10 @@ paramsDIAlignR()
 }
 \value{
 A list of parameters:
-\item{runType}{(string) must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".}
+\item{runType}{(string) must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".}
 \item{chromFile}{(string) must either be "mzML" or "sqMass".}
 \item{maxFdrQuery}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_MS2.QVALUE less than itself.}
+\item{maxFdrQuery}{(numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_IPF.QVALUE less than itself. (For PTM IPF use)}
 \item{maxPeptideFdr}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_PEPTIDE.QVALUE less than itself.}
 \item{analyteFDR}{(numeric) the upper limit of feature FDR to be it considered for building tree.}
 \item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared" or "count.}
@@ -55,6 +56,7 @@ A list of parameters:
 \item{fraction}{(integer) indicates which fraction to align.}
 \item{fractionNum}{(integer) Number of fractions to divide the alignment.}
 \item{lossy}{(logical) if TRUE, time and intensity are lossy-compressed in generated sqMass file.}
+\item{useIdentifying}{(logical) Set TRUE to use identifying transitions in alignment. (DEFAULT: FALSE)}
 }
 \description{
 Retention alignment requires OpenSWATH/pyProphet extracted features and chromatograms. This function provides

@@ -11,10 +11,11 @@
 #' @param filename (string) as mentioned in RUN table of osw files.
 #' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".
 #' @param analyteInGroupLabel (logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.
+#' @param identifying (logical) TRUE for the extraction of identifying transtions. (Default: FALSE)
 #' @return SQL query to be searched.
 #' @keywords internal
 getQuery <- function(maxFdrQuery, oswMerged = TRUE, analytes = NULL,
-                     filename = NULL, runType = "DIA_Proteomics", analyteInGroupLabel = FALSE){
+                     filename = NULL, runType = "DIA_Proteomics", analyteInGroupLabel = FALSE, identifying=FALSE){
   if(is.null(analytes)){
     selectAnalytes <- ""
   } else{
@@ -84,7 +85,68 @@ getQuery <- function(maxFdrQuery, oswMerged = TRUE, analytes = NULL,
   INNER JOIN TRANSITION_PRECURSOR_MAPPING ON TRANSITION_PRECURSOR_MAPPING.PRECURSOR_ID = PRECURSOR.ID
   LEFT JOIN FEATURE_MS2 ON FEATURE_MS2.FEATURE_ID = FEATURE.ID
   ORDER BY transition_group_id;")
-  } else{
+  } else if (runType=="DIA_IPF"){
+    join_score_ms2 <- "INNER JOIN SCORE_MS2 ON SCORE_MS2.FEATURE_ID = FEATURE.ID"
+    join_score_ipf <- sprintf("INNER JOIN SCORE_IPF ON SCORE_IPF.FEATURE_ID = FEATURE.ID")
+    join_peptide <- sprintf("INNER JOIN PEPTIDE ON ( PEPTIDE.ID = PRECURSOR_PEPTIDE_MAPPING.PEPTIDE_ID OR PEPTIDE.ID = SCORE_IPF.PEPTIDE_ID )")
+    miscellaneous_score_ipf_control <- "AND SCORE_IPF.QVALUE IS NOT NULL AND PEPTIDE.MODIFIED_SEQUENCE NOT LIKE '%UniMod%'"
+    if ( identifying ){
+      ## Filter Identifying transitions for PEP level threshold, and keep detecting NULL transitions
+      identifying_transition_filter_query <- sprintf("AND (SCORE_TRANSITION.PEP < %s OR (TRANSITION.DETECTING AND SCORE_TRANSITION.PEP IS NULL))", identifying.transitionPEPfilter)
+    } else {
+      identifying_transition_filter_query <- ''
+    }
+    query <- paste0("SELECT", transition_group_id, ",
+        RUN.FILENAME AS filename,
+        FEATURE.ID AS feature_id,
+        FEATURE.EXP_RT AS RT,
+        FEATURE.DELTA_RT AS delta_rt,
+        FEATURE.EXP_RT - FEATURE.DELTA_RT AS assay_rt,
+        FEATURE_MS2.AREA_INTENSITY AS Intensity,
+        FEATURE.LEFT_WIDTH AS leftWidth,
+        FEATURE.RIGHT_WIDTH AS rightWidth,
+        SCORE_MS2.RANK AS peak_group_rank,
+        SCORE_MS2.SCORE AS d_score,
+        SCORE_MS2.PEP AS ms2_pep,
+        SCORE_MS2.QVALUE as ms2_m_score,
+        SCORE_IPF.PEP AS ipf_pep,
+        SCORE_IPF.QVALUE AS m_score,
+        TRANSITION.ID AS transition_id,
+        TRANSITION.PRODUCT_MZ AS product_mz,
+        ---SCORE_TRANSITION.FEATURE_ID AS score_transition_feature_id,
+        ---SCORE_TRANSITION.TRANSITION_ID AS score_transition_id,
+        ---SCORE_TRANSITION.PEP AS transition_pep,
+        TRANSITION.DETECTING AS detecting_transitions,
+        TRANSITION.IDENTIFYING AS identifying_transitions
+  FROM FEATURE
+  INNER JOIN RUN ON RUN.ID = FEATURE.RUN_ID
+  INNER JOIN FEATURE_MS2 ON FEATURE_MS2.FEATURE_ID = FEATURE.ID\n",
+  join_score_ms2,
+  "\n",
+  join_score_ipf,
+  "\nINNER JOIN PRECURSOR ON PRECURSOR.ID = FEATURE.PRECURSOR_ID
+  INNER JOIN PRECURSOR_PEPTIDE_MAPPING ON PRECURSOR_PEPTIDE_MAPPING.PRECURSOR_ID = FEATURE.PRECURSOR_ID\n",
+  join_peptide,
+  "\nINNER JOIN TRANSITION_PRECURSOR_MAPPING ON TRANSITION_PRECURSOR_MAPPING.PRECURSOR_ID = PRECURSOR.ID
+  INNER JOIN TRANSITION ON TRANSITION_PRECURSOR_MAPPING.TRANSITION_ID = TRANSITION.ID
+  WHERE FEATURE.ID IS NOT NULL -- Default WHERE Being clause
+  AND SCORE_IPF.QVALUE < ", maxFdrQuery,
+  "\n",
+  miscellaneous_score_ipf_control,
+  "\n",
+  identifying_transition_filter_query,
+  "\n",
+  selectAnalytes,
+  "\n",
+  matchFilename,
+  "\nAND (
+        TRANSITION.DETECTING=TRUE
+        OR TRANSITION.IDENTIFYING=", identifying,
+            ")
+  ORDER BY transition_group_id,
+  peak_group_rank
+  ")
+  }else{
     query <- paste0("SELECT", transition_group_id,",
   RUN.FILENAME AS filename,
   FEATURE.EXP_RT AS RT,
@@ -254,8 +316,33 @@ getPrecursorsQuery <- function(runType = "DIA_Proteomics", level = "Peptide")
       WHERE PRECURSOR.DECOY = 0
       ORDER BY peptide_id, transition_group_id, transition_id;"
     }
-  } else if (runType == "DIA_Metabolomics")
-  {
+  } else if (runType == "DIA_IPF"){
+    ## TODO: Not as clear on PROTEIN level, for now we only do peptide level
+      query <- "SELECT DISTINCT PRECURSOR.ID AS transition_group_id,
+      TRANSITION_PRECURSOR_MAPPING.TRANSITION_ID AS transition_id,
+      PEPTIDE.ID AS peptide_id,
+      PEPTIDE.MODIFIED_SEQUENCE AS sequence,
+      PRECURSOR.CHARGE AS charge,
+      PRECURSOR.GROUP_LABEL AS group_label
+      --TRANSITION.DETECTING AS detecting,
+	    --TRANSITION.IDENTIFYING AS identifying
+      FROM PRECURSOR
+      INNER JOIN TRANSITION_PRECURSOR_MAPPING ON TRANSITION_PRECURSOR_MAPPING.PRECURSOR_ID = PRECURSOR.ID
+      INNER JOIN TRANSITION ON TRANSITION.ID = TRANSITION_PRECURSOR_MAPPING.TRANSITION_ID
+      INNER JOIN PRECURSOR_PEPTIDE_MAPPING ON PRECURSOR_PEPTIDE_MAPPING.PRECURSOR_ID = PRECURSOR.ID
+      INNER JOIN PEPTIDE ON PRECURSOR_PEPTIDE_MAPPING.PEPTIDE_ID = PEPTIDE.ID
+      INNER JOIN (
+      SELECT PEPTIDE_ID
+      FROM SCORE_PEPTIDE
+      WHERE SCORE_PEPTIDE.CONTEXT = $CONTEXT AND SCORE_PEPTIDE.QVALUE < $FDR
+      ) AS SCORE_PEPTIDE ON SCORE_PEPTIDE.PEPTIDE_ID = PEPTIDE.ID
+      WHERE PRECURSOR.DECOY = 0
+      AND (
+      TRANSITION.DETECTING=TRUE
+      OR TRANSITION.IDENTIFYING=$USE_IDENTIFYING --- #identifying
+          )
+      ORDER BY peptide_id, transition_group_id, transition_id;"
+  } else if (runType == "DIA_Metabolomics") {
       query <- "SELECT PRECURSOR.ID AS transition_group_id,
       TRANSITION_PRECURSOR_MAPPING.TRANSITION_ID AS transition_id,
       PRECURSOR_COMPOUND_MAPPING.COMPOUND_ID AS peptide_id,
@@ -284,7 +371,7 @@ getPrecursorsQuery <- function(runType = "DIA_Proteomics", level = "Peptide")
 #'
 #' License: (c) Author (2019) + GPL-3
 #' Date: 2020-04-07
-#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".
+#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @return SQL query to be searched.
 #' @seealso \code{\link{fetchFeaturesFromRun}}
 #' @keywords internal
@@ -312,6 +399,37 @@ getFeaturesQuery <- function(runType = "DIA_Proteomics") #is the same call for b
         WHERE SCORE_MS2.QVALUE < $FDR
         ) AS SCORE_MS2 ON SCORE_MS2.FEATURE_ID = FEATURE.ID
     WHERE PRECURSOR.DECOY = 0 AND RUN.ID = $runID
+    ORDER BY transition_group_id, peak_group_rank;"
+  } else if (runType == "DIA_IPF"){
+    query <- "SELECT PRECURSOR.ID AS transition_group_id,
+    FEATURE.ID AS feature_id,
+    FEATURE.EXP_RT AS RT,
+    FEATURE_MS2.AREA_INTENSITY AS intensity,
+    FEATURE.LEFT_WIDTH AS leftWidth,
+    FEATURE.RIGHT_WIDTH AS rightWidth,
+    SCORE_MS2.RANK AS peak_group_rank,
+    SCORE_MS2.QVALUE AS ms2_m_score,
+    SCORE_IPF.QVALUE AS m_score
+    FROM PRECURSOR
+    INNER JOIN PRECURSOR_PEPTIDE_MAPPING ON PRECURSOR_PEPTIDE_MAPPING.PRECURSOR_ID = PRECURSOR.ID
+    INNER JOIN FEATURE ON FEATURE.PRECURSOR_ID = PRECURSOR.ID
+    INNER JOIN RUN ON RUN.ID = FEATURE.RUN_ID
+    LEFT JOIN (
+        SELECT FEATURE_ID, AREA_INTENSITY
+        FROM FEATURE_MS2
+    ) AS FEATURE_MS2 ON FEATURE_MS2.FEATURE_ID = FEATURE.ID
+    INNER JOIN (
+        SELECT FEATURE_ID, RANK, QVALUE
+        FROM SCORE_MS2
+        WHERE SCORE_MS2.QVALUE < $FDR
+        ) AS SCORE_MS2 ON SCORE_MS2.FEATURE_ID = FEATURE.ID
+    INNER JOIN (
+        SELECT FEATURE_ID, QVALUE, PEPTIDE_ID
+        FROM SCORE_IPF
+        WHERE SCORE_IPF.QVALUE < $IPF_FDR
+        ) AS SCORE_IPF ON SCORE_IPF.FEATURE_ID = FEATURE.ID
+    WHERE PRECURSOR.DECOY = 0 AND RUN.ID = $runID
+    AND SCORE_IPF.PEPTIDE_ID+1 = PRECURSOR_PEPTIDE_MAPPING.PEPTIDE_ID
     ORDER BY transition_group_id, peak_group_rank;"
   } else if (runType == "DIA_Metabolomics") {
       query <- "SELECT PRECURSOR.ID AS transition_group_id,
@@ -344,13 +462,13 @@ getFeaturesQuery <- function(runType = "DIA_Proteomics") #is the same call for b
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-04-04
 #' @param analytes (integer) A vector of integer that is searched in PRECURSOR.ID.
-#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".
+#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @return SQL query to be searched.
 #' @seealso \code{\link{fetchPrecursorsInfo}}
 #' @keywords internal
 getPrecursorsQueryID <- function(analytes, runType = "DIA_Proteomics"){
   selectAnalytes <- paste0(" transition_group_id IN ('", paste(analytes, collapse="','"),"')")
-  if (runType == "DIA_Proteomics"){
+  if (runType == "DIA_Proteomics" || runType == "DIA_IPF"){
       query <- paste0("SELECT PRECURSOR.ID AS transition_group_id,
                   TRANSITION_PRECURSOR_MAPPING.TRANSITION_ID AS transition_id,
                   PRECURSOR_PEPTIDE_MAPPING.PEPTIDE_ID AS peptide_id,
@@ -393,12 +511,12 @@ getPrecursorsQueryID <- function(analytes, runType = "DIA_Proteomics"){
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-07-01
-#' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_Metabolomics".
+#' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @return SQL query to be searched.
 #' @seealso \code{\link{getPeptideScores}}
 #' @keywords internal
 getPeptideQuery <- function(runType = "DIA_Proteomics"){
-  if(runType == "DIA_Proteomics"){
+  if(runType == "DIA_Proteomics" || runType == "DIA_IPF"){
     query <- "SELECT DISTINCT SCORE_PEPTIDE.PEPTIDE_ID AS peptide_id,
   SCORE_PEPTIDE.RUN_ID AS run,
   SCORE_PEPTIDE.SCORE AS score,
@@ -431,7 +549,7 @@ getPeptideQuery <- function(runType = "DIA_Proteomics"){
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-11-18
-#' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_Metabolomics".
+#' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @return SQL query to be searched.
 #' @seealso \code{\link{getPeptideScores}}
 #' @keywords internal
@@ -457,7 +575,7 @@ getPeptideQuery2 <- function(runType = "DIA_Proteomics"){
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-11-15
-#' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_Metabolomics".
+#' @param runType (char) This must be one of the strings "DIA_proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @return SQL query to be searched.
 #' @seealso \code{\link{fetchTransitionsFromRun}, \link{getPrecursorsQueryID}, \link{getPrecursorsQuery}}
 #' @keywords internal

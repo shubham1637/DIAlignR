@@ -10,7 +10,8 @@ getQuery(
   analytes = NULL,
   filename = NULL,
   runType = "DIA_Proteomics",
-  analyteInGroupLabel = FALSE
+  analyteInGroupLabel = FALSE,
+  identifying = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ getQuery(
 \item{runType}{(char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".}
 
 \item{analyteInGroupLabel}{(logical) TRUE for getting analytes as PRECURSOR.GROUP_LABEL from osw file.}
+
+\item{identifying}{(logical) TRUE for the extraction of identifying transtions. (Default: FALSE)}
 }
 \value{
 SQL query to be searched.

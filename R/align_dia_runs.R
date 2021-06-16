@@ -45,7 +45,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   #### Get Precursors from the query and respectve chromatogram indices. ######
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   start_time <- Sys.time()
-  precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
+  precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]], params[["useIdentifying"]])
   if(!is.null(peps)){
     precursors <- precursors[peptide_id %in% peps, ]
     if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
@@ -94,7 +94,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   if(params[["transitionIntensity"]]){
     features <- getTransitions(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
   } else{
-    features <- getFeatures(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
+    features <- getFeatures(fileInfo, params[["maxFdrQuery"]], params[["maxIPFFdrQuery"]], params[["runType"]], applyFun)
   }
   end_time <- Sys.time()
   message("The execution time for fetching features:")
@@ -120,7 +120,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   #### Convert features into multi-peptide #####
   message("Building multipeptide.")
   start_time <- Sys.time()
-  multipeptide <- getMultipeptide(precursors, features, applyFun, NULL)
+  multipeptide <- getMultipeptide(precursors, features, runType=params[["runType"]], applyFun, NULL)
   message(length(multipeptide), " peptides are in the multipeptide.")
   end_time <- Sys.time()
   message("The execution time for building multipeptide:")
@@ -153,7 +153,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
     if(is(mz)[1] == "SQLiteConnection") DBI::dbDisconnect(mz)
     if(is(mz)[1] == "mzRpwiz") rm(mz)
   }
-  rm(prec2chromIndex, globalFits, refRuns, RSE)
+  rm(prec2chromIndex, globalFits, RSE)
 
   end_time <- Sys.time() # Report the execution time for hybrid alignment step.
   message("The execution time for alignment:")
@@ -164,9 +164,15 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   if(params[["transitionIntensity"]]){
     finalTbl[,intensity := sapply(intensity,function(x) paste(round(x, 3), collapse=", "))]
   }
+  if(params[["runType"]]=="DIA_IPF"){
+    finalTbl <- ipfReassignFDR(finalTbl, refRuns, fileInfo, params)
+  }
   utils::write.table(finalTbl, file = outFile, sep = "\t", row.names = FALSE, quote = FALSE)
   message("Retention time alignment across runs is done.")
   message(paste0(outFile, " file has been written."))
+
+  #### Cleanup.  #######
+  rm(refRuns)
 
   #### Write alignment summary  #######
   alignmentStats(finalTbl, params)
@@ -429,7 +435,7 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
     ##### Align all runs to reference run and set their alignment rank #####
     exps <- setdiff(rownames(fileInfo), ref)
     invisible(
-      lapply(exps, alignToRef, ref, refIdx, fileInfo, XICs, XICs.ref, params,
+      lapply(exps,  alignToRef, ref, refIdx, fileInfo, XICs, XICs.ref, params,
              DT, globalFits, RSE)
     )
 

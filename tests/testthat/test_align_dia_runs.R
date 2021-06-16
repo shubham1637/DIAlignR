@@ -152,6 +152,30 @@ test_that("test_alignTargetedRuns_metabolomics",{
   file.remove("temp_metabo.tsv")
 })
 
+test_that("test_alignTargetedRuns_ptms",{
+  dataPath <- system.file("ptms", package = "DIAlignR")
+  params <- paramsDIAlignR()
+  params$chromFile <- "sqMass"
+  params$runType <- "DIA_IPF"
+  params$maxFdrQuery <- 0.05
+  params$maxIPFFdrQuery <- 1
+  params$useIdentifying <- TRUE
+  params$unalignedFDR <- 0.05
+  params$alignedFDR <- 0.05
+  alignTargetedRuns(dataPath = dataPath,  outFile = "temp_ptms", params = params,
+                    oswMerged = TRUE, runs = NULL, applyFun = lapply)
+  outData <- read.table("temp_ptms.tsv", sep = "\t", header = TRUE)
+  expData <- read.table("temp_ptms.tsv", sep = "\t", header = TRUE)
+  expect_identical(dim(outData), dim(expData))
+  expect_identical(colnames(outData), colnames(expData))
+  expect_identical(outData[["peptide"]], expData[["peptide"]])
+  expect_identical(outData[["run"]], expData[["run"]])
+  for(i in 1:13){
+    expect_equal(outData[[i]], expData[[i]], tolerance = 1e-04)
+  }
+  file.remove("temp_ptms.tsv")
+})
+
 test_that("test_alignToRef",{
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()

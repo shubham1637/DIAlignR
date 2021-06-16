@@ -131,8 +131,9 @@ getOswAnalytes <- function(fileInfo, oswMerged = TRUE, analyteInGroupLabel = FAL
 #' @importFrom data.table setDT
 #' @inheritParams getPrecursors
 #' @param filename (string) Should be from the RUN.FILENAME column from osw files.
-#' @param runType (string) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".
+#' @param runType (string) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @param selectIDs (integer) a vector of integers.
+#' @param useIdentifying (logical) Set TRUE to use identifying transitions in alignment. (DEFAULT: FALSE)
 #' @return (data-frames) Data-frame has following columns:
 #' \item{transition_group_id}{(integer) a unique id for each precursor.}
 #' \item{transition_id}{(list) fragment-ion ID associated with transition_group_id. This is matched with chromatogram ID in mzML file.}
@@ -151,7 +152,7 @@ getOswAnalytes <- function(fileInfo, oswMerged = TRUE, analyteInGroupLabel = FAL
 #' dim(precursorsInfo) # 234  6
 #' }
 fetchPrecursorsInfo <- function(filename, runType = "DIA_Proteomics", selectIDs = NULL,
-                                context = "global", maxPeptideFdr = 0.05, level = "Peptide"){
+                                context = "global", maxPeptideFdr = 0.05, level = "Peptide", useIdentifying=FALSE){
   # Establish a connection of SQLite file.
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname = as.character(filename))
   # Generate a query.
@@ -164,11 +165,19 @@ fetchPrecursorsInfo <- function(filename, runType = "DIA_Proteomics", selectIDs 
   }
 
   # Run query to get peptides, their coordinates and scores.
-  precursorsInfo <- tryCatch(expr = { output <- DBI::dbSendQuery(con, statement = query)
-                     if(all && runType != "DIA_Metabolomics") {DBI::dbBind(output, list("CONTEXT"=context, "FDR"=maxPeptideFdr))}
-                                        DBI::dbFetch(output)},
-                             finally = {DBI::dbClearResult(output)
-                             DBI::dbDisconnect(con)})
+  if (runType=="DIA_IPF"){
+    precursorsInfo <- tryCatch(expr = { output <- DBI::dbSendQuery(con, statement = query)
+    if(all && runType != "DIA_Metabolomics") {DBI::dbBind(output, list("CONTEXT"=context, "FDR"=maxPeptideFdr, "USE_IDENTIFYING"=useIdentifying))}
+    DBI::dbFetch(output)},
+    finally = {DBI::dbClearResult(output)
+      DBI::dbDisconnect(con)})
+  } else {
+    precursorsInfo <- tryCatch(expr = { output <- DBI::dbSendQuery(con, statement = query)
+                       if(all && runType != "DIA_Metabolomics") {DBI::dbBind(output, list("CONTEXT"=context, "FDR"=maxPeptideFdr))}
+                                          DBI::dbFetch(output)},
+                               finally = {DBI::dbClearResult(output)
+                               DBI::dbDisconnect(con)})
+  }
   # Each precursor has only one row.
   setDT(precursorsInfo)
   precursorsInfo[, `:=`(transition_ids = list(transition_id)),
@@ -190,10 +199,11 @@ fetchPrecursorsInfo <- function(filename, runType = "DIA_Proteomics", selectIDs 
 #' @importFrom data.table data.table setkeyv
 #' @param fileInfo (data-frame) Output of \code{\link{getRunNames}} function.
 #' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
-#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".
+#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @param context (string) Context used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".
 #' @param maxPeptideFdr (numeric) A numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_PEPTIDE.QVALUE less than itself.
 #' @param level (string) Apply maxPeptideFDR on Protein as well if specified as "Protein". Default: "Peptide".
+#' @param useIdentifying (logical) Set TRUE to use identifying transitions in alignment. (DEFAULT: FALSE)
 #' @return (data-frames) A data-frame having following columns:
 #' \item{transition_group_id}{(integer) a unique id for each precursor.}
 #' \item{peptide_id}{(integer) a unique id for each peptide. A peptide can have multiple precursors.}
@@ -211,15 +221,15 @@ fetchPrecursorsInfo <- function(filename, runType = "DIA_Proteomics", selectIDs 
 #' dim(precursorsInfo) # 234  6
 #' @export
 getPrecursors <- function(fileInfo, oswMerged = TRUE, runType = "DIA_Proteomics",
-                          context = "global", maxPeptideFdr = 0.05, level = "Peptide"){
+                          context = "global", maxPeptideFdr = 0.05, level = "Peptide", useIdentifying=FALSE){
   if(oswMerged == TRUE){
     # Get precursor information from merged.osw file
     oswName <- unique(fileInfo[["featureFile"]])
-    precursors <- fetchPrecursorsInfo(oswName, runType, NULL, context, maxPeptideFdr, level)
+    precursors <- fetchPrecursorsInfo(oswName, runType, NULL, context, maxPeptideFdr, level, useIdentifying)
   } else {
     # Iterate over each file and collect precursor information
     oswName <- fileInfo[["featureFile"]][[1]]
-    precursors <- fetchPrecursorsInfo(oswName, runType, NULL, context, maxPeptideFdr, level)
+    precursors <- fetchPrecursorsInfo(oswName, runType, NULL, context, maxPeptideFdr, level, useIdentifying)
     #for(i in 1:nrow(fileInfo)){
       #oswName <- fileInfo[["featureFile"]][[i]]
       #temp <- fetchPrecursorsInfo(oswName, runType, NULL, context, maxPeptideFdr, level)
@@ -297,7 +307,8 @@ getPrecursorByID <- function(analytes, fileInfo, oswMerged = TRUE, runType = "DI
 #' @param filename (string) Path to the feature file.
 #' @param runID (string) id in RUN.ID column of the feature file.
 #' @param maxFdrQuery (numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_MS2.QVALUE less than itself.
-#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".
+#' @param maxIPFFdrQuery (numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_IPF.QVALUE less than itself. (For PTM IPF use)
+#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @return (data-frames) Data-frame has following columns:
 #' \item{transition_group_id}{(integer) a unique id for each precursor.}
 #' \item{RT}{(numeric) retention time as in FEATURE.EXP_RT of osw files.}
@@ -317,17 +328,25 @@ getPrecursorByID <- function(analytes, fileInfo, oswMerged = TRUE, runType = "DI
 #'  maxFdrQuery = 0.05)
 #' dim(featuresInfo) # 211  8
 #' }
-fetchFeaturesFromRun <- function(filename, runID, maxFdrQuery = 1.00, runType = "DIA_Proteomics"){
+fetchFeaturesFromRun <- function(filename, runID, maxFdrQuery = 1.00, maxIPFFdrQuery = 1.00, runType = "DIA_Proteomics"){
   # Establish a connection of SQLite file.
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname = as.character(filename))
   # Generate a query.
   query <- getFeaturesQuery(runType)
   # Run query to get peptides, their coordinates and scores.
-  featuresInfo <- tryCatch(expr = {output <- DBI::dbSendQuery(con, statement = query)
-                          DBI::dbBind(output, list("FDR"=maxFdrQuery, "runID" = runID))
-                          DBI::dbFetch(output)},
-                          finally = {DBI::dbClearResult(output)
-                            DBI::dbDisconnect(con)})
+  if (runType=="DIA_IPF"){
+    featuresInfo <- tryCatch(expr = {output <- DBI::dbSendQuery(con, statement = query)
+    DBI::dbBind(output, list("FDR"=maxFdrQuery, "IPF_FDR"=maxIPFFdrQuery, "runID" = runID))
+    DBI::dbFetch(output)},
+    finally = {DBI::dbClearResult(output)
+      DBI::dbDisconnect(con)})
+  } else {
+    featuresInfo <- tryCatch(expr = {output <- DBI::dbSendQuery(con, statement = query)
+                            DBI::dbBind(output, list("FDR"=maxFdrQuery, "runID" = runID))
+                            DBI::dbFetch(output)},
+                            finally = {DBI::dbClearResult(output)
+                              DBI::dbDisconnect(con)})
+  }
   setDT(featuresInfo)
   setkey(featuresInfo, "transition_group_id")
 }
@@ -346,7 +365,8 @@ fetchFeaturesFromRun <- function(filename, runID, maxFdrQuery = 1.00, runType = 
 #' @inheritParams alignTargetedRuns
 #' @param fileInfo (data-frame) output of \code{\link{getRunNames}} function.
 #' @param maxFdrQuery (numeric) a numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_MS2.QVALUE less than itself.
-#' @param runType (char) yhis must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".
+#' @param maxIPFFdrQuery (numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_IPF.QVALUE less than itself. (For PTM IPF use)
+#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @return (list of dataframes) each dataframe has following columns:
 #' \item{transition_group_id}{(integer) a unique id for each precursor.}
 #' \item{RT}{(numeric) retention time as in FEATURE.EXP_RT of osw files.}
@@ -363,15 +383,20 @@ fetchFeaturesFromRun <- function(filename, runID, maxFdrQuery = 1.00, runType = 
 #' features <- getFeatures(fileInfo, maxFdrQuery = 1.00, runType = "DIA_Proteomics")
 #' dim(features[[2]]) # 938  8
 #' @export
-getFeatures <- function(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics", applyFun = lapply){
+getFeatures <- function(fileInfo, maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, runType = "DIA_Proteomics", applyFun = lapply){
   features <- applyFun(1:nrow(fileInfo), function(i){
     run <- rownames(fileInfo)[i]
     oswName <- fileInfo[["featureFile"]][[i]]
     runID <- fileInfo[["spectraFileID"]][[i]]
     names(runID) <- rownames(fileInfo)[[i]]
-    df <- fetchFeaturesFromRun(oswName, runID, maxFdrQuery, runType)
-    message(paste0(nrow(df), " peakgroups are founds below ", maxFdrQuery,
-                   " FDR in run ", fileInfo[["runName"]][[i]], ", ID = ", runID))
+    df <- fetchFeaturesFromRun(oswName, runID, maxFdrQuery, maxIPFFdrQuery, runType)
+    if ( runType=="DIA_IPF" ){
+      message(paste0(nrow(df), " peakgroups are found below ", maxFdrQuery,
+                     " MS2 FDR and ", maxIPFFdrQuery, " IPF FDR in run ", fileInfo[["runName"]][[i]], ", ID = ", runID))
+    } else{
+      message(paste0(nrow(df), " peakgroups are found below ", maxFdrQuery,
+                     " FDR in run ", fileInfo[["runName"]][[i]], ", ID = ", runID))
+    }
     df
   })
   names(features) <- rownames(fileInfo)

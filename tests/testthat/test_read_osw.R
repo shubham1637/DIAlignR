@@ -74,6 +74,35 @@ test_that("test_fetchPrecursorsInfo",{
              "transition_ids" = list(c(192L, 193L, 194L, 195L, 196L, 197L)))
   expect_identical(outData[108,], expData)
   expect_identical(dim(outData), c(302L, 6L))
+
+  ## Test IPF useIdentifying set to FALSE
+  dataPath <- system.file("ptms", package = "DIAlignR")
+  filename <- paste0(dataPath,"/osw/merged.osw")
+  outData <- fetchPrecursorsInfo(filename, runType = "DIA_IPF", NULL,
+                                 context = "experiment-wide", maxPeptideFdr = 1.0, useIdentifying = FALSE)
+  expData <- data.table("transition_group_id" = 630L,
+                        "peptide_id" = 174L,
+                        "sequence" = "ANS(UniMod:21)SPTTNIDHLK(UniMod:259)",
+                        "charge" = 2L,
+                        "group_label" = "1565",
+                        "transition_ids" = list(c(158601L,158666L,158780L,158803L,158827L,158846L)))
+  expect_identical(outData[1,], expData)
+  expect_identical(dim(outData), c(2L, 6L))
+
+  ## Test IPF useIdentifying set to TRUE
+  dataPath <- system.file("ptms", package = "DIAlignR")
+  filename <- paste0(dataPath,"/osw/merged.osw")
+  outData <- fetchPrecursorsInfo(filename, runType = "DIA_IPF", NULL,
+                                 context = "experiment-wide", maxPeptideFdr = 1.0, useIdentifying = TRUE)
+  expData <- data.table("transition_group_id" = 630L,
+                        "peptide_id" = 174L,
+                        "sequence" = "ANS(UniMod:21)SPTTNIDHLK(UniMod:259)",
+                        "charge" = 2L,
+                        "group_label" = "1565",
+                        "transition_ids" = list(c(158584L, 158586L, 158588L, 158590L, 158594L, 158596L, 158598L, 158601L, 158602L, 158604L, 158606L, 158608L, 158610L, 158612L, 158614L, 158616L, 158618L, 158620L, 158622L, 158624L, 158626L, 158628L, 158630L, 158632L, 158635L, 158637L, 158639L, 158641L, 158643L, 158645L, 158647L, 158649L, 158651L, 158653L, 158655L, 158657L, 158659L, 158661L, 158663L, 158666L, 158667L, 158669L, 158671L, 158673L, 158676L, 158678L, 158680L, 158682L, 158684L, 158686L, 158688L, 158690L, 158692L, 158694L, 158696L, 158698L, 158700L, 158702L, 158704L, 158706L, 158708L, 158710L, 158712L, 158714L, 158716L, 158718L, 158720L, 158722L, 158724L, 158726L, 158728L, 158730L, 158732L, 158734L, 158736L, 158738L, 158740L, 158742L, 158744L, 158746L, 158748L, 158750L, 158752L, 158754L, 158756L, 158758L, 158760L, 158763L, 158766L, 158769L, 158771L, 158773L, 158775L, 158777L, 158780L, 158781L, 158783L, 158786L, 158788L, 158790L, 158792L, 158794L, 158796L, 158798L, 158800L, 158803L, 158804L, 158808L, 158810L, 158812L, 158814L, 158816L, 158818L, 158820L, 158822L, 158824L, 158827L, 158828L, 158832L, 158834L, 158836L, 158838L, 158840L, 158842L, 158844L, 158846L, 158847L, 158849L, 158852L, 158854L, 158856L, 158858L, 158860L, 158862L, 158864L, 158866L, 158868L, 158870L, 158872L, 158874L, 158876L, 158878L, 158880L, 158882L, 158884L)))
+  expect_identical(outData[1,], expData)
+  expect_identical(dim(outData), c(2L, 6L))
+
 })
 
 test_that("test_getPrecursors",{
@@ -92,6 +121,40 @@ test_that("test_getPrecursors",{
                         key = c("peptide_id", "transition_group_id"))
   expect_identical(outData[79,], expData)
   expect_identical(dim(outData), c(234L, 6L))
+
+  ## Test IPF useIdentifying set to FALSE
+  dataPath <- system.file("ptms", package = "DIAlignR")
+  fileInfo <- data.frame("featureFile" = rep(file.path(dataPath, "osw", "merged.osw"),3),
+                         row.names = c("run0", "run1", "run2"),
+                         stringsAsFactors=FALSE)
+  outData <- getPrecursors(fileInfo, oswMerged = TRUE, runType = "DIA_IPF",
+                           context = "experiment-wide", maxPeptideFdr = 0.05, useIdentifying = FALSE)
+  expData <- data.table("transition_group_id" = 630L,
+                        "peptide_id" = 174L,
+                        "sequence" = "ANS(UniMod:21)SPTTNIDHLK(UniMod:259)",
+                        "charge" = 2L,
+                        "group_label" = "1565",
+                        "transition_ids" = list(c(158601L,158666L,158780L,158803L,158827L,158846L)),
+                        key = c("peptide_id", "transition_group_id"))
+  expect_identical(outData[1,], expData)
+  expect_identical(dim(outData), c(2L, 6L))
+
+  ## Test IPF useIdentifying set to TRUE
+  dataPath <- system.file("ptms", package = "DIAlignR")
+  fileInfo <- data.frame("featureFile" = rep(file.path(dataPath, "osw", "merged.osw"),3),
+                         row.names = c("run0", "run1", "run2"),
+                         stringsAsFactors=FALSE)
+  outData <- getPrecursors(fileInfo, oswMerged = TRUE, runType = "DIA_IPF",
+                           context = "experiment-wide", maxPeptideFdr = 0.05, useIdentifying = TRUE)
+  expData <- data.table("transition_group_id" = 630L,
+                        "peptide_id" = 174L,
+                        "sequence" = "ANS(UniMod:21)SPTTNIDHLK(UniMod:259)",
+                        "charge" = 2L,
+                        "group_label" = "1565",
+                        "transition_ids" = list(c(158584L, 158586L, 158588L, 158590L, 158594L, 158596L, 158598L, 158601L, 158602L, 158604L, 158606L, 158608L, 158610L, 158612L, 158614L, 158616L, 158618L, 158620L, 158622L, 158624L, 158626L, 158628L, 158630L, 158632L, 158635L, 158637L, 158639L, 158641L, 158643L, 158645L, 158647L, 158649L, 158651L, 158653L, 158655L, 158657L, 158659L, 158661L, 158663L, 158666L, 158667L, 158669L, 158671L, 158673L, 158676L, 158678L, 158680L, 158682L, 158684L, 158686L, 158688L, 158690L, 158692L, 158694L, 158696L, 158698L, 158700L, 158702L, 158704L, 158706L, 158708L, 158710L, 158712L, 158714L, 158716L, 158718L, 158720L, 158722L, 158724L, 158726L, 158728L, 158730L, 158732L, 158734L, 158736L, 158738L, 158740L, 158742L, 158744L, 158746L, 158748L, 158750L, 158752L, 158754L, 158756L, 158758L, 158760L, 158763L, 158766L, 158769L, 158771L, 158773L, 158775L, 158777L, 158780L, 158781L, 158783L, 158786L, 158788L, 158790L, 158792L, 158794L, 158796L, 158798L, 158800L, 158803L, 158804L, 158808L, 158810L, 158812L, 158814L, 158816L, 158818L, 158820L, 158822L, 158824L, 158827L, 158828L, 158832L, 158834L, 158836L, 158838L, 158840L, 158842L, 158844L, 158846L, 158847L, 158849L, 158852L, 158854L, 158856L, 158858L, 158860L, 158862L, 158864L, 158866L, 158868L, 158870L, 158872L, 158874L, 158876L, 158878L, 158880L, 158882L, 158884L)),
+                        key = c("peptide_id", "transition_group_id"))
+  expect_identical(outData[1,], expData)
+  expect_identical(dim(outData), c(2L, 6L))
 })
 
 test_that("test_getPrecursorByID",{
@@ -144,6 +207,40 @@ test_that("test_fetchFeaturesFromRun",{
                         key = "transition_group_id")
   expect_equal(outData[500,], expData, tolerance = 1e-04)
   expect_identical(dim(outData), c(926L, 8L))
+
+  # Test IPF
+  dataPath <- system.file("ptms", package = "DIAlignR")
+  fileInfo <- data.frame("featureFile" = rep(file.path(dataPath, "osw", "merged.osw"),3),
+                         "spectraFileID" = c("9073086900063020552", "-4847544860529319110", "2848806567456108792"),
+                         row.names = c("run0", "run1", "run2"),
+                         stringsAsFactors=FALSE)
+  fileInfo$featureFile <- as.factor(fileInfo$featureFile)
+  outData <- fetchFeaturesFromRun(fileInfo$featureFile[1], runID = "9073086900063020552", maxFdrQuery = 0.05, maxIPFFdrQuery = 1, runType = "DIA_IPF")
+  expData <- data.table("transition_group_id" = 630L, "feature_id" = bit64::as.integer64(-6191423739689805270),
+                        "RT" = 1843.36, "intensity" = 4970,
+                        "leftWidth" = 1816.43, "rightWidth" = 1860.05,
+                        "peak_group_rank" = 1L, "ms2_m_score" = 0.005551253, "m_score" = 0.3869842,
+                        key = "transition_group_id")
+  expect_equal(outData[1,], expData, tolerance = 1e-04)
+  expect_identical(dim(outData), c(3L, 9L))
+
+  outData <- fetchFeaturesFromRun(fileInfo$featureFile[1], runID = "-4847544860529319110", maxFdrQuery = 0.05, maxIPFFdrQuery = 1, runType = "DIA_IPF")
+  expData <- data.table("transition_group_id" = 630L, "feature_id" = bit64::as.integer64(-2549840322423605148),
+                        "RT" = 1963.89, "intensity" = 8603,
+                        "leftWidth" = 1943.57, "rightWidth" = 1983.55,
+                        "peak_group_rank" = 1L, "ms2_m_score" = 0.002784220, "m_score" = 0.04277228,
+                        key = "transition_group_id")
+  expect_equal(outData[1,], expData, tolerance = 1e-04)
+  expect_identical(dim(outData), c(6L, 9L))
+
+  outData <- fetchFeaturesFromRun(fileInfo$featureFile[1], runID = "2848806567456108792", maxFdrQuery = 0.05, maxIPFFdrQuery = 1, runType = "DIA_IPF")
+  expData <- data.table("transition_group_id" = 630L, "feature_id" = bit64::as.integer64(-8985027232552631382),
+                        "RT" = 1835.29, "intensity" = 51890,
+                        "leftWidth" = 1820.08, "rightWidth" = 1852.79,
+                        "peak_group_rank" = 1L, "ms2_m_score" = 0.002980632, "m_score" = 0.003444567,
+                        key = "transition_group_id")
+  expect_equal(outData[1,], expData, tolerance = 1e-04)
+  expect_identical(dim(outData), c(8L, 9L))
 })
 
 test_that("test_getFeatures",{
@@ -156,6 +253,17 @@ test_that("test_getFeatures",{
   outData <- getFeatures(fileInfo, maxFdrQuery = 0.05, runType = "DIA_Proteomics")
   expect_identical(length(outData), 3L)
   expect_identical(dim(outData[["run1"]]), c(227L, 8L))
+
+  # Test IPF
+  dataPath <- system.file("ptms", package = "DIAlignR")
+  fileInfo <- data.frame("featureFile" = rep(file.path(dataPath, "osw", "merged.osw"),3),
+                         "spectraFileID" = c("9073086900063020552", "-4847544860529319110", "2848806567456108792"),
+                         row.names = c("run0", "run1", "run2"),
+                         stringsAsFactors=FALSE)
+  fileInfo$featureFile <- as.factor(fileInfo$featureFile)
+  outData <- getFeatures(fileInfo, maxFdrQuery = 0.05, maxIPFFdrQuery = 1, runType = "DIA_IPF")
+  expect_identical(length(outData), 3L)
+  expect_identical(dim(outData[["run1"]]), c(6L, 9L))
 })
 
 test_that("test_fetchPeptidesInfo", {

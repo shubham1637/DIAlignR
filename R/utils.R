@@ -75,7 +75,7 @@ getRefRun <- function(peptideScores, applyFun=lapply){
 #' multipeptide[["9861"]]
 #' @seealso \code{\link{getPrecursors}, \link{getFeatures}}
 #' @export
-getMultipeptide <- function(precursors, features, applyFun=lapply, masters = NULL){
+getMultipeptide <- function(precursors, features, runType="DIA_Proteomics", applyFun=lapply, masters = NULL){
   peptideIDs <- unique(precursors$peptide_id)
   runs <- names(features)
   num_run = length(features)
@@ -86,10 +86,13 @@ getMultipeptide <- function(precursors, features, applyFun=lapply, masters = NUL
       num_analytes <- length(analytes)
       newdf <- rbindlist(lapply(runs, function(run){
         df <- rbindlist(list(features[[run]][list(analytes), ],
-                  dummyTbl(analytes)), use.names=TRUE) # dummy for new features
+                  dummyTbl(analytes, runType)), use.names=TRUE) # dummy for new features
         set(df, j = c("run", "alignment_rank"), value = list(run, NA_integer_))
         df
       }), use.names=TRUE)
+      if ( runType=="DIA_IPF" ){
+        setcolorder(newdf, c('transition_group_id', 'feature_id', 'RT', 'intensity', 'leftWidth', 'rightWidth', 'peak_group_rank', 'm_score', 'run', 'alignment_rank', 'ms2_m_score'))
+      }
       setkeyv(newdf, "run")
       newdf
     })
@@ -103,8 +106,11 @@ getMultipeptide <- function(precursors, features, applyFun=lapply, masters = NUL
         df[,`:=`("run" = run, "alignment_rank" = NA_integer_)]
         df
       })
-      df2 <- dummyMerge(analytes, masters)
+      df2 <- dummyMerge(analytes, masters, runType)
       newdf <- rbindlist(list(rbindlist(df1, use.names=TRUE), df2), use.names=TRUE)
+      if ( runType=="DIA_IPF" ){
+        setcolorder(newdf, c('transition_group_id', 'feature_id', 'RT', 'intensity', 'leftWidth', 'rightWidth', 'peak_group_rank', 'm_score', 'run', 'alignment_rank', 'ms2_m_score'))
+      }
       setkeyv(newdf, "run")
       newdf
     })
@@ -115,17 +121,31 @@ getMultipeptide <- function(precursors, features, applyFun=lapply, masters = NUL
   multipeptide
 }
 
-dummyTbl <- function(analytes){
-  data.table("transition_group_id" = analytes, "feature_id" = bit64::NA_integer64_,
-             "RT" = NA_real_, "intensity" = NA_real_, "leftWidth" = NA_real_,
-             "rightWidth" = NA_real_, "peak_group_rank" = NA_integer_, "m_score" = NA_real_)
+dummyTbl <- function(analytes, runType="DIA_Proteomics"){
+  if ( runType=="DIA_IPF" ){
+    data.table("transition_group_id" = analytes, "feature_id" = bit64::NA_integer64_,
+               "RT" = NA_real_, "intensity" = NA_real_, "leftWidth" = NA_real_,
+               "rightWidth" = NA_real_, "peak_group_rank" = NA_integer_, "ms2_m_score" = NA_real_, "m_score" = NA_real_)
+  } else {
+    data.table("transition_group_id" = analytes, "feature_id" = bit64::NA_integer64_,
+               "RT" = NA_real_, "intensity" = NA_real_, "leftWidth" = NA_real_,
+               "rightWidth" = NA_real_, "peak_group_rank" = NA_integer_, "m_score" = NA_real_)
+  }
+
 }
 
-dummyMerge <- function(analytes, masters){
-  data.table("transition_group_id" = rep(analytes, times = length(masters), each = 5L), "feature_id" = bit64::NA_integer64_,
-             "RT" = NA_real_, "intensity" = NA_real_, "leftWidth" = NA_real_,
-             "rightWidth" = NA_real_, "peak_group_rank" = NA_integer_, "m_score" = NA_real_,
-             "run" = rep(masters, each = 5L*length(analytes)), "alignment_rank" = NA_integer_)
+dummyMerge <- function(analytes, masters, runType="DIA_Proteomics"){
+  if ( runType=="DIA_IPF" ){
+    data.table("transition_group_id" = rep(analytes, times = length(masters), each = 5L), "feature_id" = bit64::NA_integer64_,
+               "RT" = NA_real_, "intensity" = NA_real_, "leftWidth" = NA_real_,
+               "rightWidth" = NA_real_, "peak_group_rank" = NA_integer_, "ms2_m_score" = NA_real_, "m_score" = NA_real_,
+               "run" = rep(masters, each = 5L*length(analytes)), "alignment_rank" = NA_integer_)
+  } else {
+    data.table("transition_group_id" = rep(analytes, times = length(masters), each = 5L), "feature_id" = bit64::NA_integer64_,
+               "RT" = NA_real_, "intensity" = NA_real_, "leftWidth" = NA_real_,
+               "rightWidth" = NA_real_, "peak_group_rank" = NA_integer_, "m_score" = NA_real_,
+               "run" = rep(masters, each = 5L*length(analytes)), "alignment_rank" = NA_integer_)
+  }
 }
 
 #' Writes the output table post-alignment
@@ -230,6 +250,10 @@ checkParams <- function(params){
     stop("maxFdrQuery must be between 0 and 1. Recommended value is 0.05")
   }
 
+  if(params[["maxIPFFdrQuery"]]>1 | params[["maxIPFFdrQuery"]] < 0){
+    stop("maxIPFFdrQuery must be between 0 and 1. Recommended value is 0.05")
+  }
+
   if(params[["maxPeptideFdr"]] < 0 | params[["maxPeptideFdr"]] > 1){
     stop("maxPeptideFdr must be between 0 and 1. Recommended value is 0.01")
   }
@@ -311,6 +335,10 @@ checkParams <- function(params){
     stop("level for maxPeptideFDR should be either Peptide or Protein.")
   }
 
+  if(params[["useIdentifying"]] != TRUE & params[["useIdentifying"]] != FALSE){
+    stop("useIdentifying can only be TRUE or FALSE.")
+  }
+
   params
 }
 
@@ -328,9 +356,10 @@ checkParams <- function(params){
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-07-11
 #' @return A list of parameters:
-#' \item{runType}{(string) must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".}
+#' \item{runType}{(string) must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".}
 #' \item{chromFile}{(string) must either be "mzML" or "sqMass".}
 #' \item{maxFdrQuery}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_MS2.QVALUE less than itself.}
+#' \item{maxFdrQuery}{(numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_IPF.QVALUE less than itself. (For PTM IPF use)}
 #' \item{maxPeptideFdr}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_PEPTIDE.QVALUE less than itself.}
 #' \item{analyteFDR}{(numeric) the upper limit of feature FDR to be it considered for building tree.}
 #' \item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared" or "count.}
@@ -375,13 +404,14 @@ checkParams <- function(params){
 #' \item{fraction}{(integer) indicates which fraction to align.}
 #' \item{fractionNum}{(integer) Number of fractions to divide the alignment.}
 #' \item{lossy}{(logical) if TRUE, time and intensity are lossy-compressed in generated sqMass file.}
+#' \item{useIdentifying}{(logical) Set TRUE to use identifying transitions in alignment. (DEFAULT: FALSE)}
 #' @seealso \code{\link{checkParams}, \link{alignTargetedRuns}}
 #' @examples
 #' params <- paramsDIAlignR()
 #' @export
 paramsDIAlignR <- function(){
   params <- list( runType = "DIA_Proteomics", chromFile = "sqMass",
-                  maxFdrQuery = 0.05, maxPeptideFdr = 0.01, analyteFDR = 0.01, treeDist = "rsquared",
+                  maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, maxPeptideFdr = 0.01, analyteFDR = 0.01, treeDist = "rsquared",
                   context = "global", unalignedFDR = 0.01, alignedFDR = 0.05, level = "Peptide",
                   integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
                   recalIntensity = FALSE, fillMissing = TRUE, baseSubtraction = TRUE,
@@ -394,7 +424,7 @@ paramsDIAlignR <- function(){
                   hardConstrain = FALSE, samples4gradient = 100,
                   fillMethod = "spline", splineMethod = "natural", mergeTime = "avg", smoothPeakArea = FALSE,
                   keepFlanks = TRUE, wRef = 0.5, batchSize = 1000L, transitionIntensity = FALSE,
-                  fraction = 1L, fractionNum = 1L, lossy = FALSE)
+                  fraction = 1L, fractionNum = 1L, lossy = FALSE, useIdentifying = FALSE)
   params
 }
 
@@ -412,31 +442,60 @@ paramsDIAlignR <- function(){
 #' @seealso \code{\link{paramsDIAlignR}, \link{writeTables}}
 #' @keywords internal
 alignmentStats <- function(finalTbl, params){
-  # Without alignment at unaligned FDR:
-  num1 <- sum(finalTbl$m_score <= params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
-                !is.na(finalTbl$intensity), na.rm = TRUE)
-  message("The number of quantified precursors at ", params[["unalignedFDR"]], " FDR: ", num1)
+  if (params[["runType"]]=="DIA_IPF"){
+    # Without alignment at unaligned FDR:
+    num1 <- sum(finalTbl$original_m_score <= params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
+                  !is.na(finalTbl$intensity), na.rm = TRUE)
+    message("The number of quantified precursors at ", params[["unalignedFDR"]], " FDR: ", num1)
 
-  # Without alignment at aligned FDR (Gain):
-  num2 <- sum(finalTbl$m_score > params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
-                !is.na(finalTbl$intensity), na.rm = TRUE)
-  message("The increment in the number of quantified precursors at ", params[["alignedFDR"]],
-          " FDR: ", num2)
+    # Without alignment at aligned FDR (Gain):
+    num2 <- sum(finalTbl$original_m_score > params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
+                  !is.na(finalTbl$intensity), na.rm = TRUE)
+    message("The increment in the number of quantified precursors at ", params[["alignedFDR"]],
+            " FDR: ", num2)
 
-  # Corrected peptides by Alignmet
-  idx <- finalTbl$peak_group_rank != 1L & finalTbl$m_score > params[["unalignedFDR"]] &
-    finalTbl$alignment_rank == 1L & !is.na(finalTbl$intensity)
-  num3 <- sum(idx, na.rm = TRUE)
-  message("Out of ", num2, " DIAlignR corrects the peaks for ", num3, " precursors.")
-  message("Hence, it has corrected quantification of ", round(num3*100/(num2 + num1), 3), "% precursors.")
+    # Corrected peptides by Alignmet
+    idx <- finalTbl$peak_group_rank != 1L & finalTbl$original_m_score > params[["unalignedFDR"]] &
+      finalTbl$alignment_rank == 1L & !is.na(finalTbl$intensity)
+    num3 <- sum(idx, na.rm = TRUE)
+    message("Out of ", num2, " DIAlignR corrects the peaks for ", num3, " precursors.")
+    message("Hence, it has corrected quantification of ", round(num3*100/(num2 + num1), 3), "% precursors.")
 
-  # Gain by calculating area of missing features:
-  num4 <- sum(!is.na(finalTbl$intensity) & is.na(finalTbl$m_score) & finalTbl$alignment_rank == 1L, na.rm = TRUE)
-  message("DIAlignR has calculated quantification for ", num4, " precursors, for which peaks were not identified.")
-  message("Thus, it provides a gain of ", round(num4*100/(num2 + num1 + num4), 3), "%.")
+    # Gain by calculating area of missing features:
+    num4 <- sum(!is.na(finalTbl$intensity) & is.na(finalTbl$original_m_score) & finalTbl$alignment_rank == 1L, na.rm = TRUE)
+    message("DIAlignR has calculated quantification for ", num4, " precursors, for which peaks were not identified.")
+    message("Thus, it provides a gain of ", round(num4*100/(num2 + num1 + num4), 3), "%.")
 
-  if(params[["fillMissing"]]) message(sum(is.na(finalTbl$intensity)),
-                          " precursors had part of the aligned peak out of the chromatograms or missing chromatograms, hence could not be quantified.")
+    if(params[["fillMissing"]]) message(sum(is.na(finalTbl$intensity)),
+                                        " precursors had part of the aligned peak out of the chromatograms or missing chromatograms, hence could not be quantified.")
+
+  } else {
+    # Without alignment at unaligned FDR:
+    num1 <- sum(finalTbl$m_score <= params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
+                  !is.na(finalTbl$intensity), na.rm = TRUE)
+    message("The number of quantified precursors at ", params[["unalignedFDR"]], " FDR: ", num1)
+
+    # Without alignment at aligned FDR (Gain):
+    num2 <- sum(finalTbl$m_score > params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
+                  !is.na(finalTbl$intensity), na.rm = TRUE)
+    message("The increment in the number of quantified precursors at ", params[["alignedFDR"]],
+            " FDR: ", num2)
+
+    # Corrected peptides by Alignmet
+    idx <- finalTbl$peak_group_rank != 1L & finalTbl$m_score > params[["unalignedFDR"]] &
+      finalTbl$alignment_rank == 1L & !is.na(finalTbl$intensity)
+    num3 <- sum(idx, na.rm = TRUE)
+    message("Out of ", num2, " DIAlignR corrects the peaks for ", num3, " precursors.")
+    message("Hence, it has corrected quantification of ", round(num3*100/(num2 + num1), 3), "% precursors.")
+
+    # Gain by calculating area of missing features:
+    num4 <- sum(!is.na(finalTbl$intensity) & is.na(finalTbl$m_score) & finalTbl$alignment_rank == 1L, na.rm = TRUE)
+    message("DIAlignR has calculated quantification for ", num4, " precursors, for which peaks were not identified.")
+    message("Thus, it provides a gain of ", round(num4*100/(num2 + num1 + num4), 3), "%.")
+
+    if(params[["fillMissing"]]) message(sum(is.na(finalTbl$intensity)),
+                            " precursors had part of the aligned peak out of the chromatograms or missing chromatograms, hence could not be quantified.")
+  }
   invisible(NULL)
 }
 
@@ -526,6 +585,45 @@ getPrecursorSubset <- function(precursors, params){
   c(pepStart, pepEnd)
 }
 
+#' Re-Assign FDR Aligned Peaks
+#'
+#' This method will re-assign peaks with either the MS2 FDR if there was not enough confidence (identifying transitions) in the IPF FDR, or it will assign the user defined alignedFDR. This assumes the reference run has a really good peak that meets the IPF FDR threshold.
+#'
+#' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-0386-0092
+#'
+#' License: (c) Author (2020) + GPL-3
+#' Date: 2020-07-17
+#' @param dt (data.table) Aligned results tables from writeTables
+#' @param refRuns (dataframe) A peptide reference run table from getRefRun
+#' @param fileInfo (dataframe) A table with run filename information from getRunNames
+#' @param params (list) A list of parameters used by DIAlignR generated from paramsDIAlignR
+#' @return (data.table) Aligned results table with reassigned m-scores
+#' @keywords internal
+#' @seealso writeTables, getRefRun, getRunNames, paramsDIAlignR
+#' @importFrom dplyr recode select
+#' @import data.table
+#' @examples
+#' \dontrun{
+#' finalTbl <- ipfReassignFDR(finalTbl, refRuns, fileInfo, params)
+#' }
+ipfReassignFDR <- function(dt, refRuns, fileInfo, params){
+  ## Create Reference Run table with runName to map back to dt
+  runNameMap <- fileInfo$runName
+  names(runNameMap) <- rownames(fileInfo)
+  refRuns$ref_run <- dplyr::recode(refRuns$run, !!!runNameMap )
+  ## Merge peptide Reference Run table with aligned results table
+  dt <- data.table::merge.data.table(dt, dplyr::select(refRuns, -run), by="peptide_id")
+  ## Assign new FDRs
+  ## 1. For aligned peaks that had a poor IPF FDR, assign MS2 FDR
+  ## 2. For aligned peaks that have a poor IPF FDR and poor MS2 FDR, assign user defined alignedFDR
+  ## TODO: Is this it reasonable to reassign FDRs like this?
+  dt[, m_score_new := data.table::fifelse((ms2_m_score < m_score & run!=ref_run), ms2_m_score, m_score, na=params[["alignedFDR"]]), by = 1:nrow(dt)]
+  dt[, m_score_new := data.table::fifelse((m_score_new < params[["alignedFDR"]]), m_score_new, params[["alignedFDR"]], na=params[["alignedFDR"]]), by = 1:nrow(dt)]
+  setnames(dt, c("m_score_new", "m_score"), c("m_score", "original_m_score"))
+  dt
+}
 
 missingInXIC <- function(XICs){
   any(sapply(seq_along(XICs), function(i) any(is.na(XICs[[i]]))))

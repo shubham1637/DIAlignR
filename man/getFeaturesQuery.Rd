@@ -7,7 +7,7 @@
 getFeaturesQuery(runType = "DIA_Proteomics")
 }
 \arguments{
-\item{runType}{(char) This must be one of the strings "DIA_Proteomics", "DIA_Metabolomics".}
+\item{runType}{(char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".}
 }
 \value{
 SQL query to be searched.
