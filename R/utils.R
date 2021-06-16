@@ -49,7 +49,7 @@ getRefRun <- function(peptideScores, applyFun=lapply){
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-04-08
-#' @importFrom data.table rbindlist set setkeyv
+#' @importFrom data.table rbindlist set setkeyv setcolorder
 #' @importFrom bit64 NA_integer64_
 #' @inheritParams alignTargetedRuns
 #' @param precursors (data-frames) Contains precursors and associated transition IDs.
@@ -602,7 +602,6 @@ getPrecursorSubset <- function(precursors, params){
 #' @return (data.table) Aligned results table with reassigned m-scores
 #' @keywords internal
 #' @seealso writeTables, getRefRun, getRunNames, paramsDIAlignR
-#' @importFrom dplyr recode select
 #' @import data.table
 #' @examples
 #' \dontrun{
@@ -612,9 +611,13 @@ ipfReassignFDR <- function(dt, refRuns, fileInfo, params){
   ## Create Reference Run table with runName to map back to dt
   runNameMap <- fileInfo$runName
   names(runNameMap) <- rownames(fileInfo)
-  refRuns$ref_run <- dplyr::recode(refRuns$run, !!!runNameMap )
+  refRuns[, ref_run := run, by=1:nrow(refRuns)]
+  ## Remap from run number id to experiment name id
+  refRuns[ .(ref_run = names(runNameMap), to = runNameMap), on = "ref_run", ref_run := i.to]
+  ## Remove run numnber id
+  refRuns[, run:=NULL]
   ## Merge peptide Reference Run table with aligned results table
-  dt <- data.table::merge.data.table(dt, dplyr::select(refRuns, -run), by="peptide_id")
+  dt <- data.table::merge.data.table(dt, refRuns, by="peptide_id")
   ## Assign new FDRs
   ## 1. For aligned peaks that had a poor IPF FDR, assign MS2 FDR
   ## 2. For aligned peaks that have a poor IPF FDR and poor MS2 FDR, assign user defined alignedFDR
