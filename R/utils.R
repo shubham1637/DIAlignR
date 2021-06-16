@@ -603,6 +603,7 @@ getPrecursorSubset <- function(precursors, params){
 #' @keywords internal
 #' @seealso writeTables, getRefRun, getRunNames, paramsDIAlignR
 #' @import data.table
+#' @importFrom data.table merge.data.table setnames fifelse :=
 #' @examples
 #' \dontrun{
 #' finalTbl <- ipfReassignFDR(finalTbl, refRuns, fileInfo, params)
@@ -617,13 +618,13 @@ ipfReassignFDR <- function(dt, refRuns, fileInfo, params){
   ## Remove run numnber id
   refRuns[, run:=NULL]
   ## Merge peptide Reference Run table with aligned results table
-  dt <- data.table::merge.data.table(dt, refRuns, by="peptide_id")
+  dt <- merge.data.table(dt, refRuns, by="peptide_id")
   ## Assign new FDRs
   ## 1. For aligned peaks that had a poor IPF FDR, assign MS2 FDR
   ## 2. For aligned peaks that have a poor IPF FDR and poor MS2 FDR, assign user defined alignedFDR
   ## TODO: Is this it reasonable to reassign FDRs like this?
-  dt[, m_score_new := data.table::fifelse((ms2_m_score < m_score & run!=ref_run), ms2_m_score, m_score, na=params[["alignedFDR"]]), by = 1:nrow(dt)]
-  dt[, m_score_new := data.table::fifelse((m_score_new < params[["alignedFDR"]]), m_score_new, params[["alignedFDR"]], na=params[["alignedFDR"]]), by = 1:nrow(dt)]
+  dt[, m_score_new := fifelse((ms2_m_score < m_score & run!=ref_run), ms2_m_score, m_score, na=params[["alignedFDR"]]), by = 1:nrow(dt)]
+  dt[, m_score_new := fifelse((m_score_new < params[["alignedFDR"]]), m_score_new, params[["alignedFDR"]], na=params[["alignedFDR"]]), by = 1:nrow(dt)]
   setnames(dt, c("m_score_new", "m_score"), c("m_score", "original_m_score"))
   dt
 }

@@ -31,7 +31,8 @@ getFeatures(
 \item{leftWidth}{(numeric) as in FEATURE.LEFT_WIDTH of osw files.}
 \item{rightWidth}{(numeric) as in FEATURE.RIGHT_WIDTH of osw files.}
 \item{peak_group_rank}{(integer) rank of each feature associated with transition_group_id.}
-\item{m_score}{(numeric) q-value of each feature associated with transition_group_id.}
+\item{m_score}{(numeric) q-value of each feature associated with transition_group_id. (If using 'DIA_IPF' runType, this will represent IPF's QVALUE)}
+\item{ms2_m_score}{(numeric) MS2 q-value of each feature associated with transition_group_id. (Will only be present if using 'DIA_IPF' runType)}
 }
 \description{
 Get a list of data-frame of OpenSwath features that contains retention time, intensities, boundaries etc.
