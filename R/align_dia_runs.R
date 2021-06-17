@@ -404,7 +404,6 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
     ref <- refRuns[rownum, "run"][[1]]
     idx <- (rownum - (iBatch-1)*batchSize)
     analytes <- analytesA[[idx]]
-    analytes <- analytesA[idx]
 
     XICs <- lapply(seq_along(runs), function(i){
       cI <- chromIndices[[i]][[idx]]

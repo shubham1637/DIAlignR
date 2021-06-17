@@ -603,7 +603,7 @@ getPrecursorSubset <- function(precursors, params){
 #' @keywords internal
 #' @seealso writeTables, getRefRun, getRunNames, paramsDIAlignR
 #' @import data.table
-#' @importFrom data.table merge.data.table setnames fifelse :=
+#' @importFrom data.table merge.data.table setnames fifelse ':='
 #' @examples
 #' \dontrun{
 #' finalTbl <- ipfReassignFDR(finalTbl, refRuns, fileInfo, params)
