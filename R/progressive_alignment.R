@@ -63,7 +63,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   if(params[["transitionIntensity"]]){
     features <- getTransitions(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
   } else{
-    features <- getFeatures(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
+    features <- getFeatures(fileInfo, params[["maxFdrQuery"]], params[["maxIPFFdrQuery"]], params[["runType"]], applyFun)
   }
   end_time <- Sys.time()
 
@@ -105,7 +105,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   features <- do.call(c, list(features, masterFeatures))
   start_time <- Sys.time()
   message("Building multipeptide.")
-  multipeptide <- getMultipeptide(precursors, features, applyFun, NULL)
+  multipeptide <- getMultipeptide(precursors, features, params[["runType"]], applyFun, NULL)
   end_time <- Sys.time()
   message("The execution time for building multipeptide:")
   print(end_time - start_time)
@@ -196,7 +196,7 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   if(params[["transitionIntensity"]]){
     features <- getTransitions(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
   } else{
-    features <- getFeatures(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
+    features <- getFeatures(fileInfo, params[["maxFdrQuery"]], params[["maxIPFFdrQuery"]], params[["runType"]], applyFun)
   }
   message("The execution time for getting features:")
   end_time <- Sys.time()
@@ -238,7 +238,7 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   names(peptideScores) <- as.character(peptideIDs)
   features <- dummyFeatures(precursors, masters, params$transitionIntensity)
   prec2chromIndex <- dummyChromIndex(precursors, masters)
-  multipeptide <- getMultipeptide(precursors, features, applyFun, NULL)
+  multipeptide <- getMultipeptide(precursors, features, params[["runType"]], applyFun, NULL)
   outFile <- paste(outFile, 0, params[["fractionNum"]], sep = "_")
   outFile <- file.path(dataPath, paste0(outFile, ".rds"))
   tree <- ape::reorder.phylo(tree, "postorder")
@@ -308,7 +308,7 @@ progSplit2 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   features <- do.call(c, list(features, masterFeatures))
   start_time <- Sys.time()
   message("Building multipeptide.")
-  multipeptide <- getMultipeptide(precursors, features, applyFun, NULL)
+  multipeptide <- getMultipeptide(precursors, features, params[["runType"]], applyFun, NULL)
   end_time <- Sys.time()
   message("The execution time for building multipeptide:")
   print(end_time - start_time)

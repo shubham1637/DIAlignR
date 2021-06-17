@@ -186,7 +186,7 @@ getXICs <- function(analytes, runs, dataPath = ".", maxFdrQuery = 1.0, runType =
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs, lapply)
 
   # Get Chromatogram indices for each peptide in each run.
-  features <- getFeatures(fileInfo, maxFdrQuery, runType, lapply)
+  features <- getFeatures(fileInfo, maxFdrQuery, params[["maxIPFFdrQuery"]], runType, lapply)
   refAnalytes <-  analytesFromFeatures(features, analyteFDR = maxFdrQuery, commonAnalytes = FALSE)
   analytesFound <- intersect(analytes, refAnalytes)
   analytesNotFound <- setdiff(analytes, analytesFound)
