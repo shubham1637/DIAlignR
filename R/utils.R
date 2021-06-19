@@ -54,6 +54,7 @@ getRefRun <- function(peptideScores, applyFun=lapply){
 #' @inheritParams alignTargetedRuns
 #' @param precursors (data-frames) Contains precursors and associated transition IDs.
 #' @param features (list of data-frames) Contains features and their properties identified in each run.
+#' @param runType (char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".
 #' @param masters (characters) names of extra runs.
 #' @return (list) of dataframes having following columns:
 #' \item{transition_group_id}{(integer) a unique id for each precursor.}
