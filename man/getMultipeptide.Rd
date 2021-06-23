@@ -17,6 +17,8 @@ getMultipeptide(
 
 \item{features}{(list of data-frames) Contains features and their properties identified in each run.}
 
+\item{runType}{(char) This must be one of the strings "DIA_Proteomics", "DIA_IPF", "DIA_Metabolomics".}
+
 \item{applyFun}{(function) value must be either lapply or BiocParallel::bplapply.}
 
 \item{masters}{(characters) names of extra runs.}
