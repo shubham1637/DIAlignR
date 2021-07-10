@@ -187,6 +187,7 @@ writeTables <- function(fileInfo, multipeptide, precursors){
     idx <- unlist(lapply(runs, function(run){
       j <- which(df[["run"]] == run)
       idx <- j[df$alignment_rank[j]  == 1L]
+      #TODO: If alignment-rank is 1 but out of boundary then select other peak?
       if(all(is.na(idx))) idx <- j[df$peak_group_rank[j] == 1L]
       idx
     }))

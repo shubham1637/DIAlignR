@@ -162,7 +162,8 @@ setAlignmentRank <- function(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT
   right <- tAligned[,2][which.min(abs(tAligned[,1] - rightRef))]
   eXpRT <- tAligned[,2][which.min(abs(tAligned[,1] - refRT))]
   # TODO. Save for the edge cases. or use wider chromatogram.
-  if(any(length(left)==0, length(right)==0, length(eXpRT)==0, is.na(left), is.na(right))){
+  # Peaks can be found withing adaptiveRT window even if the mapping straddles out-of-chromatogram.
+  if(any(length(left)==0, length(right)==0, length(eXpRT)==0)){
     return(invisible(NULL)) # Can happen if XICs have all zero intensities.
   }
 
@@ -195,6 +196,7 @@ setOtherPrecursors <- function(df, refIdx, XICs, analytes, params){
   if(length(refIdx) == 0 | is.null(refIdx)) return(NULL)
   precRef <- .subset2(df, "transition_group_id")[[refIdx]]
   pk <- c(.subset2(df, "leftWidth")[refIdx], .subset2(df, "rightWidth")[refIdx])
+  # if(any(is.na(pk))) return(NULL) # Peak may be out of chrom hence set as NA.
 
   # If other precursors have overlapping feature then set their alignment rank to 1.
   for(analyte in setdiff(analytes, precRef)){
