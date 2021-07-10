@@ -1,5 +1,6 @@
-CHANGES IN VERSION 2.1.0 (May 17, 2021)
+CHANGES IN VERSION 2.1.0 (July 10, 2021)
 ------------------------
++ Added support for IPF based Post-translation Modification alignment.
 + Added Minimum Spanning Tree based alignment for reference-free approach.
 + Reintegrate area under the peak for low-confidence peaks.
 + Supporting Savitzky-Golay smoothing while calculating area.
