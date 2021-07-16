@@ -168,13 +168,29 @@ setAlignmentRank <- function(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT
   }
 
   ##### Find any feature present within adaptiveRT. #####
-  pk <- c(left - adaptiveRT, right + adaptiveRT)
+  # This step removes low FDR peaks which are not within adaptiveRT window.
+  widePk <- c(left - adaptiveRT, right + adaptiveRT)
+  narwPk <- c(left, right)
   tempi <- which(df$run == eXp & !is.na(df$RT))
   if(length(tempi) != 0){
-    idx <- sapply(tempi, function(i) checkOverlap(pk,
+    # Feature is present at the aligned time, use narrow peak #
+    idx <- sapply(tempi, function(i) checkOverlap(narwPk,
         c(.subset2(df, "leftWidth")[[i]], .subset2(df, "rightWidth")[[i]])))
     idx <- tempi[which(idx)]
-    if(any(.subset2(df, "m_score")[idx] <= params[["alignedFDR"]], na.rm = TRUE)){
+    if(any(.subset2(df, "m_score")[idx] <= params[["alignedFDR1"]], na.rm = TRUE)){
+      # Select peak with biggest overlap
+      idx <- idx[which.max(overlapLen(df, narwPk, idx))]
+      set(df, i = idx, "alignment_rank", 1L)
+      if(params[["recalIntensity"]]){
+        reIntensity2(df, idx, XICs[[analyte_chr]], c(left, right), params)}
+      return(invisible(NULL))
+    }
+
+    # Feature is not present at the aligned time, use wide peak #
+    idx <- sapply(tempi, function(i) checkOverlap(widePk,
+        c(.subset2(df, "leftWidth")[[i]], .subset2(df, "rightWidth")[[i]])))
+    idx <- tempi[which(idx)]
+    if(any(.subset2(df, "m_score")[idx] <= params[["alignedFDR2"]], na.rm = TRUE)){
       idx <- idx[which.min(.subset2(df, "m_score")[idx])]
       set(df, i = idx, "alignment_rank", 1L)
       if(params[["recalIntensity"]] && checkOverlap(c(left, right), c(.subset2(df, "leftWidth")[[idx]], .subset2(df, "rightWidth")[[idx]]))){

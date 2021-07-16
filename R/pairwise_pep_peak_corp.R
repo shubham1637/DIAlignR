@@ -275,11 +275,16 @@ getAlignedTimesFast <- function(XICs.ref, XICs.eXp, globalFit, adaptiveRT, param
     B1p <- XICs.eXp[[1]][1,1]
     B2p <- XICs.eXp[[1]][nrow(XICs.eXp[[1]]),1]
   }
-  tAligned <- getAlignedTimesCpp(XICs.ref, XICs.eXp, params[["kernelLen"]], params[["polyOrd"]], params[["alignType"]],
-                     adaptiveRT, params[["normalization"]], params[["simMeasure"]],
-                     B1p = B1p, B2p = B2p, params[["goFactor"]], params[["geFactor"]], params[["cosAngleThresh"]],
-                     params[["OverlapAlignment"]], params[["dotProdThresh"]], params[["gapQuantile"]], 9L,
-                     params[["hardConstrain"]], params[["samples4gradient"]])
+  if(params[["alignType"]] != 'global'){
+    tAligned <- getAlignedTimesCpp(XICs.ref, XICs.eXp, params[["kernelLen"]], params[["polyOrd"]], params[["alignType"]],
+                  adaptiveRT, params[["normalization"]], params[["simMeasure"]],
+                  B1p = B1p, B2p = B2p, params[["goFactor"]], params[["geFactor"]], params[["cosAngleThresh"]],
+                  params[["OverlapAlignment"]], params[["dotProdThresh"]], params[["gapQuantile"]], 9L,
+                  params[["hardConstrain"]], params[["samples4gradient"]])
+  }else{
+    tAligned <- getPredict(globalFit, XICs.ref[[1]][,1], params[["globalAlignment"]])
+    tAligned <-  matrix(c(XICs.ref[[1]][,1], tAligned), ncol = 2)
+  }
   tAligned
 }
 

@@ -9,7 +9,7 @@ alignmentStats(finalTbl, params)
 \arguments{
 \item{finalTbl}{(dataframe) an output of  \code{\link{writeTables}} function.}
 
-\item{params}{(list) must have following elements: alignedFDR and unalignedFDR.}
+\item{params}{(list) must have following elements: alignedFDR2 and unalignedFDR.}
 }
 \value{
 Invisible NULL

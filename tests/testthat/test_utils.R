@@ -119,7 +119,7 @@ test_that("test_ipfReassignFDR", {
   params$maxIPFFdrQuery <- 1
   params$useIdentifying <- TRUE
   params$unalignedFDR <- 0.05
-  params$alignedFDR <- 0.05
+  params$alignedFDR2 <- 0.05
   fileInfo <- getRunNames(dataPath, oswMerged = TRUE)
   precursors <- getPrecursors(fileInfo, oswMerged = TRUE, runType = "DIA_IPF", context = "experiment-wide", maxPeptideFdr = 0.05, useIdentifying = FALSE)
   peptideIDs <- precursors[, logical(1), keyby = peptide_id]$peptide_id

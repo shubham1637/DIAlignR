@@ -277,7 +277,10 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", refRun = NULL, oswMerge
   # Get Chromatogram for each peptide in each run.
   message("Fetching Extracted-ion chromatograms from runs")
   XICs <- getXICs4AlignObj(mzPntrs, filenames, filenames[, "runName"], prec2chromIndex, analytes)
-  rm(mzPntrs)
+  for(mz in mzPntrs){
+    if(is(mz)[1] == "SQLiteConnection") DBI::dbDisconnect(mz)
+    if(is(mz)[1] == "mzRpwiz") rm(mz)
+  }
 
   ####################### Perfrom alignment ##########################################
   AlignObjs <- vector("list", length(analytes))

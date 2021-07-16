@@ -260,7 +260,7 @@ extractFit <- function(fit, globalAlignment){
 
 getPredict <- function(fit, x, globalAlignment){
   if(globalAlignment == "linear"){
-    return(sum(fit*c(1, x)))
+    return(c(fit%*%t(cbind(1, x))))
   } else{
     return(fit(x))
   }

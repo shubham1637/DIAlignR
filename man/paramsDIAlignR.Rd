@@ -18,7 +18,9 @@ A list of parameters:
 \item{context}{(string) used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".}
 \item{unalignedFDR}{(numeric) must be between 0 and maxFdrQuery. Features below unalignedFDR are
  considered for quantification even without the RT alignment.}
-\item{alignedFDR}{(numeric) must be between unalignedFDR and 1. Features below alignedFDR are
+\item{alignedFDR1}{(numeric) must be between unalignedFDR and alignedFDR2. Features below alignedFDR1 and aligned to the reference are
+ considered for quantification.}
+\item{alignedFDR2}{(numeric) must be between alignedFDR1 and maxFdrQuery. Features below alignedFDR2 and within certain distance from the aligned time are
  considered for quantification after the alignment.}
 \item{level}{(string) apply maxPeptideFDR on Protein as well if specified as "Protein". Default: "Peptide".}
 \item{integrationType}{(string) method to ompute the area of a peak contained in XICs. Must be

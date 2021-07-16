@@ -19,7 +19,7 @@ ipfReassignFDR(dt, refRuns, fileInfo, params)
 (data.table) Aligned results table with reassigned m-scores
 }
 \description{
-This method will re-assign peaks with either the MS2 FDR if there was not enough confidence (identifying transitions) in the IPF FDR, or it will assign the user defined alignedFDR. This assumes the reference run has a really good peak that meets the IPF FDR threshold.
+This method will re-assign peaks with either the MS2 FDR if there was not enough confidence (identifying transitions) in the IPF FDR, or it will assign the user defined alignedFDR2. This assumes the reference run has a really good peak that meets the IPF FDR threshold.
 }
 \examples{
 \dontrun{

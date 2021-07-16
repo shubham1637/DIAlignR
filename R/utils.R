@@ -304,8 +304,8 @@ checkParams <- function(params){
     stop("unalignedFDR must be between 0 and maxFdrQuery. Recommended value is 0.01")
   }
 
-  if(params[["alignedFDR"]] < params[["unalignedFDR"]] | params[["alignedFDR"]] > params[["maxFdrQuery"]]){
-    stop("alignedFDR must be between unalignedFDR and maxFdrQuery. Recommended value is 0.05")
+  if(params[["alignedFDR2"]] < params[["unalignedFDR"]] | params[["alignedFDR2"]] > params[["maxFdrQuery"]]){
+    stop("alignedFDR2 must be between unalignedFDR and maxFdrQuery. Recommended value is 0.05")
   }
 
   if(!any(params[["integrationType"]] %in% c("intensity_sum", "trapezoid", "simpson"))){
@@ -368,7 +368,9 @@ checkParams <- function(params){
 #' \item{context}{(string) used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".}
 #' \item{unalignedFDR}{(numeric) must be between 0 and maxFdrQuery. Features below unalignedFDR are
 #'  considered for quantification even without the RT alignment.}
-#' \item{alignedFDR}{(numeric) must be between unalignedFDR and 1. Features below alignedFDR are
+#' \item{alignedFDR1}{(numeric) must be between unalignedFDR and alignedFDR2. Features below alignedFDR1 and aligned to the reference are
+#'  considered for quantification.}
+#' \item{alignedFDR2}{(numeric) must be between alignedFDR1 and maxFdrQuery. Features below alignedFDR2 and within certain distance from the aligned time are
 #'  considered for quantification after the alignment.}
 #' \item{level}{(string) apply maxPeptideFDR on Protein as well if specified as "Protein". Default: "Peptide".}
 #' \item{integrationType}{(string) method to ompute the area of a peak contained in XICs. Must be
@@ -414,7 +416,7 @@ checkParams <- function(params){
 paramsDIAlignR <- function(){
   params <- list( runType = "DIA_Proteomics", chromFile = "sqMass",
                   maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, maxPeptideFdr = 0.01, analyteFDR = 0.01, treeDist = "rsquared",
-                  context = "global", unalignedFDR = 0.01, alignedFDR = 0.05, level = "Peptide",
+                  context = "global", unalignedFDR = 0.01, alignedFDR1 = 0.01, alignedFDR2 = 0.05, level = "Peptide",
                   integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
                   recalIntensity = FALSE, fillMissing = TRUE, baseSubtraction = TRUE,
                   XICfilter = "sgolay", polyOrd = 4L, kernelLen = 11L,
@@ -439,7 +441,7 @@ paramsDIAlignR <- function(){
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-07-15
 #' @param finalTbl (dataframe) an output of  \code{\link{writeTables}} function.
-#' @param params (list) must have following elements: alignedFDR and unalignedFDR.
+#' @param params (list) must have following elements: alignedFDR2 and unalignedFDR.
 #' @return Invisible NULL
 #' @seealso \code{\link{paramsDIAlignR}, \link{writeTables}}
 #' @keywords internal
@@ -453,7 +455,7 @@ alignmentStats <- function(finalTbl, params){
     # Without alignment at aligned FDR (Gain):
     num2 <- sum(finalTbl$original_m_score > params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
                   !is.na(finalTbl$intensity), na.rm = TRUE)
-    message("The increment in the number of quantified precursors at ", params[["alignedFDR"]],
+    message("The increment in the number of quantified precursors at ", params[["alignedFDR2"]],
             " FDR: ", num2)
 
     # Corrected peptides by Alignmet
@@ -480,7 +482,7 @@ alignmentStats <- function(finalTbl, params){
     # Without alignment at aligned FDR (Gain):
     num2 <- sum(finalTbl$m_score > params[["unalignedFDR"]] & finalTbl$alignment_rank == 1L &
                   !is.na(finalTbl$intensity), na.rm = TRUE)
-    message("The increment in the number of quantified precursors at ", params[["alignedFDR"]],
+    message("The increment in the number of quantified precursors at ", params[["alignedFDR2"]],
             " FDR: ", num2)
 
     # Corrected peptides by Alignmet
@@ -561,6 +563,13 @@ checkOverlap <- function(x, y){
   olap
 }
 
+overlapLen <- function(df, pk, idx){
+  left <- pmax(pk[1], .subset2(df, "leftWidth")[idx])
+  right <- pmin(pk[2], .subset2(df, "rightWidth")[idx])
+  right - left
+}
+
+
 #' Prints messages if a certain number of analytes are aligned
 #' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
 #'
@@ -589,7 +598,7 @@ getPrecursorSubset <- function(precursors, params){
 
 #' Re-Assign FDR Aligned Peaks
 #'
-#' This method will re-assign peaks with either the MS2 FDR if there was not enough confidence (identifying transitions) in the IPF FDR, or it will assign the user defined alignedFDR. This assumes the reference run has a really good peak that meets the IPF FDR threshold.
+#' This method will re-assign peaks with either the MS2 FDR if there was not enough confidence (identifying transitions) in the IPF FDR, or it will assign the user defined alignedFDR2. This assumes the reference run has a really good peak that meets the IPF FDR threshold.
 #'
 #' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
 #'
@@ -623,10 +632,10 @@ ipfReassignFDR <- function(dt, refRuns, fileInfo, params){
   dt <- merge.data.table(dt, refRuns, by="peptide_id")
   ## Assign new FDRs
   ## 1. For aligned peaks that had a poor IPF FDR, assign MS2 FDR
-  ## 2. For aligned peaks that have a poor IPF FDR and poor MS2 FDR, assign user defined alignedFDR
+  ## 2. For aligned peaks that have a poor IPF FDR and poor MS2 FDR, assign user defined alignedFDR2
   ## TODO: Is this it reasonable to reassign FDRs like this?
-  dt[, m_score_new := fifelse((ms2_m_score < m_score & run!=ref_run), ms2_m_score, m_score, na=params[["alignedFDR"]]), by = 1:nrow(dt)]
-  dt[, m_score_new := fifelse((m_score_new < params[["alignedFDR"]]), m_score_new, params[["alignedFDR"]], na=params[["alignedFDR"]]), by = 1:nrow(dt)]
+  dt[, m_score_new := fifelse((ms2_m_score < m_score & run!=ref_run), ms2_m_score, m_score, na=params[["alignedFDR2"]]), by = 1:nrow(dt)]
+  dt[, m_score_new := fifelse((m_score_new < params[["alignedFDR2"]]), m_score_new, params[["alignedFDR2"]], na=params[["alignedFDR2"]]), by = 1:nrow(dt)]
   setnames(dt, c("m_score_new", "m_score"), c("m_score", "original_m_score"))
   dt
 }

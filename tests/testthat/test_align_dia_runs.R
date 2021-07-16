@@ -130,7 +130,7 @@ test_that("test_alignTargetedRuns_metabolomics",{
   params <- paramsDIAlignR()
   params[["maxFdrQuery"]] <- 0.05
   params[["unalignedFDR"]] <- 0.05
-  params[["alignedFDR"]] <- 0.05
+  params[["alignedFDR2"]] <- 0.05
   params[["analyteFDR"]] <- 1.0
   params[["maxPeptideFdr"]] <- 0.05
   params[["kernelLen"]] <- 9L
@@ -161,7 +161,7 @@ test_that("test_alignTargetedRuns_ptms",{
   params$maxIPFFdrQuery <- 1
   params$useIdentifying <- TRUE
   params$unalignedFDR <- 0.05
-  params$alignedFDR <- 0.05
+  params$alignedFDR2 <- 0.05
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp_ptms", params = params,
                     oswMerged = TRUE, runs = NULL, applyFun = lapply)
   outData <- read.table("temp_ptms.tsv", sep = "\t", header = TRUE)
