@@ -344,17 +344,16 @@ NumericMatrix sgolayCpp(NumericMatrix chrom, int kernelLen, int polyOrd){
 //' XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR
 //' XICs.ref <- lapply(XICs[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
 //' XICs.eXp <- lapply(XICs[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
-//' B1p <- 4964.752
-//' B2p <- 5565.462
+//' Bp <- seq(4964.752, 5565.462, length.out = nrow(XICs.ref[[1]]))
 //' time <- getAlignedTimesCpp(XICs.ref, XICs.eXp, 11, 4, alignType = "hybrid", adaptiveRT = 77.82315,
-//'  normalization = "mean", simType = "dotProductMasked", B1p = B1p, B2p = B2p,
+//'  normalization = "mean", simType = "dotProductMasked", Bp = Bp,
 //'  goFactor = 0.125, geFactor = 40, cosAngleThresh = 0.3, OverlapAlignment = TRUE,
 //'  dotProdThresh = 0.96, gapQuantile = 0.5, hardConstrain = FALSE, samples4gradient = 100)
 //' @export
 // [[Rcpp::export]]
 NumericMatrix getAlignedTimesCpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd,
                                  std::string alignType, double adaptiveRT, std::string normalization,
-                                 std::string simType, double B1p = 0.0, double B2p =0.0,
+                                 std::string simType, const std::vector<double>& Bp,
                                  double goFactor = 0.125, double geFactor = 40,
                                  double cosAngleThresh = 0.3, bool OverlapAlignment = true,
                                  double dotProdThresh = 0.96, double gapQuantile = 0.5, int kerLen = 9,
@@ -384,14 +383,16 @@ NumericMatrix getAlignedTimesCpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, in
 
   SimMatrix s = getSimilarityMatrix(intensity1, intensity2, normalization, simType, cosAngleThresh, dotProdThresh, kerLen);
   double gapPenalty = getGapPenalty(s, gapQuantile, simType);
-  if (alignType == "hybrid"){
+  if (alignType != "local"){
     SimMatrix MASK;
     MASK.n_row = time1[0].size();
     MASK.n_col = time2[0].size();
     MASK.data.resize(MASK.n_row*MASK.n_col, 0.0);
-    double A1 = time1[0][0], A2 = time1[0][MASK.n_row-1];
-    double B1 = time2[0][0], B2 = time2[0][MASK.n_col-1];
-    if(B2p > B1p) calcNoBeefMask(MASK, A1, A2, B1, B2, B1p, B2p, noBeef, hardConstrain);
+    if(alignType == "global"){ // This will give aligned chromatogram for global alignment.
+      noBeef = 0;
+      hardConstrain = true;
+    }
+    calcNoBeefMask2(MASK, time1[0], time2[0], Bp, noBeef, hardConstrain);
     auto maxIt = max_element(std::begin(s.data), std::end(s.data));
     double maxVal = *maxIt;
     constrainSimilarity(s, MASK, -2.0*maxVal/samples4gradient);
@@ -737,10 +738,9 @@ NumericVector splineFillCpp(const std::vector<double>& x, const std::vector<doub
 //' XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR
 //' XICs.ref <- lapply(XICs[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
 //' XICs.eXp <- lapply(XICs[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
-//' B1p <- 4964.752
-//' B2p <- 5565.462
+//' Bp <- seq(4964.752, 5565.462, length.out = nrow(XICs.ref[[1]]))
 //' chrom <- getChildXICpp(XICs.ref, XICs.eXp, 11L, 4L, alignType = "hybrid", adaptiveRT = 77.82315,
-//'  normalization = "mean", simType = "dotProductMasked", B1p = B1p, B2p = B2p,
+//'  normalization = "mean", simType = "dotProductMasked", Bp = Bp,
 //'  goFactor = 0.125, geFactor = 40, cosAngleThresh = 0.3, OverlapAlignment = TRUE,
 //'  dotProdThresh = 0.96, gapQuantile = 0.5, hardConstrain = FALSE, samples4gradient = 100,
 //'  wRef = 0.5, keepFlanks= TRUE)
@@ -748,7 +748,7 @@ NumericVector splineFillCpp(const std::vector<double>& x, const std::vector<doub
 // [[Rcpp::export]]
 List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd,
                         std::string alignType, double adaptiveRT, std::string normalization,
-                        std::string simType, double B1p = 0.0, double B2p =0.0,
+                        std::string simType, const std::vector<double>& Bp,
                         double goFactor = 0.125, double geFactor = 40,
                         double cosAngleThresh = 0.3, bool OverlapAlignment = true,
                         double dotProdThresh = 0.96, double gapQuantile = 0.5, int kerLen = 9,
@@ -783,14 +783,16 @@ List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd,
 
   SimMatrix s = getSimilarityMatrix(intensity1s, intensity2s, normalization, simType, cosAngleThresh, dotProdThresh, kerLen);
   double gapPenalty = getGapPenalty(s, gapQuantile, simType);
-  if (alignType == "hybrid"){
+  if (alignType != "local"){
     SimMatrix MASK;
     MASK.n_row = time1[0].size();
     MASK.n_col = time2[0].size();
     MASK.data.resize(MASK.n_row*MASK.n_col, 0.0);
-    double A1 = time1[0][0], A2 = time1[0][MASK.n_row-1];
-    double B1 = time2[0][0], B2 = time2[0][MASK.n_col-1];
-    if(B2p > B1p || B1p <= 0 || B2p <= 0) calcNoBeefMask(MASK, A1, A2, B1, B2, B1p, B2p, noBeef, hardConstrain);
+    if(alignType == "global"){ // This will give aligned chromatogram for global alignment.
+      noBeef = 0;
+      hardConstrain = true;
+    }
+    calcNoBeefMask2(MASK, time1[0], time2[0], Bp, noBeef, hardConstrain);
     auto maxIt = max_element(std::begin(s.data), std::end(s.data));
     double maxVal = *maxIt;
     constrainSimilarity(s, MASK, -2.0*maxVal/samples4gradient);
@@ -862,7 +864,6 @@ List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd,
     Rcpp::NumericVector v = wrap(intensity1NN[i]);
     chrom[i] = Rcpp::cbind(t, v);
   }
-
 
   // Remove leading and trailing missing value from alignedChildTime
   interpolateZero(alignedChildTime);

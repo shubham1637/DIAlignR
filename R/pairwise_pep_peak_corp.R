@@ -268,22 +268,21 @@ getAlignedTimes <- function(XICs.ref, XICs.eXp, globalFit, alignType, adaptiveRT
 #' getAlignedTimesFast(XICs.ref, XICs.eXp, globalFit, adaptiveRT, params)
 #' @export
 getAlignedTimesFast <- function(XICs.ref, XICs.eXp, globalFit, adaptiveRT, params){
-  B1p <- getPredict(globalFit, XICs.ref[[1]][1,1], params[["globalAlignment"]])
-  len <- nrow(XICs.ref[[1]])
-  B2p <- getPredict(globalFit, XICs.ref[[1]][len,1], params[["globalAlignment"]])
-  if(is.na(B1p) || is.na(B2p) || B1p <=0 || B2p <= 0 || is.nan(B1p) || is.nan(B2p)){
-    B1p <- XICs.eXp[[1]][1,1]
-    B2p <- XICs.eXp[[1]][nrow(XICs.eXp[[1]]),1]
+  Bp <- getPredict(globalFit, XICs.ref[[1]][,1], params[["globalAlignment"]])
+  if(any(is.na(Bp) | Bp <=0 | is.nan(Bp))){
+    Bp <- seq(XICs.eXp[[1]][1,1], XICs.eXp[[1]][nrow(XICs.eXp[[1]]),1], length.out = length(Bp))
   }
-  if(params[["alignType"]] != 'global'){
-    tAligned <- getAlignedTimesCpp(XICs.ref, XICs.eXp, params[["kernelLen"]], params[["polyOrd"]], params[["alignType"]],
-                  adaptiveRT, params[["normalization"]], params[["simMeasure"]],
-                  B1p = B1p, B2p = B2p, params[["goFactor"]], params[["geFactor"]], params[["cosAngleThresh"]],
+  alignType <- params[["alignType"]]
+  #TODO: If NA, should use local: less signal so good or chromatogram time: already extracted after linear interpolation?
+  # alignType <- ifelse(any(is.na(Bp) | Bp <=0 | is.nan(Bp)), "local", params[["alignType"]])
+  if(alignType != 'global'){ #TODO: Use new alignType here as well
+    tAligned <- getAlignedTimesCpp(XICs.ref, XICs.eXp, params[["kernelLen"]], params[["polyOrd"]], alignType,
+                  adaptiveRT, params[["normalization"]], params[["simMeasure"]], Bp = Bp,
+                  params[["goFactor"]], params[["geFactor"]], params[["cosAngleThresh"]],
                   params[["OverlapAlignment"]], params[["dotProdThresh"]], params[["gapQuantile"]], 9L,
                   params[["hardConstrain"]], params[["samples4gradient"]])
-  }else{
-    tAligned <- getPredict(globalFit, XICs.ref[[1]][,1], params[["globalAlignment"]])
-    tAligned <-  matrix(c(XICs.ref[[1]][,1], tAligned), ncol = 2)
+  } else{
+    tAligned <-  matrix(c(XICs.ref[[1]][,1], Bp), ncol = 2)
   }
   tAligned
 }

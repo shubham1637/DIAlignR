@@ -13,8 +13,7 @@ getChildXICpp(
   adaptiveRT,
   normalization,
   simType,
-  B1p = 0,
-  B2p = 0,
+  Bp,
   goFactor = 0.125,
   geFactor = 40,
   cosAngleThresh = 0.3,
@@ -49,10 +48,6 @@ getChildXICpp(
 Mask = s > quantile(s, dotProdThresh)\cr
 AllowDotProd= [Mask × cosine2Angle + (1 - Mask)] > cosAngleThresh\cr
 s_new= s × AllowDotProd}
-
-\item{B1p}{(numeric) Timepoint mapped by global fit for tA[1].}
-
-\item{B2p}{(numeric) Timepoint mapped by global fit for tA[length(tA)].}
 
 \item{goFactor}{(numeric) Penalty for introducing first gap in alignment. This value is multiplied by base gap-penalty.}
 
@@ -91,10 +86,9 @@ data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
 XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR
 XICs.ref <- lapply(XICs[["hroest_K120809_Strep0\%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
 XICs.eXp <- lapply(XICs[["hroest_K120809_Strep10\%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
-B1p <- 4964.752
-B2p <- 5565.462
+Bp <- seq(4964.752, 5565.462, length.out = nrow(XICs.ref[[1]]))
 chrom <- getChildXICpp(XICs.ref, XICs.eXp, 11L, 4L, alignType = "hybrid", adaptiveRT = 77.82315,
- normalization = "mean", simType = "dotProductMasked", B1p = B1p, B2p = B2p,
+ normalization = "mean", simType = "dotProductMasked", Bp = Bp,
  goFactor = 0.125, geFactor = 40, cosAngleThresh = 0.3, OverlapAlignment = TRUE,
  dotProdThresh = 0.96, gapQuantile = 0.5, hardConstrain = FALSE, samples4gradient = 100,
  wRef = 0.5, keepFlanks= TRUE)

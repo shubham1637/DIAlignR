@@ -180,6 +180,68 @@ void test_constrainSimilarity(){
   // ASSERT(cmp_arr3[3][4] == 2);
 }
 
+void test_calcNoBeefMask2(){
+  std::vector<double> A1 = {3353.2, 3356.633, 3360.067, 3363.5};
+  std::vector<double> B1 = {3325.9, 3329.3, 3332.7, 3336.1, 3339.5};
+  std::vector<double> B1p = {3324.7, 3328.507, 3332.313, 3336.12};
+  SimMatrix MASK;
+  MASK.data.resize(5*4,0);
+  MASK.n_col = 5;
+  MASK.n_row = 4;
+
+  //........................  CASE 1 ........................................
+  int noBeef = 2;
+  calcNoBeefMask2(MASK, A1, B1, B1p, noBeef, false);
+  // std::cout << "MASK is : " << std::endl;
+  // 0 0 0 0.707 1.414
+  // 0 0 0 0 0.707
+  // 0 0 0 0 0
+  // 0.707 0 0 0 0
+
+  std::vector< std::vector< double > > cmp_arr;
+  std::vector< double > tmp;
+  tmp = {0, 0, 0, 1.35294, 2.35294}; cmp_arr.push_back(tmp);
+  tmp = {0, 0, 0, 0, 1.23324}; cmp_arr.push_back(tmp);
+  tmp = {0, 0, 0, 0, 0}; cmp_arr.push_back(tmp);
+  tmp = {1.00588, 0, 0, 0, 0}; cmp_arr.push_back(tmp);
+
+  // std::cout.precision(10);
+  for (int i = 0; i < MASK.n_row; i++)
+    for (int j = 0; j < MASK.n_col; j++)
+      ASSERT(std::abs(MASK.data[i*MASK.n_col+j] - cmp_arr[i][j]) < 1e-05);
+
+  //........................  CASE 2 ........................................
+  std::fill(MASK.data.begin(), MASK.data.end(), 0.0);
+  noBeef = 1;
+  calcNoBeefMask2(MASK, A1, B1, B1p, noBeef, true);
+
+  std::vector< std::vector< double > > cmp_arr2;
+  tmp = {0, 0, 1, 1, 1}; cmp_arr2.push_back(tmp);
+  tmp = {0, 0, 0, 1, 1}; cmp_arr2.push_back(tmp);
+  tmp = {1, 0, 0, 0, 1}; cmp_arr2.push_back(tmp);
+  tmp = {1, 1, 0, 0, 0}; cmp_arr2.push_back(tmp);
+
+  for (int i = 0; i < MASK.n_row; i++)
+    for (int j = 0; j < MASK.n_col; j++)
+      ASSERT(std::abs(MASK.data[i*MASK.n_col+j] - cmp_arr2[i][j]) < 1e-07);
+
+  //........................  CASE 3 ........................................
+  std::fill(MASK.data.begin(), MASK.data.end(), 0.0);
+  noBeef = 0;
+  calcNoBeefMask2(MASK, A1, B1, B1p, noBeef, true);
+
+  std::vector< std::vector< double > > cmp_arr3;
+  tmp = {0, 1, 1, 1, 1}; cmp_arr3.push_back(tmp);
+  tmp = {1, 0, 1, 1, 1}; cmp_arr3.push_back(tmp);
+  tmp = {1, 1, 0, 1, 1}; cmp_arr3.push_back(tmp);
+  tmp = {1, 1, 1, 0, 1}; cmp_arr3.push_back(tmp);
+
+  for (int i = 0; i < MASK.n_row; i++)
+    for (int j = 0; j < MASK.n_col; j++)
+      ASSERT(std::abs(MASK.data[i*MASK.n_col+j] - cmp_arr3[i][j]) < 1e-07);
+
+}
+
 #ifdef DIALIGN_USE_Rcpp
 int main_constrainMat(){
 #else
@@ -187,6 +249,7 @@ int main(){
 #endif
   test_calcNoBeefMask();
   test_constrainSimilarity();
+  test_calcNoBeefMask2();
   std::cout << "test constrainMat successful" << std::endl;
   return 0;
 }

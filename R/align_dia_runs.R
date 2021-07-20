@@ -120,7 +120,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   #### Convert features into multi-peptide #####
   message("Building multipeptide.")
   start_time <- Sys.time()
-  multipeptide <- getMultipeptide(precursors, features, runType=params[["runType"]], applyFun, NULL)
+  multipeptide <- getMultipeptide(precursors, features, params[["runType"]], applyFun, NULL)
   message(length(multipeptide), " peptides are in the multipeptide.")
   end_time <- Sys.time()
   message("The execution time for building multipeptide:")

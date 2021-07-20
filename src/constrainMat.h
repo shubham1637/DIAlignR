@@ -51,6 +51,9 @@ void calcNoBeefMask(SimMatrix& MASK, double A1, double A2, double B1, double B2,
  * MASK and s must be of the same size. constrainVal is a penalizing factor for the MASK.
  */
 void constrainSimilarity(SimMatrix& s, const SimMatrix& MASK, double constrainVal);
+
+void calcNoBeefMask2(SimMatrix& MASK, std::vector<double> tA, std::vector<double> tB,
+                     std::vector<double> tBp, int noBeef, bool hardConstrain);
 } // namespace ConstrainMatrix
 } // namespace DIAlign
 

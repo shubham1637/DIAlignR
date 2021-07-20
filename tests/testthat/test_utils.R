@@ -129,10 +129,10 @@ test_that("test_ipfReassignFDR", {
   mzPntrs <- getMZMLpointers(fileInfo)
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs, lapply)
   multipeptide <- getMultipeptide(precursors, features, runType = "DIA_IPF")
-  globalFits <- DIAlignR:::getGlobalFits(refRuns, features, fileInfo, "loess", 0.01, 0.1, lapply)
-  RSE <- lapply(globalFits, DIAlignR:::getRSE, "loess")
-  globalFits <- lapply(globalFits, DIAlignR:::extractFit, "loess")
-  DIAlignR:::perBatch(iBatch=1, peptideIDs, multipeptide, refRuns, precursors, prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, applyFun = lapply)
+  globalFits <- getGlobalFits(refRuns, features, fileInfo, "loess", 0.01, 0.1, lapply)
+  RSE <- lapply(globalFits, getRSE, "loess")
+  globalFits <- lapply(globalFits, extractFit, "loess")
+  perBatch(iBatch=1, peptideIDs, multipeptide, refRuns, precursors, prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, applyFun = lapply)
   ## Clean up
   for(mz in mzPntrs){
     if(is(mz)[1] == "SQLiteConnection") DBI::dbDisconnect(mz)
@@ -141,7 +141,7 @@ test_that("test_ipfReassignFDR", {
   rm(prec2chromIndex, globalFits, RSE)
   rm(features)
 
-  finalTbl <- DIAlignR:::writeTables(fileInfo, multipeptide, precursors)
+  finalTbl <- writeTables(fileInfo, multipeptide, precursors)
   finalTbl <- ipfReassignFDR(dt = finalTbl, refRuns, fileInfo, params)
 
   expData <- data.table( peptide_id = rep(c(174L), 6),

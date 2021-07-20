@@ -71,5 +71,23 @@ void constrainSimilarity(SimMatrix& s, const SimMatrix& MASK, double constrainVa
   for(std::size_t i = 0; i < s.data.size(); i++)
     s.data[i] += constrainVal*MASK.data[i];
 }
+
+void calcNoBeefMask2(SimMatrix& MASK, std::vector<double> tA, std::vector<double> tB,
+                     std::vector<double> tBp, int noBeef, bool hardConstrain){
+  double deltaTime = (tB.back() - tB.front())/(tB.size()-1);
+  double mapped = 0.0;
+  double dist = 0.0;
+  for(int i = 0; i < MASK.n_row; i++){
+    for(int j = 0; j < MASK.n_col; j++){
+      dist = std::abs((tBp[i] - tB[j])/deltaTime);
+      if(round(dist) > noBeef){
+        MASK.data[i*MASK.n_col + j] = (hardConstrain) ? 1.0 : (dist-noBeef);
+      } else{
+        MASK.data[i*MASK.n_col + j] = 0.0;
+      }
+    }
+  }
+}
+
 } // namespace ConstrainMatrix
 } // namespace DIAlign

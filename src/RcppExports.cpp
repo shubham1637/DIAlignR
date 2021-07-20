@@ -113,8 +113,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // getAlignedTimesCpp
-NumericMatrix getAlignedTimesCpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd, std::string alignType, double adaptiveRT, std::string normalization, std::string simType, double B1p, double B2p, double goFactor, double geFactor, double cosAngleThresh, bool OverlapAlignment, double dotProdThresh, double gapQuantile, int kerLen, bool hardConstrain, double samples4gradient);
-RcppExport SEXP _DIAlignR_getAlignedTimesCpp(SEXP l1SEXP, SEXP l2SEXP, SEXP kernelLenSEXP, SEXP polyOrdSEXP, SEXP alignTypeSEXP, SEXP adaptiveRTSEXP, SEXP normalizationSEXP, SEXP simTypeSEXP, SEXP B1pSEXP, SEXP B2pSEXP, SEXP goFactorSEXP, SEXP geFactorSEXP, SEXP cosAngleThreshSEXP, SEXP OverlapAlignmentSEXP, SEXP dotProdThreshSEXP, SEXP gapQuantileSEXP, SEXP kerLenSEXP, SEXP hardConstrainSEXP, SEXP samples4gradientSEXP) {
+NumericMatrix getAlignedTimesCpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd, std::string alignType, double adaptiveRT, std::string normalization, std::string simType, const std::vector<double>& Bp, double goFactor, double geFactor, double cosAngleThresh, bool OverlapAlignment, double dotProdThresh, double gapQuantile, int kerLen, bool hardConstrain, double samples4gradient);
+RcppExport SEXP _DIAlignR_getAlignedTimesCpp(SEXP l1SEXP, SEXP l2SEXP, SEXP kernelLenSEXP, SEXP polyOrdSEXP, SEXP alignTypeSEXP, SEXP adaptiveRTSEXP, SEXP normalizationSEXP, SEXP simTypeSEXP, SEXP BpSEXP, SEXP goFactorSEXP, SEXP geFactorSEXP, SEXP cosAngleThreshSEXP, SEXP OverlapAlignmentSEXP, SEXP dotProdThreshSEXP, SEXP gapQuantileSEXP, SEXP kerLenSEXP, SEXP hardConstrainSEXP, SEXP samples4gradientSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -126,8 +126,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type adaptiveRT(adaptiveRTSEXP);
     Rcpp::traits::input_parameter< std::string >::type normalization(normalizationSEXP);
     Rcpp::traits::input_parameter< std::string >::type simType(simTypeSEXP);
-    Rcpp::traits::input_parameter< double >::type B1p(B1pSEXP);
-    Rcpp::traits::input_parameter< double >::type B2p(B2pSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type Bp(BpSEXP);
     Rcpp::traits::input_parameter< double >::type goFactor(goFactorSEXP);
     Rcpp::traits::input_parameter< double >::type geFactor(geFactorSEXP);
     Rcpp::traits::input_parameter< double >::type cosAngleThresh(cosAngleThreshSEXP);
@@ -137,7 +136,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type kerLen(kerLenSEXP);
     Rcpp::traits::input_parameter< bool >::type hardConstrain(hardConstrainSEXP);
     Rcpp::traits::input_parameter< double >::type samples4gradient(samples4gradientSEXP);
-    rcpp_result_gen = Rcpp::wrap(getAlignedTimesCpp(l1, l2, kernelLen, polyOrd, alignType, adaptiveRT, normalization, simType, B1p, B2p, goFactor, geFactor, cosAngleThresh, OverlapAlignment, dotProdThresh, gapQuantile, kerLen, hardConstrain, samples4gradient));
+    rcpp_result_gen = Rcpp::wrap(getAlignedTimesCpp(l1, l2, kernelLen, polyOrd, alignType, adaptiveRT, normalization, simType, Bp, goFactor, geFactor, cosAngleThresh, OverlapAlignment, dotProdThresh, gapQuantile, kerLen, hardConstrain, samples4gradient));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -212,8 +211,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // getChildXICpp
-List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd, std::string alignType, double adaptiveRT, std::string normalization, std::string simType, double B1p, double B2p, double goFactor, double geFactor, double cosAngleThresh, bool OverlapAlignment, double dotProdThresh, double gapQuantile, int kerLen, bool hardConstrain, double samples4gradient, double wRef, std::string splineMethod, std::string mergeStrategy, bool keepFlanks);
-RcppExport SEXP _DIAlignR_getChildXICpp(SEXP l1SEXP, SEXP l2SEXP, SEXP kernelLenSEXP, SEXP polyOrdSEXP, SEXP alignTypeSEXP, SEXP adaptiveRTSEXP, SEXP normalizationSEXP, SEXP simTypeSEXP, SEXP B1pSEXP, SEXP B2pSEXP, SEXP goFactorSEXP, SEXP geFactorSEXP, SEXP cosAngleThreshSEXP, SEXP OverlapAlignmentSEXP, SEXP dotProdThreshSEXP, SEXP gapQuantileSEXP, SEXP kerLenSEXP, SEXP hardConstrainSEXP, SEXP samples4gradientSEXP, SEXP wRefSEXP, SEXP splineMethodSEXP, SEXP mergeStrategySEXP, SEXP keepFlanksSEXP) {
+List getChildXICpp(Rcpp::List l1, Rcpp::List l2, int kernelLen, int polyOrd, std::string alignType, double adaptiveRT, std::string normalization, std::string simType, const std::vector<double>& Bp, double goFactor, double geFactor, double cosAngleThresh, bool OverlapAlignment, double dotProdThresh, double gapQuantile, int kerLen, bool hardConstrain, double samples4gradient, double wRef, std::string splineMethod, std::string mergeStrategy, bool keepFlanks);
+RcppExport SEXP _DIAlignR_getChildXICpp(SEXP l1SEXP, SEXP l2SEXP, SEXP kernelLenSEXP, SEXP polyOrdSEXP, SEXP alignTypeSEXP, SEXP adaptiveRTSEXP, SEXP normalizationSEXP, SEXP simTypeSEXP, SEXP BpSEXP, SEXP goFactorSEXP, SEXP geFactorSEXP, SEXP cosAngleThreshSEXP, SEXP OverlapAlignmentSEXP, SEXP dotProdThreshSEXP, SEXP gapQuantileSEXP, SEXP kerLenSEXP, SEXP hardConstrainSEXP, SEXP samples4gradientSEXP, SEXP wRefSEXP, SEXP splineMethodSEXP, SEXP mergeStrategySEXP, SEXP keepFlanksSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -225,8 +224,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type adaptiveRT(adaptiveRTSEXP);
     Rcpp::traits::input_parameter< std::string >::type normalization(normalizationSEXP);
     Rcpp::traits::input_parameter< std::string >::type simType(simTypeSEXP);
-    Rcpp::traits::input_parameter< double >::type B1p(B1pSEXP);
-    Rcpp::traits::input_parameter< double >::type B2p(B2pSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type Bp(BpSEXP);
     Rcpp::traits::input_parameter< double >::type goFactor(goFactorSEXP);
     Rcpp::traits::input_parameter< double >::type geFactor(geFactorSEXP);
     Rcpp::traits::input_parameter< double >::type cosAngleThresh(cosAngleThreshSEXP);
@@ -240,7 +238,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type splineMethod(splineMethodSEXP);
     Rcpp::traits::input_parameter< std::string >::type mergeStrategy(mergeStrategySEXP);
     Rcpp::traits::input_parameter< bool >::type keepFlanks(keepFlanksSEXP);
-    rcpp_result_gen = Rcpp::wrap(getChildXICpp(l1, l2, kernelLen, polyOrd, alignType, adaptiveRT, normalization, simType, B1p, B2p, goFactor, geFactor, cosAngleThresh, OverlapAlignment, dotProdThresh, gapQuantile, kerLen, hardConstrain, samples4gradient, wRef, splineMethod, mergeStrategy, keepFlanks));
+    rcpp_result_gen = Rcpp::wrap(getChildXICpp(l1, l2, kernelLen, polyOrd, alignType, adaptiveRT, normalization, simType, Bp, goFactor, geFactor, cosAngleThresh, OverlapAlignment, dotProdThresh, gapQuantile, kerLen, hardConstrain, samples4gradient, wRef, splineMethod, mergeStrategy, keepFlanks));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -271,12 +269,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_DIAlignR_getBaseGapPenaltyCpp", (DL_FUNC) &_DIAlignR_getBaseGapPenaltyCpp, 3},
     {"_DIAlignR_areaIntegrator", (DL_FUNC) &_DIAlignR_areaIntegrator, 10},
     {"_DIAlignR_sgolayCpp", (DL_FUNC) &_DIAlignR_sgolayCpp, 3},
-    {"_DIAlignR_getAlignedTimesCpp", (DL_FUNC) &_DIAlignR_getAlignedTimesCpp, 19},
+    {"_DIAlignR_getAlignedTimesCpp", (DL_FUNC) &_DIAlignR_getAlignedTimesCpp, 18},
     {"_DIAlignR_alignChromatogramsCpp", (DL_FUNC) &_DIAlignR_alignChromatogramsCpp, 20},
     {"_DIAlignR_doAlignmentCpp", (DL_FUNC) &_DIAlignR_doAlignmentCpp, 3},
     {"_DIAlignR_doAffineAlignmentCpp", (DL_FUNC) &_DIAlignR_doAffineAlignmentCpp, 4},
     {"_DIAlignR_splineFillCpp", (DL_FUNC) &_DIAlignR_splineFillCpp, 3},
-    {"_DIAlignR_getChildXICpp", (DL_FUNC) &_DIAlignR_getChildXICpp, 23},
+    {"_DIAlignR_getChildXICpp", (DL_FUNC) &_DIAlignR_getChildXICpp, 22},
     {"_DIAlignR_otherChildXICpp", (DL_FUNC) &_DIAlignR_otherChildXICpp, 8},
     {NULL, NULL, 0}
 };

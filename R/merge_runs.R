@@ -453,12 +453,9 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
       XICs.eXp.pep <- XICs.eXp[[analyte_chr]]
     }
 
-    B1p <- getPredict(globalFit, XICs.ref.pep[[1]][1,1], params[["globalAlignment"]])
-    len <- nrow(XICs.ref.pep[[1]])
-    B2p <- getPredict(globalFit, XICs.ref.pep[[1]][len,1], params[["globalAlignment"]])
-    if(is.na(B1p) || is.na(B2p) || B1p <=0 || B2p <= 0 || is.nan(B1p) || is.nan(B2p)){
-      B1p <- XICs.eXp.pep[[1]][1,1]
-      B2p <- XICs.eXp.pep[[1]][nrow(XICs.eXp.pep[[1]]),1]
+    Bp <- getPredict(globalFit, XICs.ref.pep[[1]][,1], params[["globalAlignment"]])
+    if(any(is.na(Bp) | Bp <=0 | is.nan(Bp))){
+      Bp <- seq(XICs.eXp.pep[[1]][1,1], XICs.eXp.pep[[1]][nrow(XICs.eXp.pep[[1]]),1], length.out = length(Bp))
     }
     nope <- any(sapply(seq_along(XICs.ref.pep), function(i) any(is.na(XICs.ref.pep[[i]])))) ||
             any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))
@@ -471,7 +468,7 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
     #### Merge chromatograms  ####
     merged_xics <- getChildXICpp(XICs.ref.pep, XICs.eXp.pep, params[["kernelLen"]], params[["polyOrd"]],
                   params[["alignType"]], adaptiveRT, params[["normalization"]],
-                  params[["simMeasure"]], B1p, B2p, params[["goFactor"]], params[["geFactor"]],
+                  params[["simMeasure"]], Bp, params[["goFactor"]], params[["geFactor"]],
                   params[["cosAngleThresh"]], params[["OverlapAlignment"]],
                   params[["dotProdThresh"]], params[["gapQuantile"]], params[["kerLen"]],
                   params[["hardConstrain"]], params[["samples4gradient"]], wRef,

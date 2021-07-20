@@ -108,10 +108,9 @@ test_that("test_getAlignedTimesCpp",{
   tVec.eXp <- XICs.eXp[[1]][, "time"] # Extracting time component
   len <- length(tVec.ref)
   lfun <- stats::approxfun(globalFit)
-  B1p <- lfun(tVec.ref[1])
-  B2p <- lfun(tVec.ref[len])
+  Bp <- lfun(tVec.ref)
   outData <- getAlignedTimesCpp(XICs.ref, XICs.eXp, kernelLen = 0L, polyOrd = 4L, alignType = "hybrid",
-                  adaptiveRT = 77.82315, normalization = "mean", simType = "dotProductMasked", B1p = B1p, B2p = B2p,
+                  adaptiveRT = 77.82315, normalization = "mean", simType = "dotProductMasked", Bp = Bp,
                   goFactor = 0.125, geFactor = 40, cosAngleThresh = 0.3, OverlapAlignment = TRUE,
                   dotProdThresh = 0.96, gapQuantile = 0.5, kerLen = 9, hardConstrain = FALSE, samples4gradient = 100)
 
@@ -264,10 +263,9 @@ test_that("test_getChildXICpp", {
   XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR
   XICs.ref <- lapply(XICs[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
   XICs.eXp <- lapply(XICs[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
-  B1p <- 4964.752
-  B2p <- 5565.462
+  Bp <- seq(4964.752, 5565.462, length.out = nrow(XICs.ref[[1]]))
   outData <- getChildXICpp(XICs.ref, XICs.eXp, 0, 4, alignType = "hybrid", adaptiveRT = 77.82315,
-                         normalization = "mean", simType = "dotProductMasked", B1p = B1p, B2p = B2p,
+                         normalization = "mean", simType = "dotProductMasked", Bp = Bp,
                          goFactor = 0.125, geFactor = 40, cosAngleThresh = 0.3, OverlapAlignment = TRUE,
                          dotProdThresh = 0.96, gapQuantile = 0.5, hardConstrain = FALSE, samples4gradient = 100,
                          wRef = 0.5, keepFlanks= TRUE, splineMethod = "natural", mergeStrategy = "avg")
@@ -286,8 +284,6 @@ test_that("test_otherChildXICpp", {
   XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR
   XICs.ref <- lapply(XICs[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
   XICs.eXp <- lapply(XICs[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]], as.matrix)
-  B1p <- 4964.752
-  B2p <- 5565.462
   data(masterXICs_DIAlignR, package="DIAlignR")
   expData <- masterXICs_DIAlignR
   outData <- otherChildXICpp(XICs.ref, XICs.eXp, 0L, 4L, as.matrix(expData[[2]][, 3:5]),
