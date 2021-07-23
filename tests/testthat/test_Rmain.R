@@ -48,15 +48,16 @@ test_that("test_getChromSimMatCpp",{
 })
 
 test_that("test_getGlobalAlignMaskCpp",{
-  tA <- c(3353.2, 3356.6, 3360.0, 3363.5)
-  tB <- c(3325.9, 3329.3, 3332.7, 3336.1)
-  B1p <- 3325.751; B2p <- 3336.119
+  tA <- c(1707.6, 1711, 1714.5, 1717.9, 1721.3, 1724.7, 1728.1, 1731.5, 1734.9, 1738.4)
+  tB <- c(1765.7, 1769.1, 1772.5, 1775.9, 1779.3, 1782.7, 1786.2, 1789.6, 1793, 1796.4)
+  tBp <- c(1786.9, 1790.35, 1793.9, 1797.36, 1800.81, 1804.26, 1807.71, 1811.17, 1814.62, 1818.17)
   noBeef <- 1
-  mask <- getGlobalAlignMaskCpp(tA, tB, B1p, B2p, noBeef, FALSE)
+  mask <- getGlobalAlignMaskCpp(tA, tB, tBp, noBeef, FALSE)
   outData <- round(mask, 3)
-  expData <-matrix(c(0.000, 0.000, 0.707, 1.414, 0.000, 0.000, 0.000, 0.707, 0.707, 0.000,
-             0.000, 0.000, 1.414, 0.707, 0.000, 0.000), 4, 4, byrow = FALSE)
-  expect_equal(outData, expData)
+  expData <- matrix(c(5.215,4.218,3.221,2.225,1.228,0,0,0,0.788, 1.785,
+           6.226,5.230,4.233,3.236,2.239,1.243,0,0,0, 0.774), nrow = 2, ncol = 10, byrow = TRUE)
+  expect_equal(outData[1:2,], expData)
+  expect_equal(sum(mask), 549.5987)
 })
 
 test_that("test_constrainSimCpp",{

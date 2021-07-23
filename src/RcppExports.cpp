@@ -38,18 +38,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // getGlobalAlignMaskCpp
-NumericMatrix getGlobalAlignMaskCpp(const std::vector<double>& tA, const std::vector<double>& tB, double B1p, double B2p, int noBeef, bool hardConstrain);
-RcppExport SEXP _DIAlignR_getGlobalAlignMaskCpp(SEXP tASEXP, SEXP tBSEXP, SEXP B1pSEXP, SEXP B2pSEXP, SEXP noBeefSEXP, SEXP hardConstrainSEXP) {
+NumericMatrix getGlobalAlignMaskCpp(const std::vector<double>& tA, const std::vector<double>& tB, const std::vector<double>& tBp, int noBeef, bool hardConstrain);
+RcppExport SEXP _DIAlignR_getGlobalAlignMaskCpp(SEXP tASEXP, SEXP tBSEXP, SEXP tBpSEXP, SEXP noBeefSEXP, SEXP hardConstrainSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::vector<double>& >::type tA(tASEXP);
     Rcpp::traits::input_parameter< const std::vector<double>& >::type tB(tBSEXP);
-    Rcpp::traits::input_parameter< double >::type B1p(B1pSEXP);
-    Rcpp::traits::input_parameter< double >::type B2p(B2pSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type tBp(tBpSEXP);
     Rcpp::traits::input_parameter< int >::type noBeef(noBeefSEXP);
     Rcpp::traits::input_parameter< bool >::type hardConstrain(hardConstrainSEXP);
-    rcpp_result_gen = Rcpp::wrap(getGlobalAlignMaskCpp(tA, tB, B1p, B2p, noBeef, hardConstrain));
+    rcpp_result_gen = Rcpp::wrap(getGlobalAlignMaskCpp(tA, tB, tBp, noBeef, hardConstrain));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -264,7 +263,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_DIAlignR_getSeqSimMatCpp", (DL_FUNC) &_DIAlignR_getSeqSimMatCpp, 4},
     {"_DIAlignR_getChromSimMatCpp", (DL_FUNC) &_DIAlignR_getChromSimMatCpp, 7},
-    {"_DIAlignR_getGlobalAlignMaskCpp", (DL_FUNC) &_DIAlignR_getGlobalAlignMaskCpp, 6},
+    {"_DIAlignR_getGlobalAlignMaskCpp", (DL_FUNC) &_DIAlignR_getGlobalAlignMaskCpp, 5},
     {"_DIAlignR_constrainSimCpp", (DL_FUNC) &_DIAlignR_constrainSimCpp, 3},
     {"_DIAlignR_getBaseGapPenaltyCpp", (DL_FUNC) &_DIAlignR_getBaseGapPenaltyCpp, 3},
     {"_DIAlignR_areaIntegrator", (DL_FUNC) &_DIAlignR_areaIntegrator, 10},

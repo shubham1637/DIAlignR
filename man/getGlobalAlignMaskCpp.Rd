@@ -4,16 +4,14 @@
 \alias{getGlobalAlignMaskCpp}
 \title{Outputs a mask for constraining similarity matrix}
 \usage{
-getGlobalAlignMaskCpp(tA, tB, B1p, B2p, noBeef = 50L, hardConstrain = FALSE)
+getGlobalAlignMaskCpp(tA, tB, tBp, noBeef = 50L, hardConstrain = FALSE)
 }
 \arguments{
-\item{tA}{(numeric) A numeric vector. This vector has equally spaced timepoints of XIC A.}
+\item{tA}{(numeric) This vector has equally spaced timepoints of XIC A.}
 
-\item{tB}{(numeric) A numeric vector. This vector has equally spaced timepoints of XIC B.}
+\item{tB}{(numeric) This vector has equally spaced timepoints of XIC B.}
 
-\item{B1p}{(numeric) Timepoint mapped by global fit for tA[1].}
-
-\item{B2p}{(numeric) Timepoint mapped by global fit for tA[length(tA)].}
+\item{tBp}{(numeric) mapping of tA to run B using some global fit.}
 
 \item{noBeef}{(integer) It defines the distance from the global fit, upto which no penalization is performed.\cr
 The window length = 2*noBeef.}
@@ -30,14 +28,15 @@ Outside of window, all elements of matrix are either equally weighted or weighte
 proportional to distance from window-boundry.
 }
 \examples{
-tA <- c(3353.2, 3356.6, 3360.0, 3363.5)
-tB <- c(3325.9, 3329.3, 3332.7, 3336.1)
-B1p <- 3325.751; B2p <- 3336.119
+tA <- c(1707.6, 1711, 1714.5, 1717.9, 1721.3, 1724.7, 1728.1, 1731.5, 1734.9, 1738.4)
+tB <- c(1765.7, 1769.1, 1772.5, 1775.9, 1779.3, 1782.7, 1786.2, 1789.6, 1793, 1796.4)
+tBp <- c(1786.9, 1790.35, 1793.9, 1797.36, 1800.81, 1804.26, 1807.71, 1811.17, 1814.62, 1818.17)
 noBeef <- 1
-mask <- getGlobalAlignMaskCpp(tA, tB, B1p, B2p, noBeef, FALSE)
+mask <- getGlobalAlignMaskCpp(tA, tB, tBp, noBeef, FALSE)
 round(mask, 3)
-matrix(c(0.000, 0.000, 0.707, 1.414, 0.000, 0.000, 0.000, 0.707, 0.707, 0.000,
-0.000, 0.000, 1.414, 0.707, 0.000, 0.000), 4, 4, byrow = FALSE)
+matrix(c( 5.215,4.218,4.221,2.225,1.228,0,0,0,0.788, 1.785,
+6.226,5.230,4.233,3.236,2.239,1.243,0,0,0, 0.774), nrow = 2, ncol = 10, byrow = FALSE)
+#image(mask) # A is on x-axis, B is on y-axis
 }
 \author{
 Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
