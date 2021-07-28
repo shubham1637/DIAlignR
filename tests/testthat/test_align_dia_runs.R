@@ -162,6 +162,7 @@ test_that("test_alignTargetedRuns_ptms",{
   params$useIdentifying <- TRUE
   params$unalignedFDR <- 0.05
   params$alignedFDR2 <- 0.05
+  params$globalAlignment <- "linear"
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp_ptms", params = params,
                     oswMerged = TRUE, runs = NULL, applyFun = lapply)
   outData <- read.table("temp_ptms.tsv", sep = "\t", header = TRUE)
