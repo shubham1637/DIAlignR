@@ -178,6 +178,7 @@ test_that("test_getChildXICs",{
   params[["polyOrd"]] <- 4L
   params[["keepFlanks"]] <- TRUE
   params[["globalAlignment"]] <- "linear"
+  params[["samples4gradient"]] <- 100L
   outData <- getChildXICs(runA = "run2", runB="run1", fileInfo, features, mzPntrs, precursors,
                prec2chromIndex, refRun, peptideScores, params)
   for(con in mzPntrs) DBI::dbDisconnect(con)

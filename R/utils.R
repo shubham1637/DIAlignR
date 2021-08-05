@@ -329,6 +329,10 @@ checkParams <- function(params){
     stop("Number of fractions must be greater than 1.")
   }
 
+  if(params[["hardConstrain"]]){
+    params[["samples4gradient"]] <- 1L
+  }
+
   if(params[["fraction"]] < 1 | params[["fraction"]] > params[["fractionNum"]]){
     stop("fraction must be between 1 and fractionNum.")
   }
@@ -425,7 +429,7 @@ paramsDIAlignR <- function(){
                   alignType = "hybrid", goFactor = 0.125, geFactor = 40,
                   cosAngleThresh = 0.3, OverlapAlignment = TRUE,
                   dotProdThresh = 0.96, gapQuantile = 0.5, kerLen = 9,
-                  hardConstrain = FALSE, samples4gradient = 100,
+                  hardConstrain = FALSE, samples4gradient = 1L,
                   fillMethod = "spline", splineMethod = "natural", mergeTime = "avg", smoothPeakArea = FALSE,
                   keepFlanks = TRUE, wRef = 0.5, batchSize = 1000L, transitionIntensity = FALSE,
                   fraction = 1L, fractionNum = 1L, lossy = FALSE, useIdentifying = FALSE)
@@ -629,7 +633,7 @@ ipfReassignFDR <- function(dt, refRuns, fileInfo, params){
   ## Remove run numnber id
   refRuns[, run:=NULL]
   ## Merge peptide Reference Run table with aligned results table
-  dt <- merge.data.table(dt, refRuns, by="peptide_id")
+  dt <- merge(dt, refRuns, by="peptide_id")
   ## Assign new FDRs
   ## 1. For aligned peaks that had a poor IPF FDR, assign MS2 FDR
   ## 2. For aligned peaks that have a poor IPF FDR and poor MS2 FDR, assign user defined alignedFDR2

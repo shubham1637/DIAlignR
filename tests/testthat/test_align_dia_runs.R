@@ -138,6 +138,7 @@ test_that("test_alignTargetedRuns_metabolomics",{
   params[["globalAlignmentFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"
   params[["runType"]] <- "DIA_Metabolomics"
+  params[["samples4gradient"]] <- 100L
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp_metabo", params = params,
                       oswMerged = TRUE, runs = NULL, applyFun = lapply)
   outData <- read.table("temp_metabo.tsv", sep = "\t", header = TRUE)
