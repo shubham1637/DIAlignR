@@ -49,6 +49,8 @@ Mask = s > quantile(s, dotProdThresh)\cr
 AllowDotProd= [Mask × cosine2Angle + (1 - Mask)] > cosAngleThresh\cr
 s_new= s × AllowDotProd}
 
+\item{Bp}{(numeric) Timepoint mapped by global fit for tA.}
+
 \item{goFactor}{(numeric) Penalty for introducing first gap in alignment. This value is multiplied by base gap-penalty.}
 
 \item{geFactor}{(numeric) Penalty for introducing subsequent gaps in alignment. This value is multiplied by base gap-penalty.}

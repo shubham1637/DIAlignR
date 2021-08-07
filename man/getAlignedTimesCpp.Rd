@@ -45,6 +45,8 @@ Mask = s > quantile(s, dotProdThresh)\cr
 AllowDotProd= [Mask × cosine2Angle + (1 - Mask)] > cosAngleThresh\cr
 s_new= s × AllowDotProd}
 
+\item{Bp}{(numeric) Timepoint mapped by global fit for tA.}
+
 \item{goFactor}{(numeric) Penalty for introducing first gap in alignment. This value is multiplied by base gap-penalty.}
 
 \item{geFactor}{(numeric) Penalty for introducing subsequent gaps in alignment. This value is multiplied by base gap-penalty.}
@@ -62,10 +64,6 @@ s_new= s × AllowDotProd}
 \item{hardConstrain}{(logical) if false; indices farther from noBeef distance are filled with distance from linear fit line.}
 
 \item{samples4gradient}{(numeric) This parameter modulates penalization of masked indices.}
-
-\item{B1p}{(numeric) Timepoint mapped by global fit for tA[1].}
-
-\item{B2p}{(numeric) Timepoint mapped by global fit for tA[length(tA)].}
 }
 \value{
 NumericMatrix Aligned indices of l1 and l2.

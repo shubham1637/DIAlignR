@@ -396,7 +396,7 @@ checkParams <- function(params){
 #' \item{simMeasure}{(string) must be selected from dotProduct, cosineAngle, crossCorrelation,
 #'   cosine2Angle, dotProductMasked, euclideanDist, covariance and correlation.}
 #' \item{alignType}{(numeric) available alignment methods are "global", "local" and "hybrid".}
-#' \item{goFactor}{(numeric) penalty for introducing first gap in alignment. This value is multiplied by base gap-penalty.}
+#' \item{goFactor}{(numeric) penalty for introducing first gap in alignment. This value is multiplied by base gap-penalty. Should be between 10-1000.}
 #' \item{geFactor}{(numeric) penalty for introducing subsequent gaps in alignment. This value is multiplied by base gap-penalty.}
 #' \item{cosAngleThresh}{(numeric) in simType = dotProductMasked mode, angular similarity should be higher than cosAngleThresh otherwise similarity is forced to zero.}
 #' \item{OverlapAlignment}{(logical) an input for alignment with free end-gaps. False: Global alignment, True: overlap alignment.}
