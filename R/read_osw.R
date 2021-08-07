@@ -268,19 +268,10 @@ getPrecursorByID <- function(analytes, fileInfo, oswMerged = TRUE, runType = "DI
   if(oswMerged == TRUE){
     # Get precursor information from merged.osw file
     oswName <- unique(fileInfo[["featureFile"]])
-    precursors <- fetchPrecursorsInfo(oswName, runType, analytes, maxPeptideFdr = 1.00)
   } else {
-    # Iterate over each file and collect precursor information
-    precursors <- data.table("transition_group_id" = integer(), "transition_id"= integer(), "peptide_id" = integer(),
-                             "sequence" = character(), "charge" = integer(), "group_label" = character(),
-                             "transition_ids" = list())
-    for(i in 1:nrow(fileInfo)){
-      oswName <- fileInfo[["featureFile"]][[i]]
-      temp <- fetchPrecursorsInfo2(oswName, runType, analytes, maxPeptideFdr = 1.00)
-      temp <- temp[!precursors, on = .(transition_group_id)] # Anti-join
-      precursors <- rbind(precursors, temp, use.names = FALSE)
-    }
+    oswName <- fileInfo[["featureFile"]][[1]]
   }
+  precursors <- fetchPrecursorsInfo(oswName, runType, analytes, maxPeptideFdr = 1.00)
   setkeyv(precursors, c("peptide_id", "transition_group_id"))
   message(precursors[,.N], " precursors are found.")
   precursors
