@@ -72,24 +72,38 @@ reIntensity <- function(df, Run, XICs, params){
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2020-05-28
 #'
-#' @importFrom magrittr %>%
+#' @import data.table
 #' @inheritParams alignTargetedRuns
-#' @param peakTable (data-frame) usually an output of alignTargetedRuns. Must have these columns: run, precursor, leftWidth, rightWidth.
-#' @param dataPath (string) path to xics and osw directory.
-#' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
-#' @return (data-frame)
+#' @param peakTable (data-table) usually an output of alignTargetedRuns. Must have these columns: precursor, run, intensity, leftWidth, rightWidth.
+#' @return (data-table)
 #' @seealso \code{\link{alignTargetedRuns}, \link{calculateIntensity}}
 #' @examples
-#' peakTable <- data.frame(precursor = c(1967L, 1967L, 2474L, 2474L),
+#' library(data.table)
+#' peakTable <- data.table(precursor = c(1967L, 1967L, 2474L, 2474L),
 #'                    run = rep(c("hroest_K120808_Strep10%PlasmaBiolRepl1_R03_SW_filt",
 #'                    "hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"), 2),
 #'                    intensity = c(186.166, 579.832, 47.9525, 3.7413),
 #'                    leftWidth = c(5001.76, 5025.66, 6441.51, 6516.6),
-#'                    rightWidth = c(5076.86, 5121.25, 6475.65, 6554.2), stringsAsFactors = FALSE)
+#'                    rightWidth = c(5076.86, 5121.25, 6475.65, 6554.2))
 #' dataPath <- system.file("extdata", package = "DIAlignR")
-#' newTable <- recalculateIntensity(peakTable, dataPath)
+#' params <- paramsDIAlignR()
+#' params$smoothPeakArea <- TRUE
+#' recalculateIntensity(peakTable, dataPath, params = params)
+#' peakTable <- data.table(precursor = c(1967L, 1967L, 2474L, 2474L),
+#'                    run = rep(c("hroest_K120808_Strep10%PlasmaBiolRepl1_R03_SW_filt",
+#'                    "hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"), 2),
+#'                    intensity = list(NA, NA, NA, NA),
+#'                    leftWidth = c(5001.76, 5025.66, 6441.51, 6516.6),
+#'                    rightWidth = c(5076.86, 5121.25, 6475.65, 6554.2))
+#' params$transitionIntensity <- TRUE
+#' recalculateIntensity(peakTable, dataPath, params = params)
 #' @export
 recalculateIntensity <- function(peakTable, dataPath = ".", oswMerged = TRUE, params = paramsDIAlignR()){
+  if(!all(colnames(peakTable) == c("precursor", "run", "intensity", "leftWidth", "rightWidth"))){
+    stop("Columns must be precursor, run, intensity, leftWidth, rightWidth in the same order.")
+  }
+  peakTable <- data.table::copy(peakTable)
+  data.table::setkeyv(peakTable, "run")
   runs <- unique(peakTable$run)
   analytes <- unique(peakTable$precursor)
   fileInfo <- getRunNames(dataPath, oswMerged, params)
@@ -97,6 +111,8 @@ recalculateIntensity <- function(peakTable, dataPath = ".", oswMerged = TRUE, pa
 
   ######### Get Precursors from the query and respectve chromatogram indices. ######
   precursors <- getPrecursorByID(analytes, fileInfo)
+  precursors[,peptide_id := NULL]
+  data.table::setkeyv(precursors, c("transition_group_id"))
 
   ######### Collect pointers for each mzML file. #######
   message("Collecting metadata from mzML files.")
@@ -105,29 +121,35 @@ recalculateIntensity <- function(peakTable, dataPath = ".", oswMerged = TRUE, pa
 
   ############# Get chromatogram Indices of precursors across all runs. ############
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs)
-
-  newArea <- list()
+  fetchXICs = extractXIC_group2
+  analytes <- precursors[, "transition_group_id"][[1]]
+  # Iterate through each run
   for (run in rownames(fileInfo)){
-    newArea[[run]] <- rep(NA_real_, length(analytes))
-    runname <- fileInfo[run, "runName"]
-    for (i in seq_along(analytes)){
-      analyte <- analytes[i]
-      df <- dplyr::filter(peakTable, .data$precursor == analyte, .data$run == runname) %>%
-        dplyr::select(.data$leftWidth, .data$rightWidth)
-      chromIndices <- prec2chromIndex[[run]][["chromatogramIndex"]][[i]]
-
-      # Get XIC_group from reference run. if missing, go to next analyte.
-      if(any(is.na(chromIndices))){
-        warning("Chromatogram indices for ", analyte, " are missing in ", fileInfo[run, "runName"])
-        message("Skipping ", analyte, " in ", fileInfo[run, "runName"], ".")
+    chromIndices <- prec2chromIndex[[run]][,chromatogramIndex]
+    con <- createTemp(mzPntrs[[run]], unlist(chromIndices))
+    # Fetch XICs
+    XICs <- lapply(seq_along(analytes), function(i){
+      cI <- chromIndices[[i]]
+      if(any(is.na(unlist(cI))) | is.null(unlist(cI))) return(NULL)
+      fetchXICs(con, cI)
+    })
+    names(XICs) <- as.character(analytes)
+    DBI::dbDisconnect(con)
+    # Calculate intensity for each analyte
+    for(i in seq_along(analytes)){
+      idx <- which(peakTable[["run"]] == fileInfo[run, "runName"] & peakTable[["precursor"]] == analytes[i])
+      xics <- XICs[[i]]
+      if(is.null(xics) || any(vapply(xics, missingInXIC, FALSE, USE.NAMES = FALSE))){
+        message("Chromatogram indices for precursor ", analytes[i], " are missing in ", fileInfo[run, "runName"])
+        message("Skipping precursor ", analytes[i], " in ", fileInfo[run, "runName"])
         next
-      } else {
-        if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
-        if(params[["chromFile"]] =="sqMass") fetchXIC = extractXIC_group2
-        XICs <- fetchXIC(mzPntrs[[run]], chromIndices = chromIndices)
       }
-      area <- calculateIntensity(XICs, df[1, "leftWidth"], df[1, "rightWidth"], params)
-      newArea[[run]][i] <- area
+      if(length(idx) == 0L) next
+      left <- .subset2(peakTable, "leftWidth")[[idx]]
+      right <- .subset2(peakTable, "rightWidth")[[idx]]
+      intensity <- calculateIntensity(xics, left, right, params)
+      intensity <- ifelse(params[["transitionIntensity"]], list(intensity), intensity)
+      data.table::set(peakTable, idx, c(3L), intensity)
     }
   }
 
@@ -135,13 +157,8 @@ recalculateIntensity <- function(peakTable, dataPath = ".", oswMerged = TRUE, pa
     if(is(mz)[1] == "SQLiteConnection") DBI::dbDisconnect(mz)
     if(is(mz)[1] == "mzRpwiz") rm(mz)
   }
-
-  newArea <- as.data.frame(do.call(cbind, newArea))
-  newArea$precursor <- analytes
-  newArea <- tidyr::pivot_longer(newArea, -.data$precursor, names_to = "run",
-                                 values_to = "intensity") %>% as.data.frame()
-  newArea$run <- fileInfo[newArea$run, "runName"]
-  newArea
+  data.table::setkeyv(peakTable, c("precursor"))
+  peakTable
 }
 
 reIntensity2 <- function(df, idx, XICs, pk, params){

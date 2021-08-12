@@ -12,7 +12,7 @@ recalculateIntensity(
 )
 }
 \arguments{
-\item{peakTable}{(data-frame) usually an output of alignTargetedRuns. Must have these columns: run, precursor, leftWidth, rightWidth.}
+\item{peakTable}{(data-table) usually an output of alignTargetedRuns. Must have these columns: precursor, run, intensity, leftWidth, rightWidth.}
 
 \item{dataPath}{(string) path to xics and osw directory.}
 
@@ -21,20 +21,31 @@ recalculateIntensity(
 \item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
 }
 \value{
-(data-frame)
+(data-table)
 }
 \description{
 For the give peak boundary in peakTable, the function extracts raw chromatograms and recalculate intensities.
 }
 \examples{
-peakTable <- data.frame(precursor = c(1967L, 1967L, 2474L, 2474L),
+library(data.table)
+peakTable <- data.table(precursor = c(1967L, 1967L, 2474L, 2474L),
                    run = rep(c("hroest_K120808_Strep10\%PlasmaBiolRepl1_R03_SW_filt",
                    "hroest_K120809_Strep0\%PlasmaBiolRepl2_R04_SW_filt"), 2),
                    intensity = c(186.166, 579.832, 47.9525, 3.7413),
                    leftWidth = c(5001.76, 5025.66, 6441.51, 6516.6),
-                   rightWidth = c(5076.86, 5121.25, 6475.65, 6554.2), stringsAsFactors = FALSE)
+                   rightWidth = c(5076.86, 5121.25, 6475.65, 6554.2))
 dataPath <- system.file("extdata", package = "DIAlignR")
-newTable <- recalculateIntensity(peakTable, dataPath)
+params <- paramsDIAlignR()
+params$smoothPeakArea <- TRUE
+recalculateIntensity(peakTable, dataPath, params = params)
+peakTable <- data.table(precursor = c(1967L, 1967L, 2474L, 2474L),
+                   run = rep(c("hroest_K120808_Strep10\%PlasmaBiolRepl1_R03_SW_filt",
+                   "hroest_K120809_Strep0\%PlasmaBiolRepl2_R04_SW_filt"), 2),
+                   intensity = list(NA, NA, NA, NA),
+                   leftWidth = c(5001.76, 5025.66, 6441.51, 6516.6),
+                   rightWidth = c(5076.86, 5121.25, 6475.65, 6554.2))
+params$transitionIntensity <- TRUE
+recalculateIntensity(peakTable, dataPath, params = params)
 }
 \seealso{
 \code{\link{alignTargetedRuns}, \link{calculateIntensity}}
