@@ -1,12 +1,14 @@
+# Top-Level rule that enforces a successful run of the workflow to produce a "dialignr.tsv" file.
 rule all:
 	input:
-		"dialignr.tsv"
+		"dialignr.tsv" 
 
+# Rule to run alignTargetedRuns from DIAlignR
 rule dialignr:
 	input:
-		"inst/ptms/"
+		"inst/ptms/" # This is the input dataPath
 	output:
-		"dialignr.tsv"
+		"dialignr.tsv" # This is the expected output file
 	params:
 		outFile="dialignr",
 		oswMerged="TRUE",
