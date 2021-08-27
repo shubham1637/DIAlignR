@@ -15,9 +15,9 @@ RUN apt-get update && \
     apt-get install -y libxml2-dev && \
     apt-get install -y libglpk-dev
 
-# RUN R -e "if(!requireNamespace('BiocManager', quietly = TRUE)){ install.packages('BiocManager')}; BiocManager::install('DIAlignR')"
+RUN R -e "if(!requireNamespace('BiocManager', quietly = TRUE)){ install.packages('BiocManager')}; BiocManager::install('DIAlignR')"
 
-RUN R -e "if(!requireNamespace('devtools', quietly = TRUE)){ install.packages('devtools')}; devtools::install_github('singjc/DIAlignR', ref='feature/docker')"
+#RUN R -e "if(!requireNamespace('devtools', quietly = TRUE)){ install.packages('devtools')}; devtools::install_github('singjc/DIAlignR', ref='feature/docker')"
 
 RUN R -e "if (!requireNamespace('BiocManager', quietly = TRUE)){ install.packages('BiocManager')}; BiocManager::install('BiocParallel')"
 
