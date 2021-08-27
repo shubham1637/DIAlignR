@@ -80,7 +80,9 @@ To run the snakemake workflow, you need to ensure you have [snakemake](https://s
 To change parameters for your experiment, edit the input, output and parameters in the [snakemake/Snakefile.dialignr](https://github.com/singjc/DIAlignR/blob/feature/docker/snakemake/Snakefile.dialignr) file.
 
 ## Run Command
+Snakefile.dialignr will need to be in the same directory as **cmd.sh**
 ```
+$cd snakemake
 $bash cmd.sh
 ```
 
