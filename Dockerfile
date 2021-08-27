@@ -21,6 +21,8 @@ RUN R -e "if(!requireNamespace('BiocManager', quietly = TRUE)){ install.packages
 
 RUN R -e "if (!requireNamespace('BiocManager', quietly = TRUE)){ install.packages('BiocManager')}; BiocManager::install('BiocParallel')"
 
+RUN R -e "if(!requireNamespace('devtools', quietly = TRUE)){ install.packages('devtools')}; devtools::ins    tall_github('omegahat/Rcompression')"
+
 COPY Rscript/alignTargetedRuns_cli.R /alignTargetedRuns_cli.R
 
 ENTRYPOINT ["Rscript", "alignTargetedRuns_cli.R"]
