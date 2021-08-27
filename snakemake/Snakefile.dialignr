@@ -1,0 +1,18 @@
+rule all:
+	input:
+		"dialignr.tsv"
+
+rule dialignr:
+	input:
+		"inst/ptms/"
+	output:
+		"dialignr.tsv"
+	params:
+		outFile="dialignr",
+		oswMerged="TRUE",
+		params="context:experiment-wide,maxFdrQuery:0.05",
+		applyFun="lapply"
+	singularity:
+		"docker://singjust/dialignr:2.0.0"
+	shell:
+		"Rscript /alignTargetedRuns_cli.R --dataPath={input} --outFile={params.outFile} --oswMerged={params.oswMerged} --params={params.params} --applyFun={params.applyFun}"
