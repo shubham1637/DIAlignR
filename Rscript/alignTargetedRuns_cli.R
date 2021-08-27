@@ -25,8 +25,8 @@ alignTargetedRuns_cli <- function(){
     eval(parse(text = args[["regBioCP"]]))
   }
   # Main call to DIAlignR's alingment of Targeted Runs
-  # alignTargetedRuns(dataPath=args[["dataPath"]], outFile=args[["outFile"]], params=args[["params"]], oswMerged=args[["oswMerged"]],
-  #                   runs=args[["runs"]], peps=args[["peps"]], refRun=args[["refRun"]], applyFun=args[["applyFun"]])
+  DIAlignR::alignTargetedRuns(dataPath=args[["dataPath"]], outFile=args[["outFile"]], params=args[["params"]], oswMerged=args[["oswMerged"]],
+                     runs=args[["runs"]], peps=args[["peps"]], refRun=args[["refRun"]], applyFun=args[["applyFun"]])
 }
 
 #' Parse command line arguments and create named argument list
