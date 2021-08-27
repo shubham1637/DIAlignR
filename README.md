@@ -31,6 +31,59 @@ doxygen doc/Doxyfile
 # Installing Rcompression
 `devtools::install_github("omegahat/Rcompression")`
 
+# Docker
+## Pull image
+```
+docker push singjust/dialignr:2.0.0
+```
+
+## Build image
+```
+docker build --no-cache -t singjust/dialignr:2.0.0 .
+```
+
+## Run Command
+```
+$docker run -it --rm -v `pwd`:/data singjust/dialignr:2.0.0
+
+Name:
+        Run DIAlignR's alignTargetedRuns via the Command Line
+
+    Usage:
+        Rscript alignTargetedRuns_cli.R --dataPath=/data/ [args] | --help
+
+        Example: Rscript alignTargetedRuns_cli.R --dataPath=/data/osw/ --params=context:experiment-wide,maxFdrQuery:0.01
+
+        Example2: Rscript alignTargetedRuns_cli.R --dataPath=/data/osw/ --oswMerged=FALSE --params=context:experiment-wide,maxFdrQuery:0.01 --runs=run0,run1,run2 --peps=0,1 --applyFun=BiocParallel::bplapply --regBioCP=BiocParallel::register(BiocParallel::MulticoreParam(workers=4,progressbar=TRUE))
+
+    Options:
+        --dataPath: path to xics and osw directory.
+        --outFile: name of the output file.
+        --oswMerged: TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
+        --params: Parameters for the alignment functions generated from DIAlignR::paramsDIAlignR(). Separate keys and values using a ':', and separate parameters using ','. Example: --params=context:experiment-wide,maxFdrQuery:0.01,fitEMG:TRUE
+        --runs: names of xics file without extension. Separate runs using ','. Example: --runs=run0,run1,run2
+        --refRun: reference for alignment. If no run is provided, m-score is used to select reference run.
+        --peps: ids of peptides to be aligned. If NULL, align all peptides. Separate peptide ids using ','. Example--peps=1,2,3
+        --appyFun: value must be either lapply or BiocParallel::bplapply.
+        --regBioCP: If using BiocParallel::bplapply, register cores to use. Example: --regBioCP=BiocParallel::register(BiocParallel::MulticoreParam(workers=4,progressbar=TRUE)) . Make sure there are no spaces in this command
+        --help: Display this help message
+```
+
+## Example
+```
+docker run -it --rm -v `pwd`:/data singjust/dialignr:2.0.0 --dataPath=/data/ --outFile=/data/dialignr
+```
+
+# Snakemake
+To run the snakemake workflow, you need to ensure you have [snakemake](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html) and [singularity](https://sylabs.io/guides/3.0/user-guide/installation.html#build-and-install-an-rpm) installed.
+
+To change parameters for your experiment, edit the input, output and parameters in the [snakemake/Snakefile.dialignr](https://github.com/singjc/DIAlignR/blob/feature/docker/snakemake/Snakefile.dialignr) file.
+
+## Run Command
+```
+$bash cmd.sh
+```
+
 # Citation
 If you use the provided algorithms or the package, please cite our paper:
 
