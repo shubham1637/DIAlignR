@@ -9,6 +9,7 @@ progTree1(
   params,
   outFile = "DIAlignR",
   oswMerged = TRUE,
+  peps = NULL,
   runs = NULL,
   newickTree = NULL,
   applyFun = lapply
@@ -22,6 +23,8 @@ progTree1(
 \item{outFile}{(string) name of the output file.}
 
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+
+\item{peps}{(integer) ids of peptides to be aligned. If NULL, align all peptides.}
 
 \item{runs}{(string) names of xics file without extension.}
 

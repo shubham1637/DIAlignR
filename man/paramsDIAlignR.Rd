@@ -14,7 +14,9 @@ A list of parameters:
 \item{maxIPFFdrQuery}{(numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_IPF.QVALUE less than itself. (For PTM IPF use)}
 \item{maxPeptideFdr}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_PEPTIDE.QVALUE less than itself.}
 \item{analyteFDR}{(numeric) the upper limit of feature FDR to be it considered for building tree.}
-\item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared" or "count.}
+\item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared", "count" or "RSE".}
+\item{treeAgg}{(string) the method used for agglomeration while performing hierarchical clustering. Must be either "single", "average" or "complete".}
+\item{alignToRoot}{(logical) if TRUE, align leaves to the root in hierarchical clustering, else use already save aligned vectors.}
 \item{context}{(string) used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".}
 \item{unalignedFDR}{(numeric) must be between 0 and maxFdrQuery. Features below unalignedFDR are
  considered for quantification even without the RT alignment.}

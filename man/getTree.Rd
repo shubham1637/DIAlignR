@@ -4,7 +4,7 @@
 \alias{getTree}
 \title{Create a phylogenetic tree}
 \usage{
-getTree(distMat)
+getTree(distMat, method = "average")
 }
 \arguments{
 \item{distMat}{(dist) a pairwise distance matrix.}
