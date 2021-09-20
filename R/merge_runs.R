@@ -56,7 +56,7 @@
 getNodeRun <- function(runA, runB, mergeName, dataPath, fileInfo, features, mzPntrs, prec2chromIndex,
                        precursors, params, adaptiveRTs, refRuns, multipeptide, peptideScores, ropenms, applyFun = lapply){
   peptides <- unique(precursors$peptide_id)
-
+  wFunc <- params[["wF"]]
   ##### Select reference for each peptide and update peptideScores. #####
   var1 <- rep(NA_integer_, length(peptides))
   var2 <- rep(NA_integer_, length(peptides))
@@ -73,7 +73,7 @@ getNodeRun <- function(runA, runB, mergeName, dataPath, fileInfo, features, mzPn
     if(length(iA)+length(iB) > 0){
       set(temp, idx, c(2L, 3L, 4L),
           list(max(temp$score[c(iA, iB)], -1000, na.rm = TRUE),
-               min(temp$pvalue[c(iA, iB)], 0.99, na.rm = TRUE), min(temp$qvalue[c(iA, iB)], 0.99, na.rm = TRUE)))}
+               wFunc(temp$pvalue[c(iA, iB)], 0.99, na.rm = TRUE), min(temp$qvalue[c(iA, iB)], 0.99, na.rm = TRUE)))}
     temp <- multipeptide[[i]]
     iA <- which(temp[["run"]] == runA)
     iB <- which(temp[["run"]] == runB)
@@ -243,18 +243,25 @@ getChildFeature <- function(XICs, alignedVec, df.ref, df.eXp, i.ref, i.eXp, para
   mutate_score <- as.numeric(f[, 5L])
   k1 <- sapply(f[, 2L], function(k) any(is.na(k))) # index of missing intensity
   mutate_score[k1] <- NA_real_ # Missing intensity.
+  inten <- sapply(f[, 2L], sum)
+  inten[k1] <- NA_real_ # Missing intensity.
 
   r <- 0L
   while(any(is.na(peak_rank)) & !all(is.na(mutate_score)) & r < 5L) {
-    idx <- which.min(mutate_score)
+    minM <- min(mutate_score, na.rm = TRUE)
+    idx <- which(abs(mutate_score - minM) <= 0)
+    idx <- idx[which.max(inten[idx])]
+    #idx <- which.min(mutate_score)
     r <- r+1L
     mutate_score[idx] <- NA_real_
+    inten[idx] <- NA_real_
     peak_rank[idx] <- r
     pk <- c(f[idx, 3L][[1]], f[idx, 4L][[1]])
     # Remove other peaks that have conflicting boundaries
     rmv <- sapply(1:nrow(f), function(i) checkOverlap(pk, c(f[i, 3L][[1]], f[i, 4L][[1]])))
     rmv[idx] <- FALSE
     mutate_score[rmv] <- NA_real_
+    inten[rmv] <- NA_real_
   }
 
   if(r == 0L) return(NULL) # No peak group can be ranked hence return NULL
