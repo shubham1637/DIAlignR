@@ -5,7 +5,4 @@ Item 4 : Plot retention time distribution.
 Item 5: Use MS1 in alignment.
 Item 6: Change Traceback to lower-case.
 Item 7: Param silent in DPosition and chromatogramPeak.
-Item 8: Implement for alignType = "local" and "hybrid"
-Item 9: Implement a function to requantify across all runs.
 Item 10: Normalization of runs within mastermap
-Item 11: Rename properly: rooted tree/ unrooted tree
