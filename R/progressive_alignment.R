@@ -60,17 +60,20 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   }
 
   #### Get OpenSWATH peak-groups and their retention times. ##########
+  start_time <- Sys.time()
   if(params[["transitionIntensity"]]){
     features <- getTransitions(fileInfo, params[["maxFdrQuery"]], params[["runType"]], applyFun)
   } else{
     features <- getFeatures(fileInfo, params[["maxFdrQuery"]], params[["maxIPFFdrQuery"]], params[["runType"]], applyFun)
   }
+  message("The execution time for getting features:")
   end_time <- Sys.time()
+  print(end_time - start_time)
 
   #### Get the guidance tree. ####
   start_time <- Sys.time()
   distMat <- distMatrix(features, params, applyFun)
-  tree <- getTree(distMat) # Check validity of tree: Names are run and master only.
+  tree <- getTree(distMat, params[["treeAgg"]]) # Check validity of tree: Names are run and master only.
   if(!is.null(newickTree)){
     tree2 <- ape::read.tree(text = newickTree)
     tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
@@ -125,8 +128,16 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
 
   #### Map Ids from the master1 run to all parents. ####
   start_time <- Sys.time()
-  traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
-               precursors, adaptiveRTs, refRuns, params, applyFun)
+  setRootRank(tree, dataPath, fileInfo,multipeptide,prec2chromIndex,mzPntrs, precursors,params)
+
+  # Either traverse down with pre-calculated alignment.
+  if(params[["alignToRoot"]]){
+    alignToRoot(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
+                params, applyFun)
+  }else{
+    traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
+                 precursors, adaptiveRTs, refRuns, params, applyFun)
+  }
   end_time <- Sys.time()
   message("The execution time for transfering peaks from root to runs:")
   print(end_time - start_time)
@@ -171,7 +182,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
 #' @inheritParams progAlignRuns
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
-progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
+progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, peps = NULL,
                   runs = NULL, newickTree = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   if(params[["chromFile"]] == "mzML"){
@@ -190,6 +201,11 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]],
                               params[["maxPeptideFdr"]], params[["level"]])
+  if(!is.null(peps)){
+    precursors <- precursors[peptide_id %in% peps, ]
+    if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
+    setkeyv(precursors, c("peptide_id", "transition_group_id"))
+  }
 
   #### Get OpenSWATH peak-groups and their retention times. ##########
   start_time <- Sys.time()
@@ -205,7 +221,7 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   #### Get the guidance tree. ####
   start_time <- Sys.time()
   distMat <- distMatrix(features, params, applyFun)
-  tree <- getTree(distMat) # Check validity of tree: Names are run and master only.
+  tree <- getTree(distMat, params[["treeAgg"]]) # Check validity of tree: Names are run and master only.
   if(!is.null(newickTree)){
     tree2 <- ape::read.tree(text = newickTree)
     tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
@@ -272,6 +288,7 @@ progSplit2 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
     features <- features[tree$tip.label]
     masters <- tree$node.label
   } else{
+    # There is only a single-leaf.
     fileInfo <- fileInfo[rownames(fileInfo) %in% tree,]
     features <- features[tree]
     masters <- NULL
@@ -402,8 +419,16 @@ progComb3 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
 
   #### Map Ids from the master1 run to all parents. ####
   start_time <- Sys.time()
-  traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
-               precursors, adaptiveRTs, refRuns, params, applyFun)
+  setRootRank(tree, dataPath, fileInfo,multipeptide,prec2chromIndex,mzPntrs, precursors,params)
+
+  # Either traverse down with pre-calculated alignment.
+  if(params[["alignToRoot"]]){
+    alignToRoot(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
+                params, applyFun)
+  }else{
+    traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
+                 precursors, adaptiveRTs, refRuns, params, applyFun)
+  }
   end_time <- Sys.time()
   message("The execution time for transfering peaks from root to runs:")
   print(end_time - start_time)

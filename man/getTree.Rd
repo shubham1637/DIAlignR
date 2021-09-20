@@ -20,12 +20,17 @@ m <- matrix(c(0,1,2,3, 1,0,1.5,1.5, 2,1.5,0,1, 3,1.5,1,0), byrow = TRUE,
             ncol = 4, dimnames = list(c("run1", "run2", "run3", "run4"),
                                       c("run1", "run2", "run3", "run4")))
 distMat <- as.dist(m, diag = FALSE, upper = FALSE)
-labels(distMat); length(distMat)
 \dontrun{
-getTree(distMat)
+tree <- getTree(distMat)
 }
 tree <- ape::read.tree(text = "(run1:9,(run2:7,run0:2)master2:5)master1;")
-plot(tree, show.node.label = TRUE)
+plot(tree, type = "phylogram", show.node.label = TRUE)
+ape::axisPhylo(1)
+plot(tree, type = "unrooted", show.node.label = TRUE)
+ape::edgelabels(tree$edge.length)
+tree <- ape::nj(distMat) # Neighbor-Joining tree
+plot(tree, type = "unrooted", show.node.label = TRUE)
+ape::edgelabels(tree$edge.length)
 }
 \seealso{
 \code{\link[phangorn]{upgma}, \link{getNodeIDs}}

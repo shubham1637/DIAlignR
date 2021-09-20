@@ -51,14 +51,19 @@ nrDesc <- function(tree) {
 #'             ncol = 4, dimnames = list(c("run1", "run2", "run3", "run4"),
 #'                                       c("run1", "run2", "run3", "run4")))
 #' distMat <- as.dist(m, diag = FALSE, upper = FALSE)
-#' labels(distMat); length(distMat)
 #' \dontrun{
-#' getTree(distMat)
+#' tree <- getTree(distMat)
 #' }
 #' tree <- ape::read.tree(text = "(run1:9,(run2:7,run0:2)master2:5)master1;")
-#' plot(tree, show.node.label = TRUE)
-getTree <- function(distMat){
-  tree <- phangorn::upgma(distMat)
+#' plot(tree, type = "phylogram", show.node.label = TRUE)
+#' ape::axisPhylo(1)
+#' plot(tree, type = "unrooted", show.node.label = TRUE)
+#' ape::edgelabels(tree$edge.length)
+#' tree <- ape::nj(distMat) # Neighbor-Joining tree
+#' plot(tree, type = "unrooted", show.node.label = TRUE)
+#' ape::edgelabels(tree$edge.length)
+getTree <- function(distMat, method = "average"){
+  tree <- phangorn::upgma(distMat, method) # Use "single" to have it closely associate with MST.
   tree <- ape::reorder.phylo(tree, "postorder")
   tree <- ape::makeNodeLabel(tree, method = "number", prefix = "master")
   message("alignment order of runs in Newick format:")
@@ -213,6 +218,50 @@ traverseUp <- function(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIn
 }
 
 
+setRootRank <- function(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs, precursors,params){
+  if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
+  if(params[["chromFile"]] =="sqMass") fetchXIC = extractXIC_group2
+  vertices <- getNodeIDs(tree)
+  ord <- rev(tree$edge[,1])
+  num_merge <- length(ord)/2
+
+  # set alignment rank for the master1 run.
+  master1 <- names(vertices)[vertices == ord[1]]
+  peptideIDs <- unique(precursors$peptide_id)
+  invisible(lapply(seq_along(peptideIDs), function(i){
+    ##### Set alignment rank in the master1 #####
+    peptide <- peptideIDs[i]
+    df <- multipeptide[[i]]
+    indices <- which(df$run == master1)
+    refIdx <- indices[which(.subset2(df, "peak_group_rank")[indices] == 1L)]
+    refIdx <- refIdx[which.min(.subset2(df, "m_score")[refIdx])]
+    if(length(refIdx) == 0) return(NULL)
+    set(df, refIdx, 10L, 1L)
+
+    ##### Set alignment rank for other precursors #####
+    idx <- precursors[.(peptide), which = TRUE]
+    analytes <- .subset2(precursors, "transition_group_id")[idx]
+
+    if(length(analytes)>1){
+      ##### Get XIC_group from reference run. if missing, return unaligned features #####
+      chromIndices <- prec2chromIndex[[master1]][["chromatogramIndex"]][idx]
+      if(any(is.na(unlist(chromIndices))) | is.null(unlist(chromIndices))){
+        warning("Chromatogram indices for peptide ", peptide, " are missing in ", fileInfo[master1, "runName"])
+        message("Skipping peptide ", peptide, " in ", master1)
+        return(NULL)
+      } else {
+        XICs <- lapply(chromIndices, function(iM) fetchXIC(mzPntrs[[master1]], chromIndices = iM))
+        names(XICs) <- as.character(analytes)
+      }
+      setOtherPrecursors(df, refIdx, XICs, analytes, params)
+    }
+  }))
+  # Done
+  message("master1 has set alignment ranks.")
+  invisible(NULL)
+}
+
+
 #' Traverses down from the root to leaves
 #'
 #' Features of the root node are propagated to all leaves node. Aligned features are set/added in the
@@ -262,44 +311,10 @@ traverseUp <- function(tree, dataPath, fileInfo, features, mzPntrs, prec2chromIn
 #' }
 traverseDown <- function(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs, precursors,
                          adaptiveRTs, refRuns, params, applyFun = lapply){
-  if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
-  if(params[["chromFile"]] =="sqMass") fetchXIC = extractXIC_group2
   vertices <- getNodeIDs(tree)
   ord <- rev(tree$edge[,1])
   num_merge <- length(ord)/2
   junctions <- 2*(1:num_merge)-1
-
-  # set alignment rank for the master1 run.
-  master1 <- names(vertices)[vertices == ord[1]]
-  peptideIDs <- unique(precursors$peptide_id)
-  invisible(lapply(seq_along(peptideIDs), function(i){
-    ##### Set alignment rank in the master1 #####
-    peptide <- peptideIDs[i]
-    df <- multipeptide[[i]]
-    indices <- which(df$run == master1)
-    refIdx <- indices[which(.subset2(df, "peak_group_rank")[indices] == 1L)]
-    refIdx <- refIdx[which.min(.subset2(df, "m_score")[refIdx])]
-    if(length(refIdx) == 0) return(NULL)
-    set(df, refIdx, 10L, 1L)
-
-    ##### Set alignment rank for other precursors #####
-    idx <- precursors[.(peptide), which = TRUE]
-    analytes <- .subset2(precursors, "transition_group_id")[idx]
-
-    if(length(analytes)>1){
-      ##### Get XIC_group from reference run. if missing, return unaligned features #####
-      chromIndices <- prec2chromIndex[[master1]][["chromatogramIndex"]][idx]
-      if(any(is.na(unlist(chromIndices))) | is.null(unlist(chromIndices))){
-        warning("Chromatogram indices for peptide ", peptide, " are missing in ", fileInfo[master1, "runName"])
-        message("Skipping peptide ", peptide, " in ", master1)
-        return(NULL)
-      } else {
-        XICs <- lapply(chromIndices, function(iM) fetchXIC(mzPntrs[[master1]], chromIndices = iM))
-        names(XICs) <- as.character(analytes)
-      }
-      setOtherPrecursors(df, refIdx, XICs, analytes, params)
-    }
-  }))
 
   # Traverse from root to leaf node.
   for(i in junctions){
@@ -312,7 +327,6 @@ traverseDown <- function(tree, dataPath, fileInfo, multipeptide, prec2chromIndex
     # Get parents to master aligned time vectors.
     filename <- file.path(dataPath, paste0(master, "_av.rds"))
     alignedVecs <- readRDS(file = filename)
-
     adaptiveRT <- max(adaptiveRTs[[paste(runA, runB, sep = "_")]],
                       adaptiveRTs[[paste(runB, runA, sep = "_")]])
 
@@ -465,5 +479,29 @@ alignToMaster <- function(ref, eXp, alignedVecs, refRun, adaptiveRT, multipeptid
     invisible(NULL)
   }))
   message(eXp, " has been aligned to ", ref, ".")
+  invisible(NULL)
+}
+
+alignToRoot <- function(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
+                        params, applyFun = lapply){
+  # Remove master runs from fileInfo.
+  fileInfo <- fileInfo[c(grep("run", rownames(fileInfo)), which(rownames(fileInfo) == "master1")),]
+
+  # Calculate global alignment as star.
+  peptideIDs <- unique(precursors$peptide_id)
+  refRuns <- data.table("peptide_id" = peptideIDs, "run" = "master1", key = "peptide_id")
+  globalFits <- getGlobalFits(refRuns, features, fileInfo, params[["globalAlignment"]],
+                              params[["globalAlignmentFdr"]], params[["globalAlignmentSpan"]], applyFun)
+  RSE <- applyFun(globalFits, getRSE, params[["globalAlignment"]])
+  globalFits <- applyFun(globalFits, extractFit, params[["globalAlignment"]])
+
+  #### Star-align all runs to master1. ###########
+  message("Performing reference-based alignment.")
+  start_time <- Sys.time()
+  num_of_batch <- ceiling(length(multipeptide)/params[["batchSize"]])
+  invisible(
+    lapply(1:num_of_batch, perBatch, peptideIDs, multipeptide, refRuns, precursors,
+           prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, lapply)
+  )
   invisible(NULL)
 }

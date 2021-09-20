@@ -423,17 +423,23 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
       message("Skipping peptide ", peptide, " across all runs.")
       return(invisible(NULL))
     }
+
     ##### Set alignment rank for all precrusors of the peptide in the reference run #####
-    analytes <- as.integer(names(XICs.ref))
-    refIdx <- which(DT[["run"]] == ref & DT[["peak_group_rank"]] == 1)
-    refIdx <- refIdx[which.min(DT$m_score[refIdx])]
-    if(length(refIdx)==0) {
-      message("Features for peptide ", peptide, " is missing in ", fileInfo[ref, "runName"])
-      message("Skipping peptide ", peptide, " across all runs.")
-      return(invisible(NULL))
+    if(!any(DT[["run"]] == ref & DT[["alignment_rank"]] == 1L, na.rm = TRUE)){
+      analytes <- as.integer(names(XICs.ref))
+      refIdx <- which(DT[["run"]] == ref & DT[["peak_group_rank"]] == 1L)
+      refIdx <- refIdx[which.min(DT$m_score[refIdx])]
+      if(length(refIdx)==0) {
+        message("Features for peptide ", peptide, " is missing in ", fileInfo[ref, "runName"])
+        message("Skipping peptide ", peptide, " across all runs.")
+        return(invisible(NULL))
+      }
+      set(DT, i = refIdx, 10L, 1L)
+      setOtherPrecursors(DT, refIdx, XICs.ref, analytes, params)
+    } else{
+      refIdx <- which(DT[["run"]] == ref & DT[["alignment_rank"]] == 1L)
+      refIdx <- refIdx[which.min(DT$m_score[refIdx])]
     }
-    set(DT, i = refIdx, 10L, 1L)
-    setOtherPrecursors(DT, refIdx, XICs.ref, analytes, params)
 
     ##### Align all runs to reference run and set their alignment rank #####
     exps <- setdiff(rownames(fileInfo), ref)
