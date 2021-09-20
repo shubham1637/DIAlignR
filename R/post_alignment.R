@@ -179,6 +179,7 @@ setAlignmentRank <- function(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT
     idx <- tempi[which(idx)]
     if(any(.subset2(df, "m_score")[idx] <= params[["alignedFDR1"]], na.rm = TRUE)){
       # Select peak with biggest overlap
+      idx <- idx[which(.subset2(df, "m_score")[idx] <= params[["alignedFDR1"]])]
       idx <- idx[which.max(overlapLen(df, narwPk, idx))]
       set(df, i = idx, "alignment_rank", 1L)
       if(params[["recalIntensity"]]){
