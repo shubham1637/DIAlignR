@@ -244,6 +244,14 @@ testAlignObj <- function(){
 checkParams <- function(params){
   if(!(params[["chromFile"]] %in% c("mzML", "sqMass"))) stop("chromFile must either be mzML or sqMass.")
 
+  if(!any(params[["treeDist"]] %in% c("rsquared", "count",  "RSE"))){
+    stop("treeDist must be either rsquared, count or RSE.")
+  }
+
+  if(!any(params[["treeAgg"]] %in% c("single", "average",  "complete"))){
+    stop("treeAgg must be either single, average or complete.")
+  }
+
   if(params[["context"]] != "experiment-wide" & params[["context"]] != "global"){
     stop("context must either be experiment-wide or global for the alignment.")
   }
@@ -368,7 +376,9 @@ checkParams <- function(params){
 #' \item{maxIPFFdrQuery}{(numeric) A numeric value between 0 and 1. It is used to filter features from osw file which have SCORE_IPF.QVALUE less than itself. (For PTM IPF use)}
 #' \item{maxPeptideFdr}{(numeric) a numeric value between 0 and 1. It is used to filter peptides from osw file which have SCORE_PEPTIDE.QVALUE less than itself.}
 #' \item{analyteFDR}{(numeric) the upper limit of feature FDR to be it considered for building tree.}
-#' \item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared" or "count.}
+#' \item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared", "count" or "RSE".}
+#' \item{treeAgg}{(string) the method used for agglomeration while performing hierarchical clustering. Must be either "single", "average" or "complete".}
+#' \item{alignToRoot}{(logical) if TRUE, align leaves to the root in hierarchical clustering, else use already save aligned vectors.}
 #' \item{context}{(string) used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".}
 #' \item{unalignedFDR}{(numeric) must be between 0 and maxFdrQuery. Features below unalignedFDR are
 #'  considered for quantification even without the RT alignment.}
@@ -419,8 +429,9 @@ checkParams <- function(params){
 #' @export
 paramsDIAlignR <- function(){
   params <- list( runType = "DIA_Proteomics", chromFile = "sqMass",
-                  maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, maxPeptideFdr = 0.01, analyteFDR = 0.01, treeDist = "rsquared",
-                  context = "global", unalignedFDR = 0.01, alignedFDR1 = 0.01, alignedFDR2 = 0.05, level = "Peptide",
+                  maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, maxPeptideFdr = 0.01,
+                  analyteFDR = 0.01, treeDist = "count", treeAgg = "single", alignToRoot = FALSE,
+                  context = "global", unalignedFDR = 0.00, alignedFDR1 = 0.05, alignedFDR2 = 0.05, level = "Peptide",
                   integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
                   recalIntensity = FALSE, fillMissing = TRUE, baseSubtraction = TRUE,
                   XICfilter = "sgolay", polyOrd = 4L, kernelLen = 11L,
@@ -430,8 +441,8 @@ paramsDIAlignR <- function(){
                   cosAngleThresh = 0.3, OverlapAlignment = TRUE,
                   dotProdThresh = 0.96, gapQuantile = 0.5, kerLen = 9,
                   hardConstrain = FALSE, samples4gradient = 1L,
-                  fillMethod = "spline", splineMethod = "natural", mergeTime = "avg", smoothPeakArea = FALSE,
-                  keepFlanks = TRUE, wRef = 0.5, batchSize = 1000L, transitionIntensity = FALSE,
+                  wF = base::min, fillMethod = "spline", splineMethod = "natural", mergeTime = "avg", smoothPeakArea = FALSE,
+                  keepFlanks = TRUE, batchSize = 1000L, transitionIntensity = FALSE,
                   fraction = 1L, fractionNum = 1L, lossy = FALSE, useIdentifying = FALSE)
   params
 }
@@ -649,19 +660,41 @@ missingInXIC <- function(XICs){
 }
 
 distMatrix <- function(features, params, applyFun = lapply){
-  if(params[["treeDist"]] == "rsquared"){
-    distMat <- distMat.RT(features, params, applyFun)
-  } else{
+  strategy <- params[["treeDist"]]
+  message("Calculating distance matrix using ", strategy)
+  if(strategy == "rsquared"){
+    distMat <- distMat.rSqrd(features, params, applyFun)
+  } else if(strategy == "count"){
     distMat <- distMat.count(features, params, applyFun)
+  } else if(strategy == "RSE"){
+    distMat <- distMat.RSE(features, params, applyFun)
+  } else{
+    stop("treeDist must be either rsquared, count or RSE.")
   }
   stats::as.dist(distMat, diag = FALSE, upper = FALSE)
 }
 
-distMat.RT <- function(features, params, applyFun = lapply){
+distMat.RSE <- function(features, params, applyFun = lapply){
+  ##### Get distances among runs based on the Residual Standard Error (RSE). #####
+  # Uses params[["globalAlignmentFdr"]] for cut-off because this will be used for global alignment.
+  runs <- names(features)
+  rseMat <- sapply(runs, function(ref){
+    unlist(applyFun(runs, function(eXp){
+      fit <- getGlobalAlignment(features, ref, eXp,  params[["globalAlignment"]], params[["globalAlignmentFdr"]], params[["globalAlignmentSpan"]])
+      getRSE(fit,  params[["globalAlignment"]])
+    }))
+  }, USE.NAMES = FALSE)
+  # rseMat <- rseMat/max(rseMat) # The denominator should be the length of XICs.
+  colnames(rseMat) <- rownames(rseMat) <- runs
+  rseMat
+}
+
+distMat.rSqrd <- function(features, params, applyFun = lapply){
+  # Uses params[["globalAlignmentFdr"]] for cut-off because this will be used for global alignment.
   runs <- names(features)
   distMat <- sapply(runs, function(ref){
     c(applyFun(runs, function(eXp){
-      RUNS_RT <- tryCatch(expr = getRTdf(features, ref, eXp, params[["analyteFDR"]]),
+      RUNS_RT <- tryCatch(expr = getRTdf(features, ref, eXp, params[["globalAlignmentFdr"]]),
                           error = function(c) matrix(c(0,0), nrow=1L)
       )
       n <- nrow(RUNS_RT)
@@ -678,14 +711,14 @@ distMat.RT <- function(features, params, applyFun = lapply){
 
 distMat.count <- function(features, params, applyFun = lapply){
   ##### Get distances among runs based on the number of high-quality features. #####
+  # Use params[["analyteFDR"]] instead of params[["globalAlignmentFdr"]] to provide control about features to choose.
   tmp <- applyFun(features, function(df)
     df[df[["m_score"]] <= params[["analyteFDR"]] & df[["peak_group_rank"]] == 1L, "transition_group_id"][[1]])
   #tmp <- tmp[order(names(tmp), decreasing = FALSE)]
-  allIDs <- unique(unlist(tmp, recursive = FALSE, use.names = TRUE))
-  allIDs <- sort(allIDs)
   simMat <- crossprod(table(utils::stack(tmp))) # Number of common peaks in each pair
-  distMat <- length(allIDs) - simMat
-  distMat <- distMat/length(allIDs)
-  #distMat <- stats::dist(distMat, method = "manhattan")
+  a <- sapply(tmp, length)
+  m <- matrix(rep(a, each = length(a)) + rep(a, times = length(a)), nrow = length(a))
+  distMat <- 1-(2*simMat/m) # 1 - 2*nCommon/nA + nB
   distMat
 }
+

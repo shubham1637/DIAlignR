@@ -16,14 +16,17 @@ getMST(distMat)
 Builds a minimum spanning tree from the distance.
 }
 \examples{
-m <- matrix(c(0,1,2,3, 1,0,1.5,1.5, 2,1.5,0,1, 3,1.5,1,0), byrow = TRUE,
+m <- matrix(c(0,13,21,22, 13,0,12,13, 21,12,0,13, 22,13,13,0), byrow = TRUE,
             ncol = 4, dimnames = list(c("run1", "run2", "run3", "run4"),
                                       c("run1", "run2", "run3", "run4")))
 distMat <- as.dist(m, diag = FALSE, upper = FALSE)
 \dontrun{
-x <- getMST(distMat)
-g1 <- igraph::graph_from_edgelist(edges1, directed = FALSE)
-plot(x)
+x <- as.data.frame(getMST(distMat))
+weights <- reshape2::melt(as.matrix(distMat))
+weights$Var <- paste(weights$Var1, weights$Var2, sep = "_")
+x$weight <- weights[match(paste(x[,1], x[,2], sep = "_"), weights$Var), "value"]
+g1 <- igraph::graph_from_data_frame(x, directed = FALSE)
+plot(g1, edge.label = igraph::E(g1)$weight)
 }
 }
 \seealso{

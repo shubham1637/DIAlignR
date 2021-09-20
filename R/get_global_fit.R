@@ -168,7 +168,7 @@ getRSE <- function(fit, globalAlignment){
   } else{
     res <- fit$residuals
   }
-  if(length(res) == 2) return(0)
+  if(length(res) <= 2) return(NA_real_)
   RSE <- sqrt(sum((res)^2)/(length(res)-2))
   RSE
 }
