@@ -13,7 +13,8 @@ RUN apt-get update && \
     apt-get install -y libssl-dev && \
     apt-get install -y libnetcdf-dev && \
     apt-get install -y libxml2-dev && \
-    apt-get install -y libglpk-dev
+    apt-get install -y libglpk-dev && \
+    apt-get install -y libbz2-dev
 
 RUN R -e "if(!requireNamespace('BiocManager', quietly = TRUE)){ install.packages('BiocManager')}; BiocManager::install('DIAlignR')"
 

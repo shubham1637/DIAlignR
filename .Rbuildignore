@@ -21,3 +21,6 @@ src/build
 ^src/doc_pages$
 ^vignettes/DIAlignR-vignette.R$
 ^vignettes/DIAlignR-vignette.html$
+snakemake/
+Rscrip/
+Dockerfile
