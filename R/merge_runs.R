@@ -460,16 +460,16 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
       XICs.eXp.pep <- XICs.eXp[[analyte_chr]]
     }
 
-    Bp <- getPredict(globalFit, XICs.ref.pep[[1]][,1], params[["globalAlignment"]])
-    if(any(is.na(Bp) | Bp <=0 | is.nan(Bp))){
-      Bp <- seq(XICs.eXp.pep[[1]][1,1], XICs.eXp.pep[[1]][nrow(XICs.eXp.pep[[1]]),1], length.out = length(Bp))
-    }
     nope <- any(sapply(seq_along(XICs.ref.pep), function(i) any(is.na(XICs.ref.pep[[i]])))) ||
             any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))
     if(nope){
       message("Missing values in the chromatogram of ", paste0(analytes_chr, sep = " "), "in ",
               runA, " or ", runB)
       return(list(vector(mode = "list", length = length(analytes_chr)), NULL)) # Missing values in chromatogram
+    }
+    Bp <- getPredict(globalFit, XICs.ref.pep[[1]][,1], params[["globalAlignment"]])
+    if(any(is.na(Bp) | Bp <=0 | is.nan(Bp))){
+      Bp <- seq(XICs.eXp.pep[[1]][1,1], XICs.eXp.pep[[1]][nrow(XICs.eXp.pep[[1]]),1], length.out = length(Bp))
     }
 
     #### Merge chromatograms  ####

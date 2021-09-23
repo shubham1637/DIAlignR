@@ -189,6 +189,7 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
     if(is.null(ropenms)) stop("ropenms is required to write chrom.mzML files.")
   }
   params <- checkParams(params)
+  if(params[["alignToRoot"]]) stop("Can't do with this function. Use progAlignRuns instead.")
 
   #### Get filenames from .osw file and check consistency between osw and mzML files. #################
   fileInfo <- getRunNames(dataPath, oswMerged, params)
@@ -423,12 +424,11 @@ progComb3 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
 
   # Either traverse down with pre-calculated alignment.
   if(params[["alignToRoot"]]){
-    alignToRoot(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
-                params, applyFun)
-  }else{
-    traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
-                 precursors, adaptiveRTs, refRuns, params, applyFun)
+    warning("Can't align to root with this function. Use progAlignRuns instead.")
   }
+
+  traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
+               precursors, adaptiveRTs, refRuns, params, applyFun)
   end_time <- Sys.time()
   message("The execution time for transfering peaks from root to runs:")
   print(end_time - start_time)
