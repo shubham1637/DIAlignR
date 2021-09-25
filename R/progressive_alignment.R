@@ -189,7 +189,6 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
     if(is.null(ropenms)) stop("ropenms is required to write chrom.mzML files.")
   }
   params <- checkParams(params)
-  if(params[["alignToRoot"]]) stop("Can't do with this function. Use progAlignRuns instead.")
 
   #### Get filenames from .osw file and check consistency between osw and mzML files. #################
   fileInfo <- getRunNames(dataPath, oswMerged, params)
@@ -423,12 +422,10 @@ progComb3 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
   setRootRank(tree, dataPath, fileInfo,multipeptide,prec2chromIndex,mzPntrs, precursors,params)
 
   # Either traverse down with pre-calculated alignment.
-  if(params[["alignToRoot"]]){
-    warning("Can't align to root with this function. Use progAlignRuns instead.")
+  if(!params[["alignToRoot"]]){
+    traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
+                 precursors, adaptiveRTs, refRuns, params, applyFun)
   }
-
-  traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
-               precursors, adaptiveRTs, refRuns, params, applyFun)
   end_time <- Sys.time()
   message("The execution time for transfering peaks from root to runs:")
   print(end_time - start_time)
@@ -528,6 +525,67 @@ progSplit4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
   outFile <- paste(outFile, params[["fraction"]], params[["fractionNum"]], sep = "_")
   save(multipeptide, fileInfo, refRuns, adaptiveRTs,
        file = file.path(dataPath, paste0(outFile, ".temp.RData")))
+  filename <- paste0(outFile, ".tsv", sep = "")
+  finalTbl <- writeTables(fileInfo, multipeptide, precursors)
+  if(params[["transitionIntensity"]]){
+    finalTbl[,intensity := sapply(intensity,function(x) paste(round(x, 3), collapse=", "))]
+  }
+  utils::write.table(finalTbl, file = filename, sep = "\t", row.names = FALSE, quote = FALSE)
+  message("Retention time alignment across runs is done.")
+  message(paste0(filename, " file has been written."))
+
+  #### End of function. #####
+  alignmentStats(finalTbl, params)
+  message("DONE DONE.")
+}
+
+#' Step 4 for progressive alignment
+#'
+#' This is needed when leaves of the tree are directly aligned to the root
+#'
+#' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-3500-8152
+#'
+#' License: (c) Author (2021) + GPL-3
+#' Date: 2021-09-25
+#' @inheritParams progAlignRuns
+#' @seealso \code{\link{progAlignRuns}}
+#' @export
+alignToRoot4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, applyFun = lapply){
+  load(file = file.path(dataPath, paste0(outFile, "_prog1.RData")))
+  trees <- cutTree(tree, params[["fractionNum"]])
+  tree <- trees[[params[["fraction"]]]]
+  if(is(tree, "phylo")){
+    fileInfo <- fileInfo[rownames(fileInfo) %in% (tree$tip.label),]
+    features <- features[tree$tip.label]
+  } else{
+    # There is only a single-leaf.
+    fileInfo <- fileInfo[rownames(fileInfo) %in% tree,]
+    features <- features[tree]
+  }
+
+  filename <- file.path(dataPath, paste0(outFile, "_", "all","_", params[["fractionNum"]], ".rds"))
+  x <- readRDS(filename)
+  fileInfo <- rbind(fileInfo, x[[1]]["master1",])
+  multipeptide <- x[[2]]
+  features[["master1"]] <- x[[6]][["master1"]]
+
+  #### Collect pointers for each mzML file. #######
+  message("Collecting metadata from mzML files.")
+  mzPntrs <- list2env(getMZMLpointers(fileInfo), hash = TRUE)
+  message("Metadata is collected from mzML files.")
+
+  #### Get chromatogram Indices of precursors across all runs. ############
+  message("Collecting chromatogram indices for all precursors.")
+  prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs, applyFun)
+
+  alignToRoot(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
+              params, applyFun)
+
+  #### Write tables to the disk  #######
+  outFile <- paste(outFile, params[["fraction"]], params[["fractionNum"]], sep = "_")
+  save(multipeptide, fileInfo, file = file.path(dataPath, paste0(outFile, ".temp.RData")))
   filename <- paste0(outFile, ".tsv", sep = "")
   finalTbl <- writeTables(fileInfo, multipeptide, precursors)
   if(params[["transitionIntensity"]]){

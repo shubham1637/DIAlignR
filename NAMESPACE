@@ -2,6 +2,7 @@
 
 export(alignChromatogramsCpp)
 export(alignTargetedRuns)
+export(alignToRoot4)
 export(areaIntegrator)
 export(childXICs)
 export(constrainSimCpp)
