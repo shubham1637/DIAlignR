@@ -24,6 +24,7 @@ test_that("test_getNodeRun",{
   params[["globalAlignment"]] <- "loess"
   params[["globalAlignmentFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"
+  params[["baseSubtraction"]] <- TRUE
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   mzPntrs <- list2env(getMZMLpointers(fileInfo))
 
@@ -91,6 +92,7 @@ test_that("test_getChildFeature",{
   data(masterXICs_DIAlignR, package="DIAlignR")
   newXICs <- masterXICs_DIAlignR
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
   dataPath <- system.file("extdata", package = "DIAlignR")
   fileInfo <- getRunNames(dataPath = dataPath)
   features <- getFeatures(fileInfo, maxFdrQuery = 1.00, runType = "DIA_Proteomics")
@@ -140,6 +142,7 @@ test_that("test_trfrParentFeature",{
   timeParent <- newXICs[[2]][, c("tAligned.ref", "alignedChildTime")]
   colnames(timeParent) <- c("tAligned", "alignedChildTime")
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
   df <- data.frame(transition_group_id = 4618L,
                    feature_id = bit64::as.integer64(1:5),
                    RT = c(5238.35, 5395.79, 5519.05, 5022.30, 5054.13),

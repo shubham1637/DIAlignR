@@ -7,6 +7,7 @@ test_that("test_alignTargetedRuns",{
   params[["XICfilter"]] <- "none"
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
+  params[["baseSubtraction"]] <- TRUE
   expect_message(
     alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                       runs = NULL, applyFun = lapply)
@@ -31,6 +32,7 @@ test_that("test_alignTargetedRuns",{
   params[["batchSize"]] <- 10L
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
+  params[["baseSubtraction"]] <- TRUE
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                       runs = runs, applyFun = lapply)
   outData <- read.table("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
@@ -52,6 +54,7 @@ test_that("test_alignTargetedRuns",{
   params[["context"]] <- "experiment-wide"
   params[["transitionIntensity"]] <- TRUE
   params[["globalAlignment"]] <- "linear"
+  params[["baseSubtraction"]] <- TRUE
   expect_message(
     alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                       runs = NULL, applyFun = lapply)
@@ -75,6 +78,7 @@ test_that("test_alignTargetedRuns",{
   params[["context"]] <- "experiment-wide"
   peps <- c(8496L, 15879L, 19800L)
   params[["transitionIntensity"]] <- TRUE
+  params[["baseSubtraction"]] <- TRUE
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                     refRun = "hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt",
                     runs = NULL, peps = peps, applyFun = lapply)
@@ -139,6 +143,7 @@ test_that("test_alignTargetedRuns_metabolomics",{
   params[["context"]] <- "experiment-wide"
   params[["runType"]] <- "DIA_Metabolomics"
   params[["samples4gradient"]] <- 100L
+  params[["baseSubtraction"]] <- TRUE
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp_metabo", params = params,
                       oswMerged = TRUE, runs = NULL, applyFun = lapply)
   outData <- read.table("temp_metabo.tsv", sep = "\t", header = TRUE)
@@ -164,6 +169,7 @@ test_that("test_alignTargetedRuns_ptms",{
   params$unalignedFDR <- 0.05
   params$alignedFDR2 <- 0.05
   params$globalAlignment <- "linear"
+  params[["baseSubtraction"]] <- TRUE
   alignTargetedRuns(dataPath = dataPath,  outFile = "temp_ptms", params = params,
                     oswMerged = TRUE, runs = NULL, applyFun = lapply)
   outData <- read.table("temp_ptms.tsv", sep = "\t", header = TRUE)
@@ -182,10 +188,12 @@ test_that("test_alignToRef",{
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
   params[["maxPeptideFdr"]] <- 0.05
+  params[["unalignedFDR"]] <- 0.01
   params[["context"]] <- "experiment-wide"
   params$kernelLen <- 13L
   params[["globalAlignment"]] <- "linear"
   params[["globalAlignmentFdr"]] <- 0.05
+  params[["baseSubtraction"]] <- TRUE
   fileInfo <- getRunNames(dataPath, oswMerged = TRUE, params)
   precursors <- getPrecursors(fileInfo, oswMerged= TRUE, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]])
   precursors <- precursors[precursors$peptide_id %in% c("7040", "9861", "14383"),]
@@ -253,6 +261,7 @@ test_that("test_perBatch",{
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
   params[["context"]] <- "experiment-wide"
+  params[["baseSubtraction"]] <- TRUE
   params$kernelLen <- 13L
   params[["globalAlignmentFdr"]] <- 0.05
   params[["maxPeptideFdr"]] <- 0.05

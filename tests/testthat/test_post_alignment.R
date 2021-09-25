@@ -38,6 +38,7 @@ test_that("test_setAlignmentRank", {
   data(multipeptide_DIAlignR, package="DIAlignR")
   data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
   adaptiveRT <- 38.66
   df <- data.table::data.table(multipeptide_DIAlignR[["14383"]])
   setkeyv(df, "run")
@@ -135,6 +136,7 @@ test_that("test_setOtherPrecursors", {
   data(multipeptide_DIAlignR, package="DIAlignR")
   data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
 
   df <- data.table::data.table(multipeptide_DIAlignR[["14383"]])
   XICs.eXp <- list()

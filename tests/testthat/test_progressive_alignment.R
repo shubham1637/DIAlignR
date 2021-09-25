@@ -7,6 +7,9 @@ test_that("test_progAlignRuns", {
   params[["maxPeptideFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"
   params[["globalAlignment"]] <- "linear"
+  params$treeDist <- "rsquared"
+  params[["baseSubtraction"]] <- TRUE
+  params[["unalignedFDR"]] <- 0.01
   BiocParallel::register(BiocParallel::MulticoreParam())
   params[["chromFile"]] <- "sqMass"
   progAlignRuns(dataPath, params = params, outFile = "temp", ropenms = NULL, applyFun = BiocParallel::bplapply)
@@ -28,6 +31,8 @@ test_that("test_progAlignRuns", {
 test_that("test_progAlignRuns2", {
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
+  params[["unalignedFDR"]] <- 0.01
   params[["kernelLen"]] <- 9L
   params[["maxPeptideFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"

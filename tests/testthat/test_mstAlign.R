@@ -23,10 +23,11 @@ test_that("test_traverseMST",{
 test_that("test_mstAlignRuns",{
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
   params[["context"]] <- "experiment-wide"
   peps <- c(8496L, 15879L, 19800L)
   params[["transitionIntensity"]] <- TRUE
-  tree <- cbind(c("run2", "run2"), c("run1", "run0"))
+  tree <- "run2 run2\nrun1 run0"
   mstAlignRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                runs = NULL, peps = peps, mstNet = tree, applyFun = lapply)
   outData <- read.table("temp.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
@@ -47,10 +48,12 @@ test_that("test_mstAlignRuns",{
 
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
   params[["maxPeptideFdr"]] <- 0.05
   params[["XICfilter"]] <- "none"
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
+  params[["treeDist"]] <- "rsquared"
   expect_message(
     mstAlignRuns(dataPath = dataPath,  outFile = "temp", params = params, oswMerged = TRUE,
                       runs = NULL, applyFun = lapply)
@@ -71,8 +74,10 @@ test_that("test_mstAlignRuns",{
 test_that("test_MSTperBatch",{
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
+  params[["unalignedFDR"]] <- 0.01
+  params[["baseSubtraction"]] <- TRUE
   params[["context"]] <- "experiment-wide"
-  params$kernelLen <- 13L
+  params[["kernelLen"]] <- 13L
   params[["globalAlignmentFdr"]] <- 0.05
   params[["maxPeptideFdr"]] <- 0.05
   params$batchSize <- 1L
@@ -120,6 +125,8 @@ test_that("test_MSTperBatch",{
 test_that("test_alignToRefMST",{
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
+  params[["unalignedFDR"]] <- 0.01
+  params[["baseSubtraction"]] <- TRUE
   params[["maxPeptideFdr"]] <- 0.05
   params[["context"]] <- "experiment-wide"
   params$kernelLen <- 13L

@@ -31,6 +31,7 @@ test_that("test_calculateIntensity", {
   left <- 2.472833334
   right <- 3.022891666
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
   outData <- calculateIntensity(list(df), left, right, params)
   expect_equal(outData, 6645331.33866)
 
@@ -64,7 +65,7 @@ test_that("test_recalculateIntensity", {
   expOutput <- data.table(precursor = c(1967L, 1967L, 2474L, 2474L),
                           run = rep(c("hroest_K120808_Strep10%PlasmaBiolRepl1_R03_SW_filt",
                                       "hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"), 2),
-                          intensity = c(136.509, 526.932, 36.099, 3.741),
+                          intensity = c(186.166288, 582.069568, 49.424775, 7.380512),
                           leftWidth = c(5001.76, 5025.66, 6441.51, 6516.6),
                           rightWidth = c(5076.86, 5121.25, 6475.65, 6554.2),
                           key="precursor")
@@ -77,6 +78,7 @@ test_that("test_reIntensity", {
   data(multipeptide_DIAlignR, package="DIAlignR")
   data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
   params <- paramsDIAlignR()
+  params[["baseSubtraction"]] <- TRUE
   XICs.eXp <- list()
   df <- data.table::data.table(multipeptide_DIAlignR[["14383"]])
   XICs.eXp[["4618"]] <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]

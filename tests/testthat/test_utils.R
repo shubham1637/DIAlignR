@@ -107,7 +107,6 @@ test_that("test_checkOverlap",{
   expect_true(checkOverlap(c(1.1, 3.1), c(2.1, 2.5)))
   expect_true(checkOverlap(c(1.1, 3.1), c(0.1, 9.1)))
   expect_false(checkOverlap(c(1.1, 3.1), c(3.2, 7.1)))
-
 })
 
 test_that("test_ipfReassignFDR", {
@@ -119,6 +118,7 @@ test_that("test_ipfReassignFDR", {
   params$maxIPFFdrQuery <- 1
   params$useIdentifying <- TRUE
   params$unalignedFDR <- 0.05
+  params$alignedFDR1 <- 0.05
   params$alignedFDR2 <- 0.05
   params$globalAlignment <- "linear"
   params$samples4gradient <- 100L
@@ -132,8 +132,8 @@ test_that("test_ipfReassignFDR", {
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs, lapply)
   multipeptide <- getMultipeptide(precursors, features, runType = "DIA_IPF")
   globalFits <- getGlobalFits(refRuns, features, fileInfo, "linear", 0.01, 0.1, lapply)
-  RSE <- lapply(globalFits, getRSE, "linear")
-  globalFits <- lapply(globalFits, extractFit, "linear")
+  RSE <- lapply(globalFits, getRSE, params$globalAlignment)
+  globalFits <- lapply(globalFits, extractFit, params$globalAlignment)
   perBatch(iBatch=1, peptideIDs, multipeptide, refRuns, precursors, prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, applyFun = lapply)
   ## Clean up
   for(mz in mzPntrs){
@@ -149,10 +149,10 @@ test_that("test_ipfReassignFDR", {
   expData <- data.table( peptide_id = rep(c(174L), 6),
                          precursor = c(630L, 630L, 630L, 631L, 631L, 631L),
                          run = c('chludwig_K150309_004b_SW_1_16', 'chludwig_K150309_008_SW_1_4', 'chludwig_K150309_013_SW_0', 'chludwig_K150309_004b_SW_1_16', 'chludwig_K150309_008_SW_1_4', 'chludwig_K150309_013_SW_0'),
-                         RT = c(1909.1, 1963.89, 1835.29, 1909.1, 1966.6, 1836.3),
-                         intensity = c(1142.37258827012, 8603, 51890, 4651.38812575098, 19753, 57985),
-                         leftWidth = c(1894.6, 1943.56994628906, 1820.07995605469, 1894.6, 1938.27001953125, 1818.42004394531),
-                         rightWidth = c(1927.3, 1983.55004882812, 1852.7900390625, 1927.3, 1985.52001953125, 1854.77001953125),
+                         RT = c(NA_real_, 1963.89, 1835.29, NA_real_, 1966.6, 1836.3),
+                         intensity = c(NA_real_, 8603, 51890, NA_real_, 19753, 57985),
+                         leftWidth = c(NA_real_, 1943.56994628906, 1820.07995605469, NA_real_, 1938.27001953125, 1818.42004394531),
+                         rightWidth = c(NA_real_, 1983.55004882812, 1852.7900390625, NA_real_, 1985.52001953125, 1854.77001953125),
                          peak_group_rank = c(NA_integer_, 1L, 1L, NA_integer_, 3L, 2L),
                          original_m_score = c(NA_real_, 0.0427722787632167, 0.00344456667388718, NA_real_, 0.18446161248398, 0.00989114312849029),
                          alignment_rank = c(1L, 1L, 1L, 1L, 1L, 1L),

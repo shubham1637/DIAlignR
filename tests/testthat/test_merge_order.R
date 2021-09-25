@@ -11,9 +11,9 @@ test_that("test_getTree", {
               ncol = 4, dimnames = list(c("run1", "run2", "run3", "run4"),
                                         c("run1", "run2", "run3", "run4")))
   distMat <- as.dist(m, diag = FALSE, upper = FALSE)
-  expect_message(outData <- getTree(distMat))
+  expect_message(outData <- getTree(distMat, method = "single"))
   expect_equal(outData,
-          ape::read.tree(text = "((run1:0.5,run2:0.5)master2:0.5,(run3:0.5,run4:0.5)master3:0.5)master1;")
+          ape::read.tree(text = "((run1:0.5,run2:0.5)master2:0.25,(run3:0.5,run4:0.5)master3:0.25)master1;")
                )
 })
 
@@ -33,6 +33,7 @@ test_that("test_traverseUp", {
   params[["globalAlignmentFdr"]] <- 0.05
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
+  params[["baseSubtraction"]] <- TRUE
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   mzPntrs <- list2env(getMZMLpointers(fileInfo))
   precursors <- data.table(transition_group_id = 4618L, peptide_id = 14383L,
@@ -101,7 +102,7 @@ test_that("test_traverseUp", {
   file.remove(file.path(dataPath, "xics", "master1.chrom.sqMass"))
 })
 
-test_that("test_traverseDown", {
+test_that("test_setRootRank_traverseDown", {
   dataPath <- system.file("extdata", package = "DIAlignR")
   params <- paramsDIAlignR()
   params[["maxPeptideFdr"]] <- 0.05
@@ -110,6 +111,7 @@ test_that("test_traverseDown", {
   params[["globalAlignmentFdr"]] <- 0.05
   params[["globalAlignment"]] <- "loess"
   params[["context"]] <- "experiment-wide"
+  params[["baseSubtraction"]] <- TRUE
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   mzPntrs <- list2env(getMZMLpointers(fileInfo))
   precursors <- getPrecursors(fileInfo, oswMerged = TRUE, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]])
@@ -142,8 +144,21 @@ test_that("test_traverseDown", {
   df1 <- data.table::copy(multipeptide[["7040"]])
   df2 <- data.table::copy(multipeptide[["9861"]])
   df3 <- data.table::copy(multipeptide[["14383"]])
+
+  # setRootRank
+  expect_message(setRootRank(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs, precursors,params),
+                 "master1 has set alignment ranks.", all = TRUE)
+  expect_equal(multipeptide[["7040"]], df1)
+  expect_equal(multipeptide[["9861"]][1:2,],
+               data.table(transition_group_id = c(9719L, 9720L), feature_id = bit64::as.integer64(c("6462000664077079508", "5135268764240690321")), RT = 2594.85,
+                          intensity = c(14.62899, 20.94301), leftWidth = c(2581.15, 2576.05), rightWidth = c(2625.55, 2622.15),
+                          peak_group_rank = 1L, m_score = c(1.041916e-03, 5.692077e-05), run = "master1", alignment_rank = 1L, key = "run"),
+               tolerance = 1e-06)
+  expect_equal(multipeptide[["14383"]][13:18, alignment_rank], rep(NA_integer_, 6L))
+
+  # traverseDown
   expect_message(traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs, precursors,
-                              adaptiveRTs, refRuns, params),
+                              adaptiveRTs, refRuns, params, lapply),
                ("Mapping peaks from master1 to run1 and run2.\n|run1 has been aligned to master1.\n|run2 has been aligned to master1.\n|master1 run has been propagated to all parents."),
                all = TRUE)
   df3$alignment_rank[c(15L, 17L)] <- 1L
