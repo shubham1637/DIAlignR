@@ -182,7 +182,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
 #' @inheritParams progAlignRuns
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
-progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, peps = NULL,
+progTree1 <- function(dataPath, params, categ = NULL, outFile = "DIAlignR", oswMerged = TRUE, peps = NULL,
                   runs = NULL, newickTree = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   if(params[["chromFile"]] == "mzML"){
@@ -221,30 +221,26 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
   #### Get the guidance tree. ####
   start_time <- Sys.time()
   distMat <- distMatrix(features, params, applyFun)
-  tree <- getTree(distMat, params[["treeAgg"]]) # Check validity of tree: Names are run and master only.
-  if(!is.null(newickTree)){
-    tree2 <- ape::read.tree(text = newickTree)
-    tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
-    tree <- ape::reorder.phylo(tree, "postorder")
-  }
 
+  if(is.null(categ)){
+    tree <- getTree(distMat, params[["treeAgg"]]) # Check validity of tree: Names are run and master only.
+    if(!is.null(newickTree)){
+      tree2 <- ape::read.tree(text = newickTree)
+      tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
+      tree <- ape::reorder.phylo(tree, "postorder")
+    }
+    trees <- cutTree(tree, params[["fractionNum"]])
+    tree <- getUpperTree(tree, params[["fractionNum"]])
+  } else{
+    trees <- tree4split(distMat, params[["treeAgg"]], categ)
+    tree <- trees[["upper"]]
+  }
   filename <- file.path(dataPath, paste0(outFile, "_prog1.RData"))
-  save(fileInfo, precursors, features, tree, file = filename, compress = FALSE)
+  save(fileInfo, precursors, features, trees, file = filename, compress = FALSE)
   print(paste0("Written ", filename))
 
-  trees <- cutTree(tree, params[["fractionNum"]])
-  allNodes <- c(tree$node.label, tree$tip.label)
-  mNode <- c(); rmv <- c()
-  for(i in 1:params[["fractionNum"]]){
-    a <- trees[[i]]
-    if(is(a, "phylo")){
-      mNode <- c(mNode, c(a$tip.label, a$node.label))
-      tree <- ancesTree(tree, a)
-    } else{
-      mNode <- c(mNode, a)
-    }
-  }
-  masters <- setdiff(allNodes, mNode)
+  #### Create dummy features for master nodes ######
+  masters <- tree$node.label  # Names of the internal nodes for upper trees
   peptideIDs <- unique(precursors$peptide_id)
   peptideScores <- applyFun(seq_along(peptideIDs), function(i) {
     x <- data.table("run" = masters, "score" = NA_real_, "pvalue" = NA_real_, "qvalue" = NA_real_)
@@ -257,7 +253,6 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
   multipeptide <- getMultipeptide(precursors, features, params[["runType"]], applyFun, NULL)
   outFile <- paste(outFile, 0, params[["fractionNum"]], sep = "_")
   outFile <- file.path(dataPath, paste0(outFile, ".rds"))
-  tree <- ape::reorder.phylo(tree, "postorder")
   saveRDS(list(NULL, features, multipeptide, peptideScores, prec2chromIndex,
                NULL, NULL, tree), file = outFile, compress = FALSE)
   print(paste0("Written ", outFile))
@@ -280,7 +275,6 @@ progTree1 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, 
 progSplit2 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, applyFun = lapply){
   params <- checkParams(params)
   load(file = file.path(dataPath, paste0(outFile, "_prog1.RData")))
-  trees <- cutTree(tree, params[["fractionNum"]])
   tree <- trees[[params[["fraction"]]]]
   outFile <- paste(outFile, params[["fraction"]], params[["fractionNum"]], sep = "_")
   if(is(tree, "phylo")){
@@ -554,7 +548,6 @@ progSplit4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
 #' @export
 alignToRoot4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE, applyFun = lapply){
   load(file = file.path(dataPath, paste0(outFile, "_prog1.RData")))
-  trees <- cutTree(tree, params[["fractionNum"]])
   tree <- trees[[params[["fraction"]]]]
   if(is(tree, "phylo")){
     fileInfo <- fileInfo[rownames(fileInfo) %in% (tree$tip.label),]
@@ -598,4 +591,51 @@ alignToRoot4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRU
   #### End of function. #####
   alignmentStats(finalTbl, params)
   message("DONE DONE.")
+}
+
+tree4split <- function(distMat, method, categ){
+  mat <- as.matrix(distMat)
+  matSum <- rowSums(mat)
+  trees <- list()
+  upper <- c()
+  categories <- unique(categ$ca)
+  for(cate in categories){
+    runs <- categ$run[categ$ca == cate]
+    i <- colnames(mat) %in% runs
+    message("alignment order of runs in Newick format:")
+    if(length(runs) < 2){
+      tree <- runs
+      upper <- c(runs, upper)
+      names(upper)[1] <- runs
+      message(runs)
+    } else{
+      distmat <- as.dist(mat[i,i])
+      upper <- c(paste0("master", cate, 2), upper)
+      names(upper)[1] <- names(which.min(matSum[i]))
+      tree <- phangorn::upgma(distmat, method) # Use "single" to have it closely associate with MST.
+      tree <- ape::reorder.phylo(tree, "postorder")
+      tree$node.label <- paste0("master", cate, 2:length(runs))
+      message(ape::write.tree(tree))
+    }
+    trees[[cate]] <- tree
+  }
+
+  i <- colnames(mat) %in% names(upper)
+  newMat <- mat[i,i]
+  colnames(newMat) <- rownames(newMat) <- upper[colnames(newMat)]
+  distmat <- as.dist(newMat)
+  tree <- getTree(distmat, method)
+  trees[["upper"]] <- tree
+  trees
+}
+
+
+getUpperTree <- function(tree, fractions){
+  trees <- cutTree(tree, fractions)
+  for(i in 1:fractions){
+    a <- trees[[i]]
+    if(is(a, "phylo")) tree <- ancesTree(tree, a)
+  }
+  tree <- ape::reorder.phylo(tree, "postorder")
+  tree
 }

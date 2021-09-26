@@ -41,7 +41,7 @@ test_that("test_progAlignRuns2", {
   params[["transitionIntensity"]] <- TRUE
   params[["fractionNum"]] <- 2L
   params[["fraction"]] <- 1L
-  text1 <- "(run1:0.08857142857,(run0:0.06857142857,run2:0.06857142857)master2:0.02)master1;"
+  text1 <- "(run1:0.08857142857,(run0:0.06857142857,run2:0.06857142857)masterB:0.02)master1;"
   progTree1(dataPath, params, outFile = "temp", newickTree = text1)
   expect_warning(progSplit2(dataPath, params, outFile = "temp"))
   params[["fraction"]] <- 2L
@@ -53,7 +53,7 @@ test_that("test_progAlignRuns2", {
   progSplit4(dataPath, params, outFile = "temp")
 
   file.remove(list.files(dataPath, pattern = "temp.*rds", full.names = TRUE))
-  file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
+  file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[A-Za-z0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
   file.remove(list.files(dataPath, pattern = "temp.*RData", full.names = TRUE))
   file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
 
@@ -86,8 +86,9 @@ test_that("test_alignToRoot4", {
   params[["transitionIntensity"]] <- TRUE
   params[["fractionNum"]] <- 2L
   params[["fraction"]] <- 1L
+  categ <- data.frame(run = paste0("run", 0:2), ca= c("a", "b", "a"))
   text1 <- "(run1:0.08857142857,(run0:0.06857142857,run2:0.06857142857)master2:0.02)master1;"
-  progTree1(dataPath, params, outFile = "temp", newickTree = text1)
+  progTree1(dataPath, params, outFile = "temp", categ =  categ, newickTree = text1)
   expect_warning(progSplit2(dataPath, params, outFile = "temp"))
   params[["fraction"]] <- 2L
   progSplit2(dataPath, params, outFile = "temp")

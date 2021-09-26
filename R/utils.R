@@ -176,7 +176,7 @@ dummyMerge <- function(analytes, masters, runType="DIA_Proteomics"){
 writeTables <- function(fileInfo, multipeptide, precursors){
   peptides <- precursors[, logical(1), keyby = peptide_id]$peptide_id
   runs <- rownames(fileInfo)
-  idx <- grep("^master[0-9]+$", runs, invert = TRUE)
+  idx <- grep("^master[A-Za-z0-9]+$", runs, invert = TRUE)
   runs <- runs[idx]
   runName <- fileInfo[idx, "runName"]
 
