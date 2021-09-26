@@ -98,7 +98,7 @@ test_that("test_alignToRoot4", {
   params[["fraction"]] <- 2L
   alignToRoot4(dataPath, params, outFile = "temp")
   file.remove(list.files(dataPath, pattern = "temp.*rds", full.names = TRUE))
-  file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
+  file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[A-Za-z0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
   file.remove(list.files(dataPath, pattern = "temp.*RData", full.names = TRUE))
   file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
 

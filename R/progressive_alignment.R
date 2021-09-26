@@ -629,7 +629,6 @@ tree4split <- function(distMat, method, categ){
   trees
 }
 
-
 getUpperTree <- function(tree, fractions){
   trees <- cutTree(tree, fractions)
   for(i in 1:fractions){
