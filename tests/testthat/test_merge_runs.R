@@ -166,10 +166,10 @@ test_that("test_getChildXICs",{
   fileInfo <- getRunNames(dataPath = dataPath, params = params)
   features <- getFeatures(fileInfo, maxFdrQuery = 1.00, runType = "DIA_Proteomics")
   mzPntrs <- getMZMLpointers(fileInfo)
-  precursors <- data.frame(transition_group_id = 4618L, peptide_id = 14383L,
+  precursors <- data.table(transition_group_id = 4618L, peptide_id = 14383L,
                            sequence = "QFNNTDIVLLEDFQK", charge = 3L,
                            group_label = "14299_QFNNTDIVLLEDFQK/3",
-                           transition_ids	= I(list(27706:27711)))
+                           transition_ids	= list(27706:27711))
   peptideScores <- getPeptideScores(fileInfo, peptides = 14383L, TRUE, "DIA_Proteomics", "experiment-wide")
   peptideScores <- lapply(14383L, function(pep) dplyr::filter(peptideScores, .data$peptide_id == pep))
   names(peptideScores) <- as.character(14383L)

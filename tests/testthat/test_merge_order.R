@@ -39,7 +39,7 @@ test_that("test_traverseUp", {
   precursors <- data.table(transition_group_id = 4618L, peptide_id = 14383L,
                            sequence = "QFNNTDIVLLEDFQK", charge = 3L,
                            group_label = "14299_QFNNTDIVLLEDFQK/3",
-                           transition_ids	= I(list(27706:27711)), key = c("peptide_id", "transition_group_id"))
+                           transition_ids	= list(27706:27711), key = c("peptide_id", "transition_group_id"))
   peptideIDs <- 14383L
   peptideScores <- getPeptideScores(fileInfo, peptides = peptideIDs, TRUE, "DIA_Proteomics", "experiment-wide")
   masters <- paste("master", 1:(nrow(fileInfo)-1), sep = "")
@@ -190,7 +190,7 @@ test_that("test_alignToMaster", {
   precursors <- data.table(transition_group_id = 4618L, peptide_id = 14383L,
                            sequence = "QFNNTDIVLLEDFQK", charge = 3L,
                            group_label = "14299_QFNNTDIVLLEDFQK/3",
-                           transition_ids	= I(list(27706:27711)), key = c("peptide_id", "transition_group_id"))
+                           transition_ids	= list(27706:27711), key = c("peptide_id", "transition_group_id"))
   peptideIDs <- 14383L
   peptideScores <- getPeptideScores(fileInfo, peptides = peptideIDs, TRUE, "DIA_Proteomics", "experiment-wide")
   masters <- paste("master", 1:(nrow(fileInfo) + 1), sep = "")
