@@ -105,4 +105,3 @@ test_that("test_getAlignedTimesFast", {
   expect_equal(outData[174:176,2], c(5572.40, 5575.80, 5582.60), tolerance = 1e-03)
   expect_identical(dim(outData), c(176L, 2L))
 })
-

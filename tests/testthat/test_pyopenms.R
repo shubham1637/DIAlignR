@@ -6,6 +6,7 @@ test_that("test_get_ropenms",{
 
 test_that("test_addXIC",{
   skip_if_no_pyopenms()
+  envName <- "TricEnvr"
   ropenms <- get_ropenms(condaEnv = envName, useConda=TRUE)
   expriment <- ropenms$MSExperiment()
   data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR)
@@ -24,6 +25,7 @@ test_that("test_addXIC",{
 
 test_that("test_createMZML",{
   skip_if_no_pyopenms()
+  envName <- "TricEnvr"
   ropenms <- get_ropenms(condaEnv = envName, useConda=TRUE)
   expriment <- ropenms$MSExperiment()
   data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR)

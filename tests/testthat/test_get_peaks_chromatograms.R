@@ -5,6 +5,7 @@ test_that("test_extractXIC_group", {
   mz <- mzR::openMSfile(filename = mzmlName, backend = "pwiz")
   chromIndices <- c(37L, 38L, 39L, 40L, 41L, 42L)
   outData <- extractXIC_group(mz, chromIndices)
+  rm(mz)
   data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
   XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
   expect_identical(length(outData), 6L)

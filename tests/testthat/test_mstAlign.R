@@ -190,5 +190,3 @@ test_that("test_alignToRefMST",{
                tolerance = 1e-06)
   for(con in mzPntrs) DBI::dbDisconnect(con)
 })
-
-

@@ -538,9 +538,9 @@ updateOnalignTargetedRuns <-  function(i){
   invisible(NULL)
 }
 
-envName <- "TricEnvr"
 # helper function to skip tests if we don't have the 'foo' module
 skip_if_no_pyopenms <- function() {
+  envName <- "TricEnvr"
   ropenms <- try(get_ropenms(condaEnv = envName, useConda=TRUE))
   no_ropenms <- is(ropenms, "try-error")
   if(no_ropenms)

@@ -41,6 +41,7 @@ test_that("test_getMZMLpointers",{
   expect_is(outData[["run0"]], "mzRpwiz")
   expect_is(outData[["run1"]], "mzRpwiz")
   expect_is(outData[["run2"]], "mzRpwiz")
+  rm(outData)
 
   fileInfo <- data.frame("chromatogramFile" = c(file.path(dataPath, "xics", "hroest_K120808_Strep10%PlasmaBiolRepl1_R03_SW_filt.chrom.sqMass"),
                                                 file.path(dataPath, "xics", "hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt.chrom.sqMass"),
@@ -51,7 +52,5 @@ test_that("test_getMZMLpointers",{
   expect_is(outData[["run0"]], "SQLiteConnection")
   expect_is(outData[["run1"]], "SQLiteConnection")
   expect_is(outData[["run2"]], "SQLiteConnection")
-
   for(mz in outData) DBI::dbDisconnect(mz)
-
 })
