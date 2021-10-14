@@ -180,6 +180,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
 #' @importFrom data.table data.table setkeyv
 #' @import ape
 #' @inheritParams progAlignRuns
+#' @param categ (data-frame) contains the run names and their categories/batch id to keep them on the same branch of the tree.
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
 progTree1 <- function(dataPath, params, categ = NULL, outFile = "DIAlignR", oswMerged = TRUE, peps = NULL,

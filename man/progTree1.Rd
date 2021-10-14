@@ -7,6 +7,7 @@
 progTree1(
   dataPath,
   params,
+  categ = NULL,
   outFile = "DIAlignR",
   oswMerged = TRUE,
   peps = NULL,
@@ -19,6 +20,8 @@ progTree1(
 \item{dataPath}{(string) path to xics and osw directory.}
 
 \item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
+
+\item{categ}{(data-frame) contains the run names and their categories/batch id to keep them on the same branch of the tree.}
 
 \item{outFile}{(string) name of the output file.}
 
