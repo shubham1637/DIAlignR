@@ -127,6 +127,12 @@ mstAlignRuns <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRU
     if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
     setkeyv(precursors, c("peptide_id", "transition_group_id"))
   }
+  if(params[["fractionNum"]] > 1L){
+    idx <- getPrecursorSubset(precursors, params)
+    precursors <- precursors[idx[1]:idx[2],]
+    setkeyv(precursors, c("peptide_id", "transition_group_id"))
+    outFile <- paste(outFile, params[["fraction"]], params[["fractionNum"]], sep = "_")
+  }
   outFile <- paste0(outFile,".tsv")
 
   #### Get OpenSWATH peak-groups and their retention times. ##########
