@@ -10,6 +10,7 @@ script2(
   params = paramsDIAlignR(),
   oswMerged = TRUE,
   runs = NULL,
+  peps = NULL,
   refRun = NULL,
   applyFun = lapply
 )
@@ -24,6 +25,8 @@ script2(
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
 
 \item{runs}{(string) names of xics file without extension.}
+
+\item{peps}{(integer) ids of peptides to be aligned. If NULL, align all peptides.}
 
 \item{refRun}{(string) reference for alignment. If no run is provided, m-score is used to select reference run.}
 
