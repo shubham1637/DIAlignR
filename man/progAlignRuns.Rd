@@ -56,7 +56,7 @@ progAlignRuns(dataPath, params = params, outFile = "test3", ropenms = ropenms)
 # Removing aligned vectors
 file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
 # Removing temporarily created master chromatograms
-file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\\\.chrom\\\\.mzML$", full.names = TRUE))
+file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[A-Za-z0-9]+\\\\.chrom\\\\.sqMass$", full.names = TRUE))
 file.remove(file.path(dataPath, "test3.temp.RData"))
 file.remove(file.path(dataPath, "master.merged.osw"))
 }

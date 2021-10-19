@@ -73,7 +73,7 @@ script1 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 #' file.remove(file.path(dataPath, "testDIAlignR_script1.RData"))
 #' @export
 script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
-                    runs = NULL, refRun = NULL, applyFun = lapply){
+                    runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
   load(file = file.path(dataPath, paste0(outFile, "_script1.RData")))
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
@@ -87,6 +87,11 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   start_time <- Sys.time()
   precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
+  if(!is.null(peps)){
+    precursors <- precursors[peptide_id %in% peps, ]
+    if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
+    setkeyv(precursors, c("peptide_id", "transition_group_id"))
+  }
   if(params[["fractionNum"]] > 1L){
     idx <- getPrecursorSubset(precursors, params)
     precursors <- precursors[idx[1]:idx[2],]

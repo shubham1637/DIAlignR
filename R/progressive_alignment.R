@@ -29,7 +29,7 @@
 #' # Removing aligned vectors
 #' file.remove(list.files(dataPath, pattern = "*_av.rds", full.names = TRUE))
 #' # Removing temporarily created master chromatograms
-#' file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[0-9]+\\.chrom\\.mzML$", full.names = TRUE))
+#' file.remove(list.files(file.path(dataPath, "xics"), pattern = "^master[A-Za-z0-9]+\\.chrom\\.sqMass$", full.names = TRUE))
 #' file.remove(file.path(dataPath, "test3.temp.RData"))
 #' file.remove(file.path(dataPath, "master.merged.osw"))
 #' }
@@ -544,6 +544,7 @@ progSplit4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
 #'
 #' License: (c) Author (2021) + GPL-3
 #' Date: 2021-09-25
+#' @import DBI
 #' @inheritParams progAlignRuns
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
@@ -577,6 +578,9 @@ alignToRoot4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRU
   alignToRoot(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
               params, applyFun)
 
+  for(mz in names(mzPntrs)){
+    if(is(mzPntrs[[mz]])[1] == "SQLiteConnection") DBI::dbDisconnect(mzPntrs[[mz]])
+  }
   #### Write tables to the disk  #######
   outFile <- paste(outFile, params[["fraction"]], params[["fractionNum"]], sep = "_")
   save(multipeptide, fileInfo, file = file.path(dataPath, paste0(outFile, ".temp.RData")))
