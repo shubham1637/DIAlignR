@@ -62,10 +62,10 @@ nrDesc <- function(tree) {
 #' tree <- ape::nj(distMat) # Neighbor-Joining tree
 #' plot(tree, type = "unrooted", show.node.label = TRUE)
 #' ape::edgelabels(tree$edge.length)
-getTree <- function(distMat, method = "average"){
+getTree <- function(distMat, method = "average", prefix = "master"){
   tree <- phangorn::upgma(distMat, method) # Use "single" to have it closely associate with MST.
   tree <- ape::reorder.phylo(tree, "postorder")
-  tree <- ape::makeNodeLabel(tree, method = "number", prefix = "master")
+  tree <- ape::makeNodeLabel(tree, method = "number", prefix = prefix)
   message("alignment order of runs in Newick format:")
   message(ape::write.tree(tree))
   tree
@@ -482,14 +482,14 @@ alignToMaster <- function(ref, eXp, alignedVecs, refRun, adaptiveRT, multipeptid
   invisible(NULL)
 }
 
-alignToRoot <- function(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
+alignToRoot <- function(precursors, features, master1, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
                         params, applyFun = lapply){
   # Remove master runs from fileInfo.
-  fileInfo <- fileInfo[c(grep("run", rownames(fileInfo)), which(rownames(fileInfo) == "master1")),]
+  fileInfo <- fileInfo[c(grep("run", rownames(fileInfo)), which(rownames(fileInfo) == master1)),]
 
   # Calculate global alignment as star.
   peptideIDs <- unique(precursors$peptide_id)
-  refRuns <- data.table("peptide_id" = peptideIDs, "run" = "master1", key = "peptide_id")
+  refRuns <- data.table("peptide_id" = peptideIDs, "run" = master1, key = "peptide_id")
   globalFits <- getGlobalFits(refRuns, features, fileInfo, params[["globalAlignment"]],
                               params[["globalAlignmentFdr"]], params[["globalAlignmentSpan"]], applyFun)
   RSE <- applyFun(globalFits, getRSE, params[["globalAlignment"]])

@@ -73,7 +73,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   #### Get the guidance tree. ####
   start_time <- Sys.time()
   distMat <- distMatrix(features, params, applyFun)
-  tree <- getTree(distMat, params[["treeAgg"]]) # Check validity of tree: Names are run and master only.
+  tree <- getTree(distMat, params[["treeAgg"]], params[["prefix"]]) # Check validity of tree: Names are run and master only.
   if(!is.null(newickTree)){
     tree2 <- ape::read.tree(text = newickTree)
     tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
@@ -132,7 +132,8 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
 
   # Either traverse down with pre-calculated alignment.
   if(params[["alignToRoot"]]){
-    alignToRoot(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
+    master1 <- paste0(params[["prefix"]],"1")
+    alignToRoot(precursors, features, master1, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
                 params, applyFun)
   }else{
     traverseDown(tree, dataPath, fileInfo, multipeptide, prec2chromIndex, mzPntrs,
@@ -562,9 +563,10 @@ alignToRoot4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRU
 
   filename <- file.path(dataPath, paste0(outFile, "_", "all","_", params[["fractionNum"]], ".rds"))
   x <- readRDS(filename)
-  fileInfo <- rbind(fileInfo, x[[1]]["master1",])
+  master1 <- paste0(params[["prefix"]],"1")
+  fileInfo <- rbind(fileInfo, x[[1]][master1,])
   multipeptide <- x[[2]]
-  features[["master1"]] <- x[[6]][["master1"]]
+  features[[master1]] <- x[[6]][[master1]]
 
   #### Collect pointers for each mzML file. #######
   message("Collecting metadata from mzML files.")
@@ -575,7 +577,7 @@ alignToRoot4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRU
   message("Collecting chromatogram indices for all precursors.")
   prec2chromIndex <- getChromatogramIndices(fileInfo, precursors, mzPntrs, applyFun)
 
-  alignToRoot(precursors, features, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
+  alignToRoot(precursors, features, master1, multipeptide, fileInfo, prec2chromIndex, mzPntrs,
               params, applyFun)
 
   for(mz in names(mzPntrs)){

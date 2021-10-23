@@ -176,7 +176,8 @@ dummyMerge <- function(analytes, masters, runType="DIA_Proteomics"){
 writeTables <- function(fileInfo, multipeptide, precursors){
   peptides <- precursors[, logical(1), keyby = peptide_id]$peptide_id
   runs <- rownames(fileInfo)
-  idx <- grep("^master[A-Za-z0-9]+$", runs, invert = TRUE)
+  idx <- grep("^run[0-9]$", runs)
+  # idx <- grep("^master[A-Za-z0-9]+$", runs, invert = TRUE)
   runs <- runs[idx]
   runName <- fileInfo[idx, "runName"]
 
@@ -252,6 +253,9 @@ checkParams <- function(params){
     stop("treeAgg must be either single, average or complete.")
   }
 
+  if(params[["prefix"]] == "run"){
+    stop("prefix cannot be run.")
+  }
   if(params[["context"]] != "experiment-wide" & params[["context"]] != "global"){
     stop("context must either be experiment-wide or global for the alignment.")
   }
@@ -379,6 +383,7 @@ checkParams <- function(params){
 #' \item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared", "count" or "RSE".}
 #' \item{treeAgg}{(string) the method used for agglomeration while performing hierarchical clustering. Must be either "single", "average" or "complete".}
 #' \item{alignToRoot}{(logical) if TRUE, align leaves to the root in hierarchical clustering, else use already save aligned vectors.}
+#' \item{prefix}{(string) name to be used to define merged runs.}
 #' \item{context}{(string) used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".}
 #' \item{unalignedFDR}{(numeric) must be between 0 and maxFdrQuery. Features below unalignedFDR are
 #'  considered for quantification even without the RT alignment.}
@@ -430,7 +435,7 @@ checkParams <- function(params){
 paramsDIAlignR <- function(){
   params <- list( runType = "DIA_Proteomics", chromFile = "sqMass",
                   maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, maxPeptideFdr = 0.01,
-                  analyteFDR = 0.01, treeDist = "count", treeAgg = "single", alignToRoot = FALSE,
+                  analyteFDR = 0.01, treeDist = "count", treeAgg = "single", alignToRoot = FALSE, prefix = "master",
                   context = "global", unalignedFDR = 0.00, alignedFDR1 = 0.05, alignedFDR2 = 0.05, level = "Peptide",
                   integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
                   recalIntensity = FALSE, fillMissing = TRUE, baseSubtraction = FALSE,

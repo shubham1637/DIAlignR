@@ -17,6 +17,7 @@ A list of parameters:
 \item{treeDist}{(string) the method used to build distance matrix. Must be either "rsquared", "count" or "RSE".}
 \item{treeAgg}{(string) the method used for agglomeration while performing hierarchical clustering. Must be either "single", "average" or "complete".}
 \item{alignToRoot}{(logical) if TRUE, align leaves to the root in hierarchical clustering, else use already save aligned vectors.}
+\item{prefix}{(string) name to be used to define merged runs.}
 \item{context}{(string) used in pyprophet peptide. Must be either "run-specific", "experiment-wide", or "global".}
 \item{unalignedFDR}{(numeric) must be between 0 and maxFdrQuery. Features below unalignedFDR are
  considered for quantification even without the RT alignment.}
