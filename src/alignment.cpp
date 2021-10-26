@@ -237,6 +237,8 @@ void getAlignedIndices(AlignObj &alignObj){
       }
       break;
     }
+    default:
+      break;
     }
     // Read traceback for the next iteration.
     TracebackPointer = alignObj.Traceback[ROW_IDX*COL_SIZE+COL_IDX];

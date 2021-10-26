@@ -411,6 +411,8 @@ void getAffineAlignedIndices(AffineAlignObj &affineAlignObj, int bandwidth){
       }
       break;}
 
+    case SS:
+      break;
     }
     // Read traceback for the next iteration.
     TracebackPointer = affineAlignObj.Traceback[MatName*ROW_SIZE*COL_SIZE+ROW_IDX*COL_SIZE+COL_IDX];
