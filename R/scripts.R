@@ -60,6 +60,7 @@ script1 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 #' Date: 2021-02-20
 #' @importFrom data.table data.table setkeyv
 #' @inheritParams alignTargetedRuns
+#' @param scoreFile (character) path to the peptide score file, needed when oswMerged is FALSE.
 #' @return NULL
 #'
 #' @seealso \code{\link{alignTargetedRuns}}
@@ -73,7 +74,7 @@ script1 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 #' file.remove(file.path(dataPath, "testDIAlignR_script1.RData"))
 #' @export
 script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
-                    runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
+                    scoreFile = NULL, runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
   load(file = file.path(dataPath, paste0(outFile, "_script1.RData")))
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
@@ -108,7 +109,13 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   # This translates as "Chromatogram indices for peptide ID are missing in NA"
   start_time <- Sys.time()
   peptideIDs <- precursors[, logical(1), keyby = peptide_id]$peptide_id
-  peptideScores <- getPeptideScores(fileInfo, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
+  fileInfo2 <- fileInfo
+  if(oswMerged){
+    peptideScores <- getPeptideScores(fileInfo2, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
+  } else {
+    fileInfo2[["featureFile"]] <- scoreFile
+    peptideScores <- getPeptideScores(fileInfo2, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
+  }
   peptideScores <- lapply(peptideIDs, function(pep) peptideScores[.(pep)])
   names(peptideScores) <- as.character(peptideIDs)
   end_time <- Sys.time()

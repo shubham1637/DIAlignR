@@ -18,7 +18,7 @@ Description: To obtain unbiased proteome coverage from a biological sample, mass
 License: GPL-3
 Encoding: UTF-8
 LazyData: false
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 biocViews: MassSpectrometry, Metabolomics, Proteomics, Alignment, Software
 Depends: methods, stats, R (>= 4.0)
 Imports:

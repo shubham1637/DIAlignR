@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // getSeqSimMatCpp
 NumericMatrix getSeqSimMatCpp(std::string seq1, std::string seq2, double match, double misMatch);
 RcppExport SEXP _DIAlignR_getSeqSimMatCpp(SEXP seq1SEXP, SEXP seq2SEXP, SEXP matchSEXP, SEXP misMatchSEXP) {
