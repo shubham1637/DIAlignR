@@ -78,7 +78,7 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   load(file = file.path(dataPath, paste0(outFile, "_script1.RData")))
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
-  fileInfo <- fileInfo2
+  fileInfo2 <- fileInfo
   #### Get filenames from .osw file and check consistency between osw and mzML files. #################
   runs <- rownames(fileInfo)
   message("Following runs will be aligned:")
