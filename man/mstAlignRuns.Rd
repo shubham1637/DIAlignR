@@ -9,6 +9,7 @@ mstAlignRuns(
   params,
   outFile = "DIAlignR",
   oswMerged = TRUE,
+  scoreFile = NULL,
   runs = NULL,
   peps = NULL,
   mstNet = NULL,
@@ -23,6 +24,8 @@ mstAlignRuns(
 \item{outFile}{(string) name of the output file.}
 
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+
+\item{scoreFile}{(string) path to the peptide score file, needed when oswMerged is FALSE.}
 
 \item{runs}{(string) names of xics file without extension.}
 

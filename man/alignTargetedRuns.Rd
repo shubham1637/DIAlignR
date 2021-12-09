@@ -9,6 +9,7 @@ alignTargetedRuns(
   outFile = "DIAlignR",
   params = paramsDIAlignR(),
   oswMerged = TRUE,
+  scoreFile = NULL,
   runs = NULL,
   peps = NULL,
   refRun = NULL,
@@ -23,6 +24,8 @@ alignTargetedRuns(
 \item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
 
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+
+\item{scoreFile}{(string) path to the peptide score file, needed when oswMerged is FALSE.}
 
 \item{runs}{(string) names of xics file without extension.}
 

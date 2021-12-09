@@ -35,7 +35,7 @@
 #' }
 #' @export
 progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL, oswMerged = TRUE,
-                          runs = NULL, peps = NULL, newickTree = NULL, applyFun = lapply){
+                          scoreFile = NULL, runs = NULL, peps = NULL, newickTree = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   if(params[["chromFile"]] == "mzML"){
     if(is.null(ropenms)) stop("ropenms is required to write chrom.mzML files.")
@@ -46,12 +46,14 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   fileInfo <- getRunNames(dataPath, oswMerged, params)
   fileInfo <- updateFileInfo(fileInfo, runs)
   runs <- rownames(fileInfo)
+  fileInfo2 <- data.frame(fileInfo)
+  if(!oswMerged) fileInfo2[["featureFile"]] <- scoreFile
   message("Following runs will be aligned:")
   print(fileInfo[, "runName", drop=FALSE], sep = "\n")
 
   #### Get Precursors from the query and respectve chromatogram indices. ######
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
-  precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]],
+  precursors <- getPrecursors(fileInfo2, oswMerged, params[["runType"]], params[["context"]],
                               params[["maxPeptideFdr"]], params[["level"]])
   if(!is.null(peps)){
     precursors <- precursors[peptide_id %in% peps, ]
@@ -83,7 +85,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   #### Get Peptide scores, pvalue and qvalues. ######
   masters <- tree$node.label
   peptideIDs <- unique(precursors$peptide_id)
-  peptideScores <- getPeptideScores(fileInfo, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
+  peptideScores <- getPeptideScores(fileInfo2, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
   peptideScores <- applyFun(peptideIDs, function(pep) {x <- peptideScores[.(pep)][,-c(1L)]
   x <- rbindlist(list(x, data.table("run" = masters, "score" = NA_real_,
                                     "pvalue" = NA_real_, "qvalue" = NA_real_)), use.names=TRUE)

@@ -13,6 +13,7 @@
 #' @param dataPath (string) path to xics and osw directory.
 #' @param outFile (string) name of the output file.
 #' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
+#' @param scoreFile (string) path to the peptide score file, needed when oswMerged is FALSE.
 #' @param runs (string) names of xics file without extension.
 #' @param peps (integer) ids of peptides to be aligned. If NULL, align all peptides.
 #' @param refRun (string) reference for alignment. If no run is provided, m-score is used to select reference run.
@@ -31,7 +32,7 @@
 #'
 #' @export
 alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
-                              runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
+                              scoreFile = NULL, runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
 
@@ -39,13 +40,15 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   fileInfo <- getRunNames(dataPath, oswMerged, params)
   fileInfo <- updateFileInfo(fileInfo, runs)
   runs <- rownames(fileInfo)
+  fileInfo2 <- data.frame(fileInfo)
+  if(!oswMerged) fileInfo2[["featureFile"]] <- scoreFile
   message("Following runs will be aligned:")
   print(fileInfo[, "runName"], sep = "\n")
 
   #### Get Precursors from the query and respectve chromatogram indices. ######
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
   start_time <- Sys.time()
-  precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]], params[["useIdentifying"]])
+  precursors <- getPrecursors(fileInfo2, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]], params[["useIdentifying"]])
   if(!is.null(peps)){
     precursors <- precursors[peptide_id %in% peps, ]
     if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
@@ -67,7 +70,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   # This translates as "Chromatogram indices for peptide ID are missing in NA"
   start_time <- Sys.time()
   peptideIDs <- precursors[, logical(1), keyby = peptide_id]$peptide_id
-  peptideScores <- getPeptideScores(fileInfo, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
+  peptideScores <- getPeptideScores(fileInfo2, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
   peptideScores <- lapply(peptideIDs, function(pep) peptideScores[.(pep)])
   names(peptideScores) <- as.character(peptideIDs)
   end_time <- Sys.time()

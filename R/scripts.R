@@ -60,9 +60,7 @@ script1 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 #' Date: 2021-02-20
 #' @importFrom data.table data.table setkeyv
 #' @inheritParams alignTargetedRuns
-#' @param scoreFile (character) path to the peptide score file, needed when oswMerged is FALSE.
 #' @return NULL
-#'
 #' @seealso \code{\link{alignTargetedRuns}}
 #' @examples
 #' params <- paramsDIAlignR()
@@ -78,7 +76,8 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   load(file = file.path(dataPath, paste0(outFile, "_script1.RData")))
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
-  fileInfo2 <- fileInfo
+  fileInfo2 <- data.frame(fileInfo)
+  if(!oswMerged) fileInfo2[["featureFile"]] <- scoreFile
   #### Get filenames from .osw file and check consistency between osw and mzML files. #################
   runs <- rownames(fileInfo)
   message("Following runs will be aligned:")
@@ -86,7 +85,6 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 
   #### Get Precursors from the query and respectve chromatogram indices. ######
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
-  if(!oswMerged) fileInfo2[["featureFile"]] <- scoreFile
   start_time <- Sys.time()
   precursors <- getPrecursors(fileInfo2, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
   if(!is.null(peps)){

@@ -10,6 +10,7 @@ progAlignRuns(
   outFile = "DIAlignR",
   ropenms = NULL,
   oswMerged = TRUE,
+  scoreFile = NULL,
   runs = NULL,
   peps = NULL,
   newickTree = NULL,
@@ -26,6 +27,8 @@ progAlignRuns(
 \item{ropenms}{(pyopenms module) get this python module through \code{\link{get_ropenms}}. Required only for chrom.mzML files.}
 
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+
+\item{scoreFile}{(string) path to the peptide score file, needed when oswMerged is FALSE.}
 
 \item{runs}{(string) names of xics file without extension.}
 
