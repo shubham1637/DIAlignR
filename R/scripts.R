@@ -78,7 +78,7 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   load(file = file.path(dataPath, paste0(outFile, "_script1.RData")))
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
-
+  fileInfo <- fileInfo2
   #### Get filenames from .osw file and check consistency between osw and mzML files. #################
   runs <- rownames(fileInfo)
   message("Following runs will be aligned:")
@@ -86,8 +86,9 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 
   #### Get Precursors from the query and respectve chromatogram indices. ######
   # Get all the precursor IDs, transition IDs, Peptide IDs, Peptide Sequence Modified, Charge.
+  if(!oswMerged) fileInfo2[["featureFile"]] <- scoreFile
   start_time <- Sys.time()
-  precursors <- getPrecursors(fileInfo, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
+  precursors <- getPrecursors(fileInfo2, oswMerged, params[["runType"]], params[["context"]], params[["maxPeptideFdr"]], params[["level"]])
   if(!is.null(peps)){
     precursors <- precursors[peptide_id %in% peps, ]
     if(nrow(precursors) == 0L) stop("No peptide IDs are found in osw files.")
@@ -109,13 +110,7 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   # This translates as "Chromatogram indices for peptide ID are missing in NA"
   start_time <- Sys.time()
   peptideIDs <- precursors[, logical(1), keyby = peptide_id]$peptide_id
-  fileInfo2 <- fileInfo
-  if(oswMerged){
-    peptideScores <- getPeptideScores(fileInfo2, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
-  } else {
-    fileInfo2[["featureFile"]] <- scoreFile
-    peptideScores <- getPeptideScores(fileInfo2, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
-  }
+  peptideScores <- getPeptideScores(fileInfo2, peptideIDs, oswMerged, params[["runType"]], params[["context"]])
   peptideScores <- lapply(peptideIDs, function(pep) peptideScores[.(pep)])
   names(peptideScores) <- as.character(peptideIDs)
   end_time <- Sys.time()
