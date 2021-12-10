@@ -86,9 +86,9 @@ test_that("test_alignToRoot4", {
   params[["transitionIntensity"]] <- TRUE
   params[["fractionNum"]] <- 2L
   params[["fraction"]] <- 1L
-  categ <- data.frame(run = paste0("run", 0:2), ca= c("a", "b", "a"))
+  categ <- data.frame(run = paste0("run", 0:2), group1=as.factor(c("a", "b", "a")))
   text1 <- "(run1:0.08857142857,(run0:0.06857142857,run2:0.06857142857)master2:0.02)master1;"
-  progTree1(dataPath, params, outFile = "temp", categ =  categ, newickTree = text1)
+  progTree1(dataPath, params, outFile = "temp", groups =  categ, newickTree = text1)
   expect_warning(progSplit2(dataPath, params, outFile = "temp"))
   params[["fraction"]] <- 2L
   progSplit2(dataPath, params, outFile = "temp")

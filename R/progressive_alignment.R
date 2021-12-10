@@ -183,10 +183,10 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
 #' @importFrom data.table data.table setkeyv
 #' @import ape
 #' @inheritParams progAlignRuns
-#' @param categ (data-frame) contains the run names and their categories/batch id to keep them on the same branch of the tree.
+#' @param groups (data-frame) contains the run names and their categories/batch id to keep them on the same branch of the tree.
 #' @seealso \code{\link{progAlignRuns}}
 #' @export
-progTree1 <- function(dataPath, params, categ = NULL, outFile = "DIAlignR", oswMerged = TRUE, peps = NULL,
+progTree1 <- function(dataPath, params, groups = NULL, outFile = "DIAlignR", oswMerged = TRUE, peps = NULL,
                   runs = NULL, newickTree = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   if(params[["chromFile"]] == "mzML"){
@@ -226,19 +226,19 @@ progTree1 <- function(dataPath, params, categ = NULL, outFile = "DIAlignR", oswM
   start_time <- Sys.time()
   distMat <- distMatrix(features, params, applyFun)
 
-  if(is.null(categ)){
+  if(is.null(groups)){
     tree <- getTree(distMat, params[["treeAgg"]]) # Check validity of tree: Names are run and master only.
     if(!is.null(newickTree)){
       tree2 <- ape::read.tree(text = newickTree)
       tree <- ape::.compressTipLabel(c(tree, tree2))[[2]] # Order tip the same way as in tree
       tree <- ape::reorder.phylo(tree, "postorder")
     }
-    trees <- cutTree(tree, params[["fractionNum"]])
-    tree <- getUpperTree(tree, params[["fractionNum"]])
   } else{
-    trees <- tree4split(distMat, params[["treeAgg"]], categ)
-    tree <- trees[["upper"]]
+    distMat <- dist4split(distMat, groups)
+    tree <- getTree(distMat, params[["treeAgg"]]) #
   }
+  trees <- cutTree(tree, params[["fractionNum"]])
+  tree <- getUpperTree(tree, params[["fractionNum"]])
   filename <- file.path(dataPath, paste0(outFile, "_prog1.RData"))
   save(fileInfo, precursors, features, trees, file = filename, compress = FALSE)
   print(paste0("Written ", filename))
@@ -602,40 +602,43 @@ alignToRoot4 <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRU
   message("DONE DONE.")
 }
 
-tree4split <- function(distMat, method, categ){
-  mat <- as.matrix(distMat)
-  matSum <- rowSums(mat)
-  trees <- list()
-  upper <- c()
-  categories <- unique(categ$ca)
-  for(cate in categories){
-    runs <- categ$run[categ$ca == cate]
-    i <- colnames(mat) %in% runs
-    message("alignment order of runs in Newick format:")
-    if(length(runs) < 2){
-      tree <- runs
-      upper <- c(runs, upper)
-      names(upper)[1] <- runs
-      message(runs)
-    } else{
-      distmat <- as.dist(mat[i,i])
-      upper <- c(paste0("master", cate, 2), upper)
-      names(upper)[1] <- names(which.min(matSum[i]))
-      tree <- phangorn::upgma(distmat, method) # Use "single" to have it closely associate with MST.
-      tree <- ape::reorder.phylo(tree, "postorder")
-      tree$node.label <- paste0("master", cate, 2:length(runs))
-      message(ape::write.tree(tree))
-    }
-    trees[[cate]] <- tree
+dist4split <- function(d, groups){
+  distMat <- as.matrix(d)
+  groups <- groups[match(colnames(distMat), groups[,1]),]
+  n <- ncol(groups)-1
+  if(n>2L){
+    n <- 2L
+    warning("Can fix distance matrix only for two-level groups.")
   }
-
-  i <- colnames(mat) %in% names(upper)
-  newMat <- mat[i,i]
-  colnames(newMat) <- rownames(newMat) <- upper[colnames(newMat)]
-  distmat <- as.dist(newMat)
-  tree <- getTree(distmat, method)
-  trees[["upper"]] <- tree
-  trees
+  for(i in seq(1,n)){
+    if(i == 1L){
+      groups[,2L] <- as.factor(groups[,2L])
+      # Add distance in hetero-group cells.
+      f <- as.integer(groups[,i+1L])
+      m <- outer(f,f,FUN ='-')
+      m <- (m == 0)
+      m1 <- m*1L # Mask different groups
+      m2 <- (!m)*1L # Mask same groups
+      maxSame <- max(distMat*m1)
+      minDiff <- min(distMat*m2)
+      if(maxSame > minDiff) distMat <- distMat + (maxSame-minDiff+0.01*maxSame)*m2
+    } else if(i == 2L){
+      groups[,3L] <- as.factor(groups[,3L])
+      # Subtract distance within sub-group of each group.
+      for(g1 in levels(groups[,2L])){
+        idx <- which(groups[,2L] == g1)
+        f <- as.integer(groups[idx,i+1L])
+        m <- outer(f,f,FUN ='-')
+        m <- (m == 0)
+        m1 <- m*1L # Mask different groups
+        m2 <- (!m)*1L # Mask same groups
+        maxSame <- max(distMat[idx,idx]*m1)
+        minDiff <- min(distMat[idx,idx]*m2)
+        if(maxSame > minDiff) distMat[idx,idx] <- distMat[idx,idx] - (maxSame-minDiff+0.01*maxSame)*m1
+      }
+    }
+  }
+  as.dist(distMat)
 }
 
 getUpperTree <- function(tree, fractions){
