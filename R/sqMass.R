@@ -79,6 +79,7 @@ sqMassQuery <- function(ids){
                  FROM DATA
                  WHERE CHROMATOGRAM_ID IN (", ids1, ")
                  ORDER BY CHROMATOGRAM_ID ASC, DATA_TYPE DESC;", sep = "")
+  query
 }
 
 createTemp <- function(conDb, chromIndices){
