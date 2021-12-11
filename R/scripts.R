@@ -150,7 +150,7 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   #### Convert features into multi-peptide #####
   message("Building multipeptide.")
   start_time <- Sys.time()
-  multipeptide <- getMultipeptide(precursors, features, params[["runType"]], applyFun, NULL)
+  multipeptide <- getMultipeptide(precursors, features, params[["runType"]], lapply, NULL)
   message(length(multipeptide), " peptides are in the multipeptide.")
   end_time <- Sys.time()
   message("The execution time for building multipeptide:")
@@ -164,7 +164,7 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
   num_of_batch <- ceiling(length(multipeptide)/params[["batchSize"]])
   invisible(
     lapply(1:num_of_batch, perBatch, peptideIDs, multipeptide, refRuns, precursors,
-           prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, lapply)
+           prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, applyFun)
   )
 
   #### Cleanup.  #######
