@@ -132,9 +132,9 @@ script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 
   #### Collect pointers for each mzML file. #######
   start_time <- Sys.time()
-  message("Collecting metadata from mzML files.")
+  message("Collecting metadata from chromatogram files.")
   mzPntrs <- getMZMLpointers(fileInfo)
-  message("Metadata is collected from mzML files.")
+  message("Metadata is collected from chromatogram files.")
   end_time <- Sys.time()
   message("The execution time for getting pointers:")
   print(end_time - start_time)
