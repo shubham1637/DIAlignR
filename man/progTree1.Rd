@@ -6,10 +6,11 @@
 \usage{
 progTree1(
   dataPath,
-  params,
-  groups = NULL,
   outFile = "DIAlignR",
+  params = paramsDIAlignR(),
+  groups = NULL,
   oswMerged = TRUE,
+  scoreFile = NULL,
   peps = NULL,
   runs = NULL,
   newickTree = NULL,
@@ -19,13 +20,15 @@ progTree1(
 \arguments{
 \item{dataPath}{(string) path to xics and osw directory.}
 
+\item{outFile}{(string) name of the output file.}
+
 \item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
 
 \item{groups}{(data-frame) contains the run names and their categories/batch id to keep them on the same branch of the tree.}
 
-\item{outFile}{(string) name of the output file.}
-
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+
+\item{scoreFile}{(string) path to the peptide score file, needed when oswMerged is FALSE.}
 
 \item{peps}{(integer) ids of peptides to be aligned. If NULL, align all peptides.}
 

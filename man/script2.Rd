@@ -10,7 +10,6 @@ script2(
   params = paramsDIAlignR(),
   oswMerged = TRUE,
   scoreFile = NULL,
-  runs = NULL,
   peps = NULL,
   refRun = NULL,
   applyFun = lapply
@@ -26,8 +25,6 @@ script2(
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
 
 \item{scoreFile}{(string) path to the peptide score file, needed when oswMerged is FALSE.}
-
-\item{runs}{(string) names of xics file without extension.}
 
 \item{peps}{(integer) ids of peptides to be aligned. If NULL, align all peptides.}
 

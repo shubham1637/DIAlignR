@@ -6,8 +6,8 @@
 \usage{
 mstAlignRuns(
   dataPath,
-  params,
   outFile = "DIAlignR",
+  params = paramsDIAlignR(),
   oswMerged = TRUE,
   scoreFile = NULL,
   runs = NULL,
@@ -19,9 +19,9 @@ mstAlignRuns(
 \arguments{
 \item{dataPath}{(string) path to xics and osw directory.}
 
-\item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
-
 \item{outFile}{(string) name of the output file.}
+
+\item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
 
 \item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
 

@@ -103,7 +103,7 @@ traverseMST <- function(net, ref0){
 #' plot(igraph::graph_from_edgelist(y, directed = FALSE))
 #' }
 #' @export
-mstAlignRuns <- function(dataPath, params, outFile = "DIAlignR", oswMerged = TRUE,
+mstAlignRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
                          scoreFile = NULL, runs = NULL, peps = NULL, mstNet = NULL, applyFun = lapply){
   #### Check if all parameters make sense.  #########
   if(params[["chromFile"]] == "mzML"){

@@ -72,7 +72,7 @@ script1 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), o
 #' file.remove(file.path(dataPath, "testDIAlignR_script1.RData"))
 #' @export
 script2 <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
-                    scoreFile = NULL, runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
+                    scoreFile = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
   load(file = file.path(dataPath, paste0(outFile, "_script1.RData")))
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
