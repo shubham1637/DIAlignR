@@ -460,7 +460,8 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
       XICs.eXp.pep <- XICs.eXp[[analyte_chr]]
     }
 
-    nope <- any(sapply(seq_along(XICs.ref.pep), function(i) any(is.na(XICs.ref.pep[[i]])))) ||
+    nope <- is.null(XICs.ref.pep) || is.null(XICs.eXp.pep)
+    nope <- nope || any(sapply(seq_along(XICs.ref.pep), function(i) any(is.na(XICs.ref.pep[[i]])))) ||
             any(sapply(seq_along(XICs.eXp.pep), function(i) any(is.na(XICs.eXp.pep[[i]]))))
     if(nope){
       message("Missing values in the chromatogram of ", paste0(analytes_chr, sep = " "), "in ",
@@ -486,9 +487,17 @@ parFUN1 <- function(iBatch, runA, runB, peptides, precursors, prec2chromIndex, m
     otherPrecs <- setdiff(analytes_chr, analyte_chr)
     if(length(otherPrecs) !=0){
       for(name in otherPrecs){
-        merged_xics[[1]][[name]] <- otherChildXICpp(XICs.ref[[name]], XICs.eXp[[name]], 0L,
-                  params[["polyOrd"]], merged_xics[[2]], merged_xics[[1]][[1]][[1]][,1],
-                  wRef, params[["splineMethod"]])
+        # Check for NaN, NA or NULL
+        nope <- is.null(XICs.ref[[name]]) || is.null(XICs.eXp[[name]])
+        nope <- nope || any(sapply(seq_along(XICs.ref[[name]]), function(i) any(is.na(XICs.ref[[name]][[i]])))) ||
+          any(sapply(seq_along(XICs.eXp[[name]]), function(i) any(is.na(XICs.eXp[[name]][[i]]))))
+        if(nope){
+          merged_xics[[1]][name] <- list(NULL)
+        } else{
+          merged_xics[[1]][[name]] <- otherChildXICpp(XICs.ref[[name]], XICs.eXp[[name]], 0L,
+              params[["polyOrd"]], merged_xics[[2]], merged_xics[[1]][[1]][[1]][,1],
+              wRef, params[["splineMethod"]])
+        }
       }
     }
     merged_xics[[1]] <- merged_xics[[1]][match(analytes_chr, names(merged_xics[[1]]))]
