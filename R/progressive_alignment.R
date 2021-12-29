@@ -146,7 +146,7 @@ progAlignRuns <- function(dataPath, params, outFile = "DIAlignR", ropenms = NULL
   print(end_time - start_time)
 
   #### Save features and add master runs to osw #####
-  addMasterToOSW(dataPath, tree$node.label, oswMerged)
+  if(oswMerged) addMasterToOSW(dataPath, tree$node.label, params[["prefix"]])
   save(multipeptide, fileInfo, peptideScores, refRuns, adaptiveRTs,
           file = file.path(dataPath, paste0(outFile,".temp.RData", sep = "")))
 
