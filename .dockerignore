@@ -1,0 +1,17 @@
+.*
+data
+data-raw
+inst
+man
+python
+R
+src
+tests
+vignettes
+CMakeLists.txt
+DESCRIPTION
+NAMESPACE
+NEWS
+TODO
+README.md
+
