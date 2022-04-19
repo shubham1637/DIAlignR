@@ -205,6 +205,54 @@ getChromatogramIndices <- function(fileInfo, precursors, mzPntrs, applyFun=lappl
   prec2chromIndex
 }
 
+#' Get MS1 chromatogram indices of precursors.
+#'
+#' This function reads the header of chromatogram files. It then fetches chromatogram indices by matching transition_group_id(osw) with chromatogramID(xics).
+#' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-3500-8152
+#'
+#' License: (c) Author (2022) + GPL-3
+#' Date: 2022-01-15
+#' @inheritParams getChromatogramIndices
+#' @importFrom data.table setDT
+#' @param fileInfo (data-frame) Output of getRunNames function.
+#' @param precursors (data-frame) Atleast two columns transition_group_id and transition_ids are required.
+#' @param mzPntrs A list of mzRpwiz.
+#' @return (list) A list of dataframes having following columns:
+#' \item{transition_group_id}{(string) it is PRECURSOR.ID from osw file.}
+#' \item{chromatogramIndex}{(integer) index of MS1 chromatogram in mzML file.}
+#'
+#' @seealso \code{\link{chromatogramIdAsInteger}, \link{mapPrecursorToChromIndices}}
+#' @examples
+#' dataPath <- system.file("extdata", package = "DIAlignR")
+#' fileInfo <- getRunNames(dataPath = dataPath)
+#' precursors <- getPrecursors(fileInfo, oswMerged = TRUE, context = "experiment-wide")
+#' mzPntrs <- getMZMLpointers(fileInfo)
+#' prec2chromIndex <- getPrecursorIndices(fileInfo, precursors, mzPntrs)
+#' for(mz in mzPntrs) DBI::dbDisconnect(mz)
+#' @export
+getPrecursorIndices <- function(fileInfo, precursors, mzPntrs, applyFun=lapply){
+  runs <- rownames(fileInfo)
+  prec2chromIndex <- applyFun(seq_along(runs), function(i){
+    mz <- mzPntrs[[runs[i]]]
+    # For each precursor get associated MS1 chromatogram Indices
+    if(is(mz)[1] == "SQLiteConnection"){chromHead <- readSqMassHeader(mz)}
+    if(is(mz)[1] == "mzRpwiz"){
+      chromHead <- mzR::chromatogramHeader(mz) #TODO: Make sure that chromatogramIndex is read as integer64
+    }
+    chromHead <- chromHead[grepl("^[[:digit:]]+_Precursor_", chromHead[,1]),]
+    chromHead[,1] <- as.integer(sub("(.?)(_Precursor_)(.*)", "\\1", chromHead[,1]))
+    colnames(chromHead)[1] <- "transition_group_id"
+    df <- data.frame(transition_group_id = precursors$transition_group_id)
+    df <- dplyr::left_join(df, chromHead, by = "transition_group_id")
+    message("Fetched precursor indices from ", fileInfo$chromatogramFile[i])
+    data.table::setDT(df)
+  })
+  names(prec2chromIndex) <- runs
+  prec2chromIndex
+}
+
 dummyChromIndex <- function(precursors, masters){
   transition_group_ids <- .subset2(precursors, "transition_group_id")
   prec2chromIndex <- lapply(masters, function(run) {

@@ -19,7 +19,7 @@ progSplit4(
 
 \item{outFile}{(string) name of the output file.}
 
-\item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+\item{oswMerged}{(logical) TRUE if merged file from pyprophet is used.}
 
 \item{applyFun}{(function) value must be either lapply or BiocParallel::bplapply.}
 }

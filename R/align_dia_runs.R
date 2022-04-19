@@ -12,7 +12,7 @@
 #' @inheritParams checkParams
 #' @param dataPath (string) path to xics and osw directory.
 #' @param outFile (string) name of the output file.
-#' @param oswMerged (logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.
+#' @param oswMerged (logical) TRUE if merged file from pyprophet is used.
 #' @param scoreFile (string) path to the peptide score file, needed when oswMerged is FALSE.
 #' @param runs (string) names of xics file without extension.
 #' @param peps (integer) ids of peptides to be aligned. If NULL, align all peptides.

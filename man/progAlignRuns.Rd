@@ -26,7 +26,7 @@ progAlignRuns(
 
 \item{ropenms}{(pyopenms module) get this python module through \code{\link{get_ropenms}}. Required only for chrom.mzML files.}
 
-\item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+\item{oswMerged}{(logical) TRUE if merged file from pyprophet is used.}
 
 \item{scoreFile}{(string) path to the peptide score file, needed when oswMerged is FALSE.}
 

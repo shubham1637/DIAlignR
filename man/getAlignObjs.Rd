@@ -23,7 +23,7 @@ getAlignObjs(
 
 \item{refRun}{(string) reference for alignment. If no run is provided, m-score is used to select reference run.}
 
-\item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+\item{oswMerged}{(logical) TRUE if merged file from pyprophet is used.}
 
 \item{params}{(list) parameters are entered as list. Output of the \code{\link{paramsDIAlignR}} function.}
 

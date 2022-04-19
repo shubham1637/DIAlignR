@@ -26,7 +26,7 @@ progTree1(
 
 \item{groups}{(data-frame) contains the run names and their categories/batch id to keep them on the same branch of the tree.}
 
-\item{oswMerged}{(logical) TRUE for experiment-wide FDR and FALSE for run-specific FDR by pyprophet.}
+\item{oswMerged}{(logical) TRUE if merged file from pyprophet is used.}
 
 \item{scoreFile}{(string) path to the peptide score file, needed when oswMerged is FALSE.}
 
