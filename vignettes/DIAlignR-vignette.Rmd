@@ -37,52 +37,89 @@ library(DIAlignR)
 ```
 
 ## Prepare input files for alignment
-Mass-spectrometry files mostly contains spectra. Targeted proteomics workflow identifyies analytes from their chromatographic elution profile. DIAlignR extends the same concept for retention-time (RT) alignment and, therefore, relies on MS2 chromatograms. DIAlignR expects raw chromatogram file (.chrom.mzML) and FDR-scored features (.osw) file.   
+Mass-spectrometry files mostly contains spectra. Targeted proteomics workflow identifyies analytes from their chromatographic elution profile. DIAlignR extends the same concept for retention-time (RT) alignment and, therefore, relies on MS2 chromatograms. DIAlignR expects raw chromatogram file (.chrom.sqMass) and FDR-scored features (.osw) file.   
 Example files are available with this package and can be located with this command:
 ```{r getDataPath}
 dataPath <- system.file("extdata", package = "DIAlignR")
 ```
 
-|     (Optional) To obtain files for alignment, following three steps are needed:  
+|     (Optional) To obtain files for alignment, following three steps are needed (Paper):  
 
 * Step 1 Convert spectra files from vendor-specific format to standard mzMl format using [ProteoWizard-MSConvert](http://proteowizard.sourceforge.net/tools.shtml).    
-* Step 2 Extract features and raw extracted-ion chromatograms(XICs) for library analytes. A detailed tutorial using [OpenSWATH](http://openswath.org/en/latest/docs/openswath.html) is available for this steps. In short, following `bash` command can be used:  
+* Step 2 Extract features and raw extracted-ion chromatograms(XICs) for library analytes. A detailed [tutorial](https://doi.org/10.1101/2020.01.21.914788) using [OpenSWATH](http://openswath.org/en/latest/docs/openswath.html) is available for this steps. In short, following `bash` commands to be used:  
     
 ```{bash, eval=FALSE}
 OpenSwathWorkflow -in Filename.mzML.gz -tr library.pqp -tr_irt
 iRTassays.TraML -out_osw Filename.osw -out_chrom Filename.chrom.mzML
+OpenSwathMzMLFileCacher -in Filename.chrom.mzML -out Filename.chrom.sqMass -lossy_compression false
 ```
 
-|     Output files **Filename.osw** and **Filename.chrom.mzML** are required to next steps. Some chromatograms are stored in compressed form and currently inaccesible by `mzR`. In such cases `mzR` would throw an error indicating `Invalid cvParam accession "1002746"`. To avoid this issue, uncompress chromatograms using OpenMS.
+|     Output files **Filename.osw** and **Filename.chrom.sqMass** are required for next steps.
+Note: If you prefer to use chrom.mzML instead of chrom.sqMass, some chromatograms are stored in compressed form and currently inaccesible by `mzR`. In such cases `mzR` would throw an error indicating `Invalid cvParam accession "1002746"`. To avoid this issue, uncompress chromatograms using OpenMS.
 
 ```{bash, eval=FALSE}
 FileConverter -in Filename.chrom.mzML -in_type 'mzML' -out Filename.chrom.mzML
 ```
 
-* Step 3: Score features and calculate their q-values. A machine-learning based workflow is available with [PyProphet](http://openswath.org/en/latest/docs/pyprophet.html). For multiplt-runs experiment-wide FDR is recommended. An example of running pyprophet on OpenSWATH results is given below:
+* Step 3: Score features and calculate their q-values. A machine-learning based workflow is available with [PyProphet](http://openswath.org/en/latest/docs/pyprophet.html). For multiplt-runs experiment-wide FDR is recommended. This step is suggested only for small studies (n<30). For large n, look into the large-scale analysis section. An example of running pyprophet on OpenSWATH results is given below:
 
 ```{bash, eval=FALSE}
 pyprophet merge --template=library.pqp --out=merged.osw *.osw
-pyprophet score --in=merged.osw --classifier=XGBoost --level=ms2 --xeval_num_iter=3 \
---ss_initial_fdr=0.05 --ss_iteration_fdr=0.01
+pyprophet score --in=merged.osw --classifier=XGBoost --level=ms1ms2
 pyprophet peptide --in=merged.osw --context=experiment-wide
 ```
 
-|   Congrats! Now we have raw chromatogram files and associated scored features in merged.osw files. Move all .chrom.mzML files in `xics` directory and merged.osw file in `osw` directory. The parent folder is given as `dataPath` to DIAlignR functions.
+|   Congrats! Now we have raw chromatogram files and associated scored features in merged.osw files. Move all .chrom.sqMass files in `xics` directory and merged.osw file in `osw` directory. The parent folder is given as `dataPath` to DIAlignR functions.
 
 ## Performing alignment on DIA runs
-`alignTargetedRuns` function aligns Proteomics or Metabolomics DIA runs. It expects two directories "osw" and "xics" at `dataPath`. It outputs an intensity table where rows specify each analyte and columns specify runs. Use parameter `saveFiles = TRUE` to have aligned retetion time and intensities saved in the current directory.
+There are three modes for multirun alignment: star, MST and Progressive.
+The functions align proteomics or metabolomics DIA runs. They expect two directories "osw" and "xics" at `dataPath`, and output an intensity table where rows specify each analyte and columns specify runs.
 
 ```{r, results=FALSE, message=FALSE, warning=FALSE}
 runs <- c("hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt",
           "hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt")
 params <- paramsDIAlignR()
 params[["context"]] <- "experiment-wide"
-# For specific runs provide their names.
-alignTargetedRuns(dataPath = dataPath, outFile = "test.csv", runs = runs, oswMerged = TRUE, params = params)
-# For all the analytes in all runs, keep them as NULL.
-alignTargetedRuns(dataPath = dataPath, outFile = "test.csv", runs = NULL, oswMerged = TRUE, params = params)
 ```
+
+## Star alignmnet
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# For specific runs provide their names.
+alignTargetedRuns(dataPath = dataPath, outFile = "test", runs = runs, oswMerged = TRUE, params = params)
+# For all the analytes in all runs, keep them as NULL.
+alignTargetedRuns(dataPath = dataPath, outFile = "test", runs = NULL, oswMerged = TRUE, params = params)
+```
+
+## MST alignmnet
+For MST alignment, a precomputed guide-tree can be supplied.
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+tree <- "run2 run2\nrun1 run0"
+mstAlignRuns(dataPath = dataPath, outFile = "test", mstNet = tree, oswMerged = TRUE, params = params)
+# Compute tree on-the-fly
+mstAlignRuns(dataPath = dataPath, outFile = "test", oswMerged = TRUE, params = params)
+```
+
+## Progressive alignmnet
+Similar to previous approach, a precomputed guide-tree can be supplied.
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+text1 <- "(run1:0.08857142857,(run0:0.06857142857,run2:0.06857142857)masterB:0.02)master1;"
+progAlignRuns(dataPath = dataPath, outFile = "test", newickTree = text1, oswMerged = TRUE, params = params)
+# Compute tree on-the-fly
+progAlignRuns(dataPath = dataPath, outFile = "test", oswMerged = TRUE, params = params)
+```
+
+
+## For large-scale analysis
+In a large-scale study, the `pyprophet merge` would create a huge file that can't be fit in the memory. Hence, [scaling-up](http://openswath.org/en/latest/docs/pyprophet.html#scaling-up) of pyprophet based on subsampling is recommended. Do not run the last two
+commands `pyprophet backpropagate` and `pyprophet export`, as these commands
+copy scores from `model_global.osw` to each run, increasing the size unnecessarily.
+
+Instead, use `oswMerged = FALSE` and `scoreFile=PATH/TO/model_global.osw`.
+
+## Requantification
+
+
+## Visualizing multiple chromatograms 
 
 ## Investigating alignment of analytes
 
