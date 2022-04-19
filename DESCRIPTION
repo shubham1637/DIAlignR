@@ -1,7 +1,7 @@
 Package: DIAlignR
 Type: Package
 Title: Dynamic Programming Based Alignment of MS2 Chromatograms
-Version: 2.3.1
+Version: 2.3.3
 Authors@R: c(person(given = "Shubham", family = "Gupta", role = c("aut", "cre"),
            email = "shubham.1637@gmail.com",
            comment = c(ORCID = "0000-0003-3500-8152")),
