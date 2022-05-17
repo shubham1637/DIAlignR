@@ -268,11 +268,16 @@ getAlignedTimes <- function(XICs.ref, XICs.eXp, globalFit, alignType, adaptiveRT
 #' getAlignedTimesFast(XICs.ref, XICs.eXp, globalFit, adaptiveRT, params)
 #' @export
 getAlignedTimesFast <- function(XICs.ref, XICs.eXp, globalFit, adaptiveRT, params){
-  Bp <- getPredict(globalFit, XICs.ref[[1]][,1], params[["globalAlignment"]])
-  if(any(is.na(Bp) | Bp <=0 | is.nan(Bp))){
-    Bp <- seq(XICs.eXp[[1]][1,1], XICs.eXp[[1]][nrow(XICs.eXp[[1]]),1], length.out = length(Bp))
-  }
   alignType <- params[["alignType"]]
+  if(is(globalFit, "logical")){
+    alignType <- "local"
+    Bp <- NA_real_
+  } else{
+    Bp <- getPredict(globalFit, XICs.ref[[1]][,1], params[["globalAlignment"]])
+    if(any(is.na(Bp) | Bp <=0 | is.nan(Bp))){
+      Bp <- seq(XICs.eXp[[1]][1,1], XICs.eXp[[1]][nrow(XICs.eXp[[1]]),1], length.out = length(Bp))
+    }
+  }
   #TODO: If NA, should use local: less signal so good or chromatogram time: already extracted after linear interpolation?
   # alignType <- ifelse(any(is.na(Bp) | Bp <=0 | is.nan(Bp)), "local", params[["alignType"]])
   if(alignType != 'global'){ #TODO: Use new alignType here as well

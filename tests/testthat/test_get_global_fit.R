@@ -3,7 +3,8 @@ context("Global Fit")
 test_that("test_getLOESSfit", {
     data(oswFiles_DIAlignR, package="DIAlignR")
     oswFiles <- oswFiles_DIAlignR
-    Loess.fit <- getLOESSfit(oswFiles, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05, spanvalue = 0.1)
+    RUNS_RT <- getRTdf(oswFiles, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+    Loess.fit <- getLOESSfit(RUNS_RT, spanvalue = 0.1)
     # Testing for Residual standard error
     expect_equal(getRSE(Loess.fit, "loess"), 22.00103, tolerance = 1e-05)
     expect_identical(names(Loess.fit), c("x", "y", "RT.ref", "RT.eXp"))
@@ -28,7 +29,8 @@ test_that("test_dialignrLoess", {
 test_that("test_getLinearfit", {
   data(oswFiles_DIAlignR, package="DIAlignR")
   oswFiles <- oswFiles_DIAlignR
-  Linear.fit <- getLinearfit(oswFiles, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+  RUNS_RT <- getRTdf(oswFiles, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+  Linear.fit <- getLinearfit(RUNS_RT)
   # Testing for Residual standard error
   expect_equal(getRSE(Linear.fit, "linear"), 30.12705, tolerance = 1e-05)
   outData <- sum(coef(Linear.fit)*c(1,4978.4))

@@ -4,16 +4,10 @@
 \alias{getLOESSfit}
 \title{Calculates LOESS fit between RT of two runs}
 \usage{
-getLOESSfit(oswFiles, ref, eXp, maxFdrGlobal, spanvalue = 0.1)
+getLOESSfit(RUNS_RT, spanvalue = 0.1)
 }
 \arguments{
-\item{oswFiles}{(list of data-frames) it is output from getFeatures function.}
-
-\item{ref}{(string) Must be a combination of "run" and an iteger e.g. "run2".}
-
-\item{eXp}{(string) Must be a combination of "run" and an iteger e.g. "run2".}
-
-\item{maxFdrGlobal}{(numeric) A numeric value between 0 and 1. Features should have m-score lower than this value for participation in LOESS fit.}
+\item{RUNS_RT}{(data-frame) must have three calumns: transition_group_id, RT.eXp, and RT.ref.}
 
 \item{spanvalue}{(numeric) Spanvalue for LOESS fit. For targeted proteomics 0.1 could be used.}
 }
@@ -21,18 +15,18 @@ getLOESSfit(oswFiles, ref, eXp, maxFdrGlobal, spanvalue = 0.1)
 An object of class "loess".
 }
 \description{
-This function selects features from oswFiles which has m-score < maxFdrLoess. It fits LOESS on these feature.
+This function uses output of getRTdf that selects features from oswFiles which has m-score < maxFdrLoess. It fits LOESS on these feature.
 Loess mapping is established from reference to experiment run.
 }
 \examples{
 data(oswFiles_DIAlignR, package="DIAlignR")
 \dontrun{
-Loess.fit <- getLOESSfit(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2",
- maxFdrGlobal = 0.05, spanvalue = 0.1)
+RUNS_RT <- getRTdf(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+Loess.fit <- getLOESSfit(RUNS_RT, spanvalue = 0.1)
 }
 }
 \seealso{
-\code{\link{getLinearfit}, \link{getFeatures}}
+\code{\link{getLinearfit}, \link{getFeatures}, \link{getRTdf}}
 }
 \author{
 Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
