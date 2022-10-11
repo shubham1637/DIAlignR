@@ -583,12 +583,30 @@ checkOverlap <- function(x, y){
   olap
 }
 
+getBestPkIdx <- function(df, pk, idx){
+  # Check based on m-score
+  mscores <- .subset2(df, "m_score")[idx]
+  i <- which.min(mscores)
+  if(sum(mscores[i]>=mscores, na.rm=T) == 1){
+    return(idx[i])
+  }
+  idx <- idx[which(mscores[i]>=mscores)]
+  # Check based on intensity
+  idx <- idx[which.max(totalIntensity(df, idx))]
+  # Check based on peak-width
+  #idx <- idx[which.max(overlapLen(df, pk, idx))]
+  idx
+}
+
 overlapLen <- function(df, pk, idx){
   left <- pmax(pk[1], .subset2(df, "leftWidth")[idx])
   right <- pmin(pk[2], .subset2(df, "rightWidth")[idx])
   right - left
 }
 
+totalIntensity <- function(df, idx){
+  sapply(.subset2(df, "intensity")[idx], sum)
+}
 
 #' Prints messages if a certain number of analytes are aligned
 #' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
