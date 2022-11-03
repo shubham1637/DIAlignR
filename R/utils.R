@@ -320,6 +320,10 @@ checkParams <- function(params){
     stop("alignedFDR2 must be between unalignedFDR and maxFdrQuery. Recommended value is 0.05")
   }
 
+  if(!params[["criterion"]] %in% 1:4){
+    stop("criterion must be from 1,2,3,4. Recommended value is 2")
+  }
+
   if(!any(params[["integrationType"]] %in% c("intensity_sum", "trapezoid", "simpson"))){
     stop("integrationType must be either intensity_sum, trapezoid or simpson.")
   }
@@ -391,6 +395,7 @@ checkParams <- function(params){
 #'  considered for quantification.}
 #' \item{alignedFDR2}{(numeric) must be between alignedFDR1 and maxFdrQuery. Features below alignedFDR2 and within certain distance from the aligned time are
 #'  considered for quantification after the alignment.}
+#' \item{criterion}{(integer) strategy to select peak if found overlapping peaks. 1:intensity, 2: RT overlap, 3: mscore, 4: edge distance}
 #' \item{level}{(string) apply maxPeptideFDR on Protein as well if specified as "Protein". Default: "Peptide".}
 #' \item{integrationType}{(string) method to ompute the area of a peak contained in XICs. Must be
 #'  from "intensity_sum", "trapezoid", "simpson".}
@@ -436,8 +441,8 @@ paramsDIAlignR <- function(){
   params <- list( runType = "DIA_Proteomics", chromFile = "sqMass",
                   maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, maxPeptideFdr = 0.01,
                   analyteFDR = 0.01, treeDist = "count", treeAgg = "single", alignToRoot = FALSE, prefix = "master",
-                  context = "global", unalignedFDR = 0.00, alignedFDR1 = 0.05, alignedFDR2 = 0.05, level = "Peptide",
-                  integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
+                  context = "global", unalignedFDR = 0.00, alignedFDR1 = 0.05, alignedFDR2 = 0.05, criterion = 2L,
+                  level = "Peptide", integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
                   recalIntensity = FALSE, fillMissing = TRUE, baseSubtraction = FALSE,
                   XICfilter = "sgolay", polyOrd = 4L, kernelLen = 11L,
                   globalAlignment = "loess", globalAlignmentFdr = 0.01, globalAlignmentSpan = 0.1,
@@ -583,19 +588,30 @@ checkOverlap <- function(x, y){
   olap
 }
 
-getBestPkIdx <- function(df, pk, idx){
-  # Check based on m-score
-  mscores <- .subset2(df, "m_score")[idx]
-  i <- which.min(mscores)
-  if(sum(mscores[i]>=mscores, na.rm=T) == 1){
-    return(idx[i])
+getBestPkIdx <- function(df, pk, idx, criterion = 2L){
+  if(criterion == 1L){ # Check based on intensity
+    idx <- idx[which.max(totalIntensity(df, idx))]
+    return(idx)
+  } else if(criterion == 2L){ # Check based on RT overlap
+    idx <- idx[which.max(overlapLen(df, pk, idx))]
+    return(idx)
+  } else if(criterion == 3L){ # Check based on m-score
+    mscores <- .subset2(df, "m_score")[idx]
+    i <- which.min(mscores)
+    if(sum(mscores[i]>=mscores, na.rm=T) == 1){
+      return(idx[i])
+    }
+    idx <- idx[which(mscores[i]>=mscores)]
   }
-  idx <- idx[which(mscores[i]>=mscores)]
-  # Check based on intensity
-  idx <- idx[which.max(totalIntensity(df, idx))]
-  # Check based on peak-width
-  #idx <- idx[which.max(overlapLen(df, pk, idx))]
+  # Check based on edge-distance
+  idx <- idx[which.min(pkDist(df, pk, idx))]
   idx
+}
+
+pkDist <- function(df, pk, idx){
+  left <- pk[1] - .subset2(df, "leftWidth")[idx]
+  right <- pk[2] - .subset2(df, "rightWidth")[idx]
+  pmin(abs(right) , abs(left))
 }
 
 overlapLen <- function(df, pk, idx){
