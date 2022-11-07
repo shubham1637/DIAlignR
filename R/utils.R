@@ -122,6 +122,55 @@ getMultipeptide <- function(precursors, features, runType="DIA_Proteomics", appl
   multipeptide
 }
 
+#' Alignment Feature Mapping Table
+#'
+#' Construct an alignment feature mapping table for star align method, to map aligned features in experiment runs to the reference run
+#' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-0386-0092
+#'
+#' License: (c) Author (2020) + GPL-3
+#' Date: 2022-11-07
+#' @importFrom data.table setkeyv setattr
+#' @inheritParams alignTargetedRuns
+#' @param precursors (data-frames) Contains precursors and associated transition IDs.
+#' @param features (list of data-frames) Contains features and their properties identified in each run.
+#' @param applyFun (function) value must be either lapply or BiocParallel::bplapply.
+#' @return (list) of dataframes per precursor peptide id having following columns:
+#' \item{reference_feature_id}{(integer) id of reference feature.}
+#' \item{experiment_feature_id}{(integer) id of experiment feature aligned to reference feature.}
+#'
+#' @examples
+#' dataPath <- system.file("extdata", package = "DIAlignR")
+#' fileInfo <- getRunNames(dataPath, oswMerged = TRUE)
+#' precursors <- getPrecursors(fileInfo, oswMerged = TRUE, context = "experiment-wide")
+#' features <- getFeatures(fileInfo, maxFdrQuery = 0.05)
+#' multiFeatureAlignmentMap <- getRefExpFeatureMap(precursors, features)
+#' multiFeatureAlignmentMap[["9861"]]
+#' @seealso \code{\link{getPrecursors}, \link{getFeatures}}
+#' @export
+getRefExpFeatureMap <- function(precursors, features, applyFun=lapply){
+  peptideIDs <- unique(precursors$peptide_id)
+  runs <- names(features)
+  num_run = length(features)
+  # Generate mapping tables per peptide
+  multiFeatureAlignmentMap <- lapply(seq_along(peptideIDs), function(i){
+    analytes <- precursors[list(peptideIDs[i]), 1L][[1]]
+    # Initiate empty data.table with max number of rows to fill
+    # TODO: Assume 5 peak groups features per peptide precursor for now. This is the default number of features reported by OpenSwathWorkflow
+    n_top_features <- 5
+    n_rows <- (length(analytes) * n_top_features) * num_run
+    feature_alignment_mapping <- data.table(reference_feature_id=rep(0, n_rows), experiment_feature_id=rep(0, n_rows))
+    # Enforce class for columns to be interger64
+    setattr(feature_alignment_mapping[['reference_feature_id']], "class","integer64")
+    setattr(feature_alignment_mapping[['experiment_feature_id']], "class","integer64")
+    setkeyv(feature_alignment_mapping, "reference_feature_id")
+    feature_alignment_mapping
+  })
+  names(multiFeatureAlignmentMap) <- as.character(peptideIDs)
+  multiFeatureAlignmentMap
+}
+
 dummyTbl <- function(analytes, runType="DIA_Proteomics"){
   if ( runType=="DIA_IPF" ){
     data.table("transition_group_id" = analytes, "feature_id" = bit64::NA_integer64_,
