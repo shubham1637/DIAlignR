@@ -1,3 +1,16 @@
+#' Inverted versions of in, is.null and is.na
+#'
+#' @noRd
+#'
+#' @examples
+#' 1 %not_in% 1:10
+#' not_null(NULL)
+`%not_in%` <- Negate(`%in%`)
+
+not_null <- Negate(is.null)
+
+not_na <- Negate(is.na)
+
 #' Fetch the reference run for each peptide
 #'
 #' Provides the reference run based on lowest p-value.
@@ -256,6 +269,53 @@ writeTables <- function(fileInfo, multipeptide, precursors){
   setcolorder(finalTbl, c("peptide_id", "precursor", "run", "RT", "intensity", "leftWidth", "rightWidth",
                     "peak_group_rank", "m_score", "alignment_rank", "feature_id"))
   finalTbl
+}
+
+#' Write out alignment map to disk
+#'
+#' Save alignment mapping to disk, either append table to OSW file, or save TSV file(s)
+#' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-0386-0092
+#'
+#' License: (c) Author (2020) + GPL-3
+#' Date: 2022-11-07
+#' @importFrom data.table rbindlist setorder melt setkeyv
+#' @importFrom DBI dbConnect dbWriteTable dbDisconnect
+#' @importFrom RSQLite SQLite
+#' @inheritParams alignTargetedRuns
+#' @param multiFeatureAlignmentMap (list) contains multiple data-frames that are collection of experiment feature ids
+#' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
+#' @param oswMerged (logical) TRUE if merged file from pyprophet is used.
+#' @param fileInfo (data-frame) output of \code{\link{getRunNames}}.
+#' @export
+writeOutFeatureAlignmentMap <- function(multiFeatureAlignmentMap, oswMerged, fileInfo)
+{
+  RefExpFeatureMap <- rbindlist(multiFeatureAlignmentMap)
+  RefExpFeatureMap <- RefExpFeatureMap[reference_feature_id!=0 | experiment_feature_id!=0]
+
+  setorder(RefExpFeatureMap, "reference_feature_id")
+  RefExpFeatureMap[, ALIGNMENT_GROUP_ID := .GRP, by = "reference_feature_id"]
+
+  RefExpFeatureMap = melt(RefExpFeatureMap, if.col = "ALIGNMENT_GROUP_ID", measure.vars = c("reference_feature_id", "experiment_feature_id"), variable.name="REFERENCE", value.name = "FEATURE_ID" )
+  RefExpFeatureMap[, REFERENCE:=as.character(REFERENCE)]
+  RefExpFeatureMap[.(REFERENCE = c("reference_feature_id", "experiment_feature_id"), to = c("1", "0")), on = "REFERENCE", REFERENCE := i.to]
+  RefExpFeatureMap[, ALIGNMENT_GROUP_ID:=as.integer(ALIGNMENT_GROUP_ID)]
+  RefExpFeatureMap[, REFERENCE:=as.integer(REFERENCE)]
+  setkeyv(RefExpFeatureMap, c("ALIGNMENT_GROUP_ID", "REFERENCE", "FEATURE_ID"))
+  RefExpFeatureMap <- unique(RefExpFeatureMap)
+
+  if (oswMerged){
+    oswfile <- unique(fileInfo$featureFile)
+    conn <- DBI::dbConnect(RSQLite::SQLite(), oswfile)
+    ## Write table to database, overwrite if one already exits
+    DBI::dbWriteTable(conn, "ALIGNMENT_GROUP_FEATURE_MAPPING", RefExpFeatureMap, overwrite=TRUE)
+    DBI::dbDisconnect(conn)
+  } else {
+    feature_id_mapping_file <- paste(gsub("[.]tsv", "", outFile), "reference_experiment_feature_map.tsv", sep="_")
+    utils::write.table(RefExpFeatureMap, file = feature_id_mapping_file, sep = "\t", row.names = FALSE, quote = FALSE)
+  }
+  invisible(NULL)
 }
 
 # Alignment of precursor 4618 , sequence = QFNNTDIVLLEDFQK/3 across runs
