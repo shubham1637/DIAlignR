@@ -182,6 +182,7 @@ mapPrecursorToChromIndices <- function(prec2transition, chromHead){
 #' @export
 getChromatogramIndices <- function(fileInfo, precursors, mzPntrs, applyFun=lapply){
   # Get precursor to transition mapping and unlist so that each row has one transition.
+  # TODO: The %>% is not imported
   prec2transition <- dplyr::select(precursors, .data$transition_group_id, .data$transition_ids) %>%
     tidyr::unnest(.data$transition_ids) %>% as.data.frame()
   # For each precursor get associated chromatogram Indices

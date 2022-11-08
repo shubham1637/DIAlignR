@@ -184,7 +184,9 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   utils::write.table(finalTbl, file = outFile, sep = "\t", row.names = FALSE, quote = FALSE)
 
   #### Write Reference-Experiment Feature Alignment mapping to disk
-  writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged, fileInfo)
+  if (saveAlignmentMap){
+    writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged, fileInfo)
+  }
 
   message("Retention time alignment across runs is done.")
   message(paste0(outFile, " file has been written."))
