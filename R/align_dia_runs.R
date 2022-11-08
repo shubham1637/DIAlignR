@@ -18,6 +18,7 @@
 #' @param peps (integer) ids of peptides to be aligned. If NULL, align all peptides.
 #' @param refRun (string) reference for alignment. If no run is provided, m-score is used to select reference run.
 #' @param applyFun (function) value must be either lapply or BiocParallel::bplapply.
+#' @param saveAlignmentMap (logical) Save a mapping table to track aligned feature ids against reference feature id
 #' @return An output table with following columns: precursor, run, intensity, RT, leftWidth, rightWidth,
 #'  peak_group_rank, m_score, alignment_rank, peptide_id, sequence, charge, group_label.
 #'
@@ -32,7 +33,8 @@
 #'
 #' @export
 alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
-                              scoreFile = NULL, runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply){
+                              scoreFile = NULL, runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply,
+                              saveAlignmentMap = FALSE){
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
 
@@ -129,6 +131,15 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   message("The execution time for building multipeptide:")
   print(end_time - start_time)
 
+  #### Create a mapping for reference-experiment aligned features #####
+  if ( saveAlignmentMap )
+  {
+    multiFeatureAlignmentMap <- getRefExpFeatureMap(precursors, features, applyFun=lapply)
+  }
+  else
+  {
+    multiFeatureAlignmentMap <- NULL
+  }
   #### Container to save Global alignments.  #######
   message("Calculating global alignments.")
   start_time <- Sys.time()
@@ -148,7 +159,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   num_of_batch <- ceiling(length(multipeptide)/params[["batchSize"]])
   invisible(
     lapply(1:num_of_batch, perBatch, peptideIDs, multipeptide, refRuns, precursors,
-           prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, lapply)
+           prec2chromIndex, fileInfo, mzPntrs, params, globalFits, RSE, lapply, multiFeatureAlignmentMap)
   )
 
   #### Cleanup.  #######
@@ -171,6 +182,10 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
     finalTbl <- ipfReassignFDR(finalTbl, refRuns, fileInfo, params)
   }
   utils::write.table(finalTbl, file = outFile, sep = "\t", row.names = FALSE, quote = FALSE)
+
+  #### Write Reference-Experiment Feature Alignment mapping to disk
+  writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged, fileInfo)
+
   message("Retention time alignment across runs is done.")
   message(paste0(outFile, " file has been written."))
 
@@ -382,12 +397,14 @@ getAlignObjs <- function(analytes, runs, dataPath = ".", refRun = NULL, oswMerge
 #' @param mzPntrs (list) a list of mzRpwiz.
 #' @param globalFits (list) each element is either of class lm or loess. This is an output of \code{\link{getGlobalFits}}.
 #' @param RSE (list) Each element represents Residual Standard Error of corresponding fit in globalFits.
+#' @param multiFeatureAlignmentMap (list) contains multiple data-frames that are collection of experiment feature ids
+#' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
 #' @return invisible NULL
 #' @seealso \code{\link{alignTargetedRuns}, \link{alignToRef}, \link{getAlignedTimesFast}, \link{getMultipeptide}}
 #' @examples
 #' dataPath <- system.file("extdata", package = "DIAlignR")
 perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2chromIndex,
-                     fileInfo, mzPntrs, params, globalFits, RSE, applyFun = lapply){
+                     fileInfo, mzPntrs, params, globalFits, RSE, applyFun = lapply, multiFeatureAlignmentMap = NULL){
   # if(params[["chromFile"]] =="mzML") fetchXIC = extractXIC_group
   fetchXICs = extractXIC_group2
   message("Processing Batch ", iBatch)
@@ -410,6 +427,14 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
     ref <- refRuns[rownum, "run"][[1]]
     idx <- (rownum - (iBatch-1)*batchSize)
     analytes <- analytesA[[idx]]
+    if ( is.null(multiFeatureAlignmentMap) )
+    {
+      feature_alignment_map <- NULL
+    }
+    else
+    {
+      feature_alignment_map <- multiFeatureAlignmentMap[[rownum]]
+    }
 
     XICs <- lapply(seq_along(runs), function(i){
       cI <- chromIndices[[i]][[idx]]
@@ -448,7 +473,7 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
     exps <- setdiff(rownames(fileInfo), ref)
     invisible(
       lapply(exps,  alignToRef, ref, refIdx, fileInfo, XICs, XICs.ref, params,
-             DT, globalFits, RSE)
+             DT, globalFits, RSE, feature_alignment_map)
     )
 
     ##### Return the dataframe with alignment rank set to TRUE #####
@@ -479,11 +504,13 @@ perBatch <- function(iBatch, peptides, multipeptide, refRuns, precursors, prec2c
 #' @param XICs (list of dataframes) fragment-ion chromatograms of the analytes for all runs.
 #' @param XICs.ref (list of dataframes) fragment-ion chromatograms of the analyte_chr from the reference run.
 #' @param df (dataframe) a collection of features related to the peptide
-#' @seealso \code{\link{alignTargetedRuns}, \link{perBatch}, \link{setAlignmentRank}, \link{getMultipeptide}}
+#' @param feature_alignment_mapping (data.table)  contains experiment feature ids
+#' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
+#' @seealso \code{\link{alignTargetedRuns}, \link{perBatch}, \link{setAlignmentRank}, \link{getMultipeptide}, \link{getRefExpFeatureMap}}
 #' @examples
 #' dataPath <- system.file("extdata", package = "DIAlignR")
 alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
-                       df, globalFits, RSE){
+                       df, globalFits, RSE, feature_alignment_map=NULL){
   # Get XIC_group from experiment run.
   XICs.eXp <- XICs[[eXp]]
   analytes <- as.integer(names(XICs.ref))
@@ -547,5 +574,10 @@ alignToRef <- function(eXp, ref, refIdx, fileInfo, XICs, XICs.ref, params,
   tempi <- eXpIdx[which(df$alignment_rank[eXpIdx] == 1L)]
   if(length(tempi) == 0L) return(invisible(NULL))
   setOtherPrecursors(df, tempi, XICs.eXp, analytes, params)
+  if (not_null(feature_alignment_map))
+  {
+    # NOTE: This assumes the highest quality precursor is used, i.e. analyte_chr is defined
+    populateReferenceExperimentFeatureAlignmentMap(df, feature_alignment_map, tAligned, ref, eXp, analyte_chr)
+  }
   invisible(NULL)
 }
