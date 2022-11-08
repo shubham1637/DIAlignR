@@ -238,4 +238,42 @@ setOtherPrecursors <- function(df, refIdx, XICs, analytes, params){
   invisible(NULL)
 }
 
+#' Populate Alignment Feature Mapping Table
+#'
+#' Populate an alignment feature mapping table for star align method,
+#' to map aligned features in experiment runs to the reference run for a given analyte.
+#' Is a data.table generated from of \code{\link{getRefExpFeatureMap}}.
+#' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-0386-0092
+#'
+#' License: (c) Author (2020) + GPL-3
+#' Date: 2022-11-07
+#' @importFrom data.table rbindlist as.data.table set
+#' @inheritParams alignTargetedRuns
+#' @param df (dataframe) a collection of features related to the peptide
+#' @param feature_alignment_mapping (data.table)  contains experiment feature ids
+#' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
+#' @param tAligned (matrix) the first column corresponds to the aligned reference time, the second column is the aligned experiment time. #' @seealso \code{\link{getAlignedTimesFast}}
+#' @param ref (string) name of the reference run. Must be in the rownames of fileInfo.
+#' @param eXp (string) name of the run to be aligned to reference run. Must be in the rownames of fileInfo.
+#' @param analyte_chr (string) name of highest quality precursor/transition_group_id
+populateReferenceExperimentFeatureAlignmentMap <- function(df, feature_alignment_mapping, tAligned, ref, eXp, analyte_chr){
+  mapped_aligned_features = rbindlist(lapply(df[run==ref & transition_group_id==analyte_chr][["RT"]], function(rt_i){as.data.table(t(matrix(tAligned[which.min(abs(tAligned[,1]-rt_i)),])))}))
+  # Subset reference and experiment features for current analyte
+  ref_df = df[run==ref & transition_group_id==analyte_chr & !is.na(feature_id)]
+  eXp_df = df[run==eXp & transition_group_id==analyte_chr & !is.na(feature_id)]
 
+  # Get reference to experiment feature mapping
+  lapply(seq(1,nrow(mapped_aligned_features)), function(feature_i){
+    ref_featid <- ref_df[which.min(abs(ref_df[["RT"]]-mapped_aligned_features[["V1"]][feature_i]))][['feature_id']]
+    eXp_featid <- eXp_df[which.min(abs(eXp_df[["RT"]]-mapped_aligned_features[["V2"]][feature_i]))][['feature_id']]
+    if( length(eXp_featid)==0 ){ return(invisible(NULL)) }
+    if ( eXp_featid %not_in% feature_alignment_mapping[["experiment_feature_id"]] ){
+      populate_index <- which(feature_alignment_mapping[["reference_feature_id"]]==0 & feature_alignment_mapping[["experiment_feature_id"]]==0)
+      set(feature_alignment_mapping, i=populate_index[1], "reference_feature_id", ref_featid)
+      set(feature_alignment_mapping, i=populate_index[1], "experiment_feature_id", eXp_featid)
+    }
+  })
+  invisible(NULL)
+}
