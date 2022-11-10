@@ -16,3 +16,8 @@ addons:
   apt:
     packages:
       - libnetcdf-dev
+      - libfreetype6-dev
+      - libfontconfig1-dev
+      - xclip
+      - libfribidi-de
+      - libharfbuzz-dev
