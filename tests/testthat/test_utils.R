@@ -116,12 +116,12 @@ test_that("test_writeOutFeatureAlignmentMap",
                                                                                                         5.52612460272647e-11, 3.59272034753732e+234, 3.74370892823184e+230,
                                                                                                         2.34380646139584e+234, 4.75292059933946e+94, 5.52612460272647e-11,
                                                                                                         3.59272034753732e+234, 3.74370892823184e+230, 0, 0, 0, 0, 0,
-                                                                                                        0), class = "integer64"), experiment_feature_id = structure(c(2.04161779709829e+87,
-                                                                                                                                                                      1.60545397951231e+66, 5.20548354836881e-89, 4.57942078616298e+306,
-                                                                                                                                                                      2.66188671607728e-167, 1.89738801704963e+63, 7.46666102909777e-250,
-                                                                                                                                                                      1.01955111889378e-75, 5.12280305276836e+252, 0, 0, 0, 0, 0, 0
-                                                                                                        ), class = "integer64")), row.names = c(NA, -15L), class = c("data.table",
-                                                                                                                                                                     "data.frame")),
+                                                                                                        0), class = "integer64"),
+                                                                     experiment_feature_id = structure(c(2.04161779709829e+87,
+                                                                                                         1.60545397951231e+66, 5.20548354836881e-89, 4.57942078616298e+306,
+                                                                                                         2.66188671607728e-167, 1.89738801704963e+63, 7.46666102909777e-250,
+                                                                                                         1.01955111889378e-75, 5.12280305276836e+252, 0, 0, 0, 0, 0, 0
+                                                                                                        ), class = "integer64")), row.names = c(NA, -15L), class = c("data.table", "data.frame")),
                                              `19045` = structure(list(reference_feature_id = structure(c(6.28056556040491e-257,
                                                                                                          4.37872094299259e+26, 4.97487068543727e-50, 1.96129357589358e+225,
                                                                                                          6.28056556040491e-257, 4.37872094299259e+26, 4.97487068543727e-50,
@@ -131,15 +131,13 @@ test_that("test_writeOutFeatureAlignmentMap",
                                                                                                           1.64937896938207e+218, 1.3591112627868e-271, 3.36180583288588e-229,
                                                                                                           2.16310643042558e-237, 5.82423961711318e+254, 9.33806679439292e+229,
                                                                                                           1.58730393504064e-226, 7.21410639770476e+159, 0, 0, 0,
-                                                                                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA,
-                                                                                                                                                                                                      -30L), class = c("data.table", "data.frame")),
+                                                                                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA, -30L), class = c("data.table", "data.frame")),
                                              `19800` = structure(list(reference_feature_id = structure(c(4.72799309850901e-140,
                                                                                                          1.98100991301857e-234, 4.7297745210988e+87, 4.72799309850901e-140,
                                                                                                          4.7297745210988e+87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64"),
                                                                       experiment_feature_id = structure(c(8.56560434196891e+243,
                                                                                                           1.62593959656114e+49, 4.1149805476014e-97, 1.94083176316202e-40,
-                                                                                                          1.29045098420263e-28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA,
-                                                                                                                                                                                                    -15L), class = c("data.table", "data.frame")))
+                                                                                                          1.29045098420263e-28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA, -15L), class = c("data.table", "data.frame")))
             # Write out alignment map to disk
             writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged=TRUE, fileInfo)
 
