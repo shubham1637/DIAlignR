@@ -14,7 +14,8 @@ alignToRef(
   params,
   df,
   globalFits,
-  RSE
+  RSE,
+  feature_alignment_map = NULL
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ alignToRef(
 \item{globalFits}{(list) each element is either of class lm or loess. This is an output of \code{\link{getGlobalFits}}.}
 
 \item{RSE}{(list) Each element represents Residual Standard Error of corresponding fit in globalFits.}
+
+\item{feature_alignment_mapping}{(data.table)  contains experiment feature ids
+mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.}
 }
 \value{
 invisible NULL
@@ -49,7 +53,7 @@ ref run and updates corresponding features.
 dataPath <- system.file("extdata", package = "DIAlignR")
 }
 \seealso{
-\code{\link{alignTargetedRuns}, \link{perBatch}, \link{setAlignmentRank}, \link{getMultipeptide}}
+\code{\link{alignTargetedRuns}, \link{perBatch}, \link{setAlignmentRank}, \link{getMultipeptide}, \link{getRefExpFeatureMap}}
 }
 \author{
 Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
