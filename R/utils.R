@@ -144,7 +144,7 @@ getMultipeptide <- function(precursors, features, runType="DIA_Proteomics", appl
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2022-11-07
-#' @importFrom data.table setkeyv setattr
+#' @import data.table
 #' @inheritParams alignTargetedRuns
 #' @param precursors (data-frames) Contains precursors and associated transition IDs.
 #' @param features (list of data-frames) Contains features and their properties identified in each run.
@@ -175,9 +175,9 @@ getRefExpFeatureMap <- function(precursors, features, applyFun=lapply){
     n_rows <- (length(analytes) * n_top_features) * num_run
     feature_alignment_mapping <- data.table(reference_feature_id=rep(0, n_rows), experiment_feature_id=rep(0, n_rows))
     # Enforce class for columns to be interger64
-    setattr(feature_alignment_mapping[['reference_feature_id']], "class","integer64")
-    setattr(feature_alignment_mapping[['experiment_feature_id']], "class","integer64")
-    setkeyv(feature_alignment_mapping, "reference_feature_id")
+    data.table::setattr(feature_alignment_mapping[['reference_feature_id']], "class","integer64")
+    data.table::setattr(feature_alignment_mapping[['experiment_feature_id']], "class","integer64")
+    data.table::setkeyv(feature_alignment_mapping, "reference_feature_id")
     feature_alignment_mapping
   })
   names(multiFeatureAlignmentMap) <- as.character(peptideIDs)
@@ -280,9 +280,7 @@ writeTables <- function(fileInfo, multipeptide, precursors){
 #'
 #' License: (c) Author (2020) + GPL-3
 #' Date: 2022-11-07
-#' @importFrom data.table rbindlist setorder melt setkeyv
-#' @importFrom DBI dbConnect dbWriteTable dbDisconnect
-#' @importFrom RSQLite SQLite
+#' @import data.table RSQLite
 #' @inheritParams alignTargetedRuns
 #' @param multiFeatureAlignmentMap (list) contains multiple data-frames that are collection of experiment feature ids
 #' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
@@ -291,18 +289,18 @@ writeTables <- function(fileInfo, multipeptide, precursors){
 #' @export
 writeOutFeatureAlignmentMap <- function(multiFeatureAlignmentMap, oswMerged, fileInfo)
 {
-  RefExpFeatureMap <- rbindlist(multiFeatureAlignmentMap)
+  RefExpFeatureMap <- data.table::rbindlist(multiFeatureAlignmentMap)
   RefExpFeatureMap <- RefExpFeatureMap[reference_feature_id!=0 | experiment_feature_id!=0]
 
-  setorder(RefExpFeatureMap, "reference_feature_id")
+  data.table::setorder(RefExpFeatureMap, "reference_feature_id")
   RefExpFeatureMap[, ALIGNMENT_GROUP_ID := .GRP, by = "reference_feature_id"]
 
-  RefExpFeatureMap = melt(RefExpFeatureMap, if.col = "ALIGNMENT_GROUP_ID", measure.vars = c("reference_feature_id", "experiment_feature_id"), variable.name="REFERENCE", value.name = "FEATURE_ID" )
+  RefExpFeatureMap = data.table::melt(RefExpFeatureMap, if.col = "ALIGNMENT_GROUP_ID", measure.vars = c("reference_feature_id", "experiment_feature_id"), variable.name="REFERENCE", value.name = "FEATURE_ID" )
   RefExpFeatureMap[, REFERENCE:=as.character(REFERENCE)]
   RefExpFeatureMap[.(REFERENCE = c("reference_feature_id", "experiment_feature_id"), to = c("1", "0")), on = "REFERENCE", REFERENCE := i.to]
   RefExpFeatureMap[, ALIGNMENT_GROUP_ID:=as.integer(ALIGNMENT_GROUP_ID)]
   RefExpFeatureMap[, REFERENCE:=as.integer(REFERENCE)]
-  setkeyv(RefExpFeatureMap, c("ALIGNMENT_GROUP_ID", "REFERENCE", "FEATURE_ID"))
+  data.table::setkeyv(RefExpFeatureMap, c("ALIGNMENT_GROUP_ID", "REFERENCE", "FEATURE_ID"))
   RefExpFeatureMap <- unique(RefExpFeatureMap)
 
   if (oswMerged){

@@ -19,13 +19,17 @@ populateReferenceExperimentFeatureAlignmentMap(
 \item{feature_alignment_mapping}{(data.table)  contains experiment feature ids
 mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.}
 
-\item{tAligned}{(matrix) the first column corresponds to the aligned reference time, the second column is the aligned experiment time. #' @seealso \code{\link{getAlignedTimesFast}}}
+\item{tAligned}{(list) the first element corresponds to the aligned reference time,
+the second element is the aligned experiment time.}
 
 \item{ref}{(string) name of the reference run. Must be in the rownames of fileInfo.}
 
 \item{eXp}{(string) name of the run to be aligned to reference run. Must be in the rownames of fileInfo.}
 
 \item{analyte_chr}{(string) name of highest quality precursor/transition_group_id}
+}
+\value{
+invisible NULL
 }
 \description{
 Populate an alignment feature mapping table for star align method,
@@ -40,3 +44,4 @@ ORCID: 0000-0003-0386-0092
 License: (c) Author (2020) + GPL-3
 Date: 2022-11-07
 }
+\keyword{internal}
