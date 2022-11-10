@@ -18,7 +18,7 @@
 #' @param peps (integer) ids of peptides to be aligned. If NULL, align all peptides.
 #' @param refRun (string) reference for alignment. If no run is provided, m-score is used to select reference run.
 #' @param applyFun (function) value must be either lapply or BiocParallel::bplapply.
-#' @param saveAlignmentMap (logical) Save a mapping table to track aligned feature ids against reference feature id
+#' @param saveAlignedPeaks (logical) Save a mapping table to track aligned feature ids against reference feature id
 #' @return An output table with following columns: precursor, run, intensity, RT, leftWidth, rightWidth,
 #'  peak_group_rank, m_score, alignment_rank, peptide_id, sequence, charge, group_label.
 #'
@@ -34,7 +34,7 @@
 #' @export
 alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIAlignR(), oswMerged = TRUE,
                               scoreFile = NULL, runs = NULL, peps = NULL, refRun = NULL, applyFun = lapply,
-                              saveAlignmentMap = FALSE){
+                              saveAlignedPeaks = FALSE){
   #### Check if all parameters make sense.  #########
   params <- checkParams(params)
 
@@ -132,7 +132,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   print(end_time - start_time)
 
   #### Create a mapping for reference-experiment aligned features #####
-  if ( saveAlignmentMap )
+  if ( saveAlignedPeaks )
   {
     multiFeatureAlignmentMap <- getRefExpFeatureMap(precursors, features, applyFun=lapply)
   }
@@ -184,7 +184,7 @@ alignTargetedRuns <- function(dataPath, outFile = "DIAlignR", params = paramsDIA
   utils::write.table(finalTbl, file = outFile, sep = "\t", row.names = FALSE, quote = FALSE)
 
   #### Write Reference-Experiment Feature Alignment mapping to disk
-  if (saveAlignmentMap){
+  if (saveAlignedPeaks){
     writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged, fileInfo)
   }
 
