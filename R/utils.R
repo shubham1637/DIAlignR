@@ -146,9 +146,8 @@ getMultipeptide <- function(precursors, features, runType="DIA_Proteomics", appl
 #' Date: 2022-11-07
 #' @importFrom data.table setkeyv setattr
 #' @inheritParams alignTargetedRuns
-#' @param precursors (data-frames) Contains precursors and associated transition IDs.
+#' @inheritParams getMultipeptide
 #' @param features (list of data-frames) Contains features and their properties identified in each run.
-#' @param applyFun (function) value must be either lapply or BiocParallel::bplapply.
 #' @return (list) of dataframes per precursor peptide id having following columns:
 #' \item{reference_feature_id}{(integer) id of reference feature.}
 #' \item{experiment_feature_id}{(integer) id of experiment feature aligned to reference feature.}
@@ -284,10 +283,9 @@ writeTables <- function(fileInfo, multipeptide, precursors){
 #' @importFrom DBI dbConnect dbWriteTable dbDisconnect
 #' @importFrom RSQLite SQLite
 #' @inheritParams alignTargetedRuns
+#' @inheritParams getMZMLpointers
 #' @param multiFeatureAlignmentMap (list) contains multiple data-frames that are collection of experiment feature ids
 #' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
-#' @param oswMerged (logical) TRUE if merged file from pyprophet is used.
-#' @param fileInfo (data-frame) output of \code{\link{getRunNames}}.
 #' @export
 writeOutFeatureAlignmentMap <- function(multiFeatureAlignmentMap, oswMerged, fileInfo)
 {
