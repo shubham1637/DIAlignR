@@ -150,7 +150,7 @@ getXICs4AlignObj <- function(mzPntrs, fileInfo, runs, prec2chromIndex, analytes)
 #' For all the analytes requested in runs, it first creates oswFiles, then, fetches chromatogram indices from oswFiles and
 #' extract chromatograms from mzML files.
 #'
-#' @importFrom dplyr %>%
+#' @importFrom magrittr %>%
 #' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
 #'
 #' ORCID: 0000-0003-3500-8152

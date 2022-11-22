@@ -7,7 +7,7 @@
 #'
 #' License: (c) Author (2019) + GPL-3
 #' Date: 2019-12-13
-#' @importFrom dplyr %>%
+#' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @param oswAnalytes (dataframe) This is an output of getOswFiles.
 #' @param chromHead (dataframe) This has two columns: chromatogramId and chromatogramIndex with integer values.
@@ -23,7 +23,7 @@ mergeOswAnalytes_ChromHeader <- function(oswAnalytes, chromHead, analyteFDR =  1
     dplyr::group_by(.data$transition_group_id, .data$peak_group_rank) %>%
     dplyr::mutate(transition_ids = paste0(.data$transition_id, collapse = ","),
                   chromatogramIndex = paste0(.data$chromatogramIndex, collapse = ",")) %>%
-    dplyr::ungroup() %>% dplyr::select(-.data$transition_id) %>% dplyr::distinct(),
+    dplyr::ungroup() %>% dplyr::select(-'transition_id') %>% dplyr::distinct(),
     envir = parent.frame(n = 1))
   invisible(NULL)
 }
@@ -91,7 +91,7 @@ getOswFiles <- function(fileInfo, mzPntrs, maxFdrQuery = 0.05, analyteFDR = 0.01
     # Merge chromatogram indices with transition indices and save them.
     # Following function merges analytesInfo dataframe with the chromatogram Header.
     mergeOswAnalytes_ChromHeader(oswAnalytes, chromHead, analyteFDR, runType)
-    oswFiles[[i]] <- dplyr::select(oswAnalytes, -.data$filename)
+    oswFiles[[i]] <- dplyr::select(oswAnalytes, -'filename')
     message("Fetched chromatogram indices from ", fileInfo$runName[i])
   }
   # Assign rownames to the each element of list
@@ -116,7 +116,7 @@ getOswFiles <- function(fileInfo, mzPntrs, maxFdrQuery = 0.05, analyteFDR = 0.01
 #' @return Invisible NULL
 #' @keywords internal
 chromatogramIdAsInteger <- function(chromatogramHeader){
-  assign("chromHead", dplyr::mutate(dplyr::select(chromatogramHeader, .data$chromatogramId, .data$chromatogramIndex),
+  assign("chromHead", dplyr::mutate(dplyr::select(chromatogramHeader, 'chromatogramId', 'chromatogramIndex'),
                                     chromatogramId = as.integer(.data$chromatogramId)),
          envir = parent.frame(n = 1))
   invisible(NULL)
@@ -126,7 +126,7 @@ chromatogramIdAsInteger <- function(chromatogramHeader){
 #' Merge precursor and transitions mapping with chromatogram header
 #'
 #' Merges dataframes on transition_ids(OSW) = chromatogramId(mzML).
-#' @importFrom dplyr %>%
+#' @importFrom magrittr %>%
 #' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
 #'
 #' ORCID: 0000-0003-3500-8152
@@ -144,7 +144,7 @@ chromatogramIdAsInteger <- function(chromatogramHeader){
 mapPrecursorToChromIndices <- function(prec2transition, chromHead){
   # Assume that each transition has one row.
   prec2ChromIndices <- dplyr::select(dplyr::left_join(prec2transition, chromHead,
-                                                      by = c("transition_ids" = "chromatogramId")), -.data$transition_ids)
+                                                      by = c("transition_ids" = "chromatogramId")), -'transition_ids')
   prec2ChromIndices <- dplyr::group_by(prec2ChromIndices, .data$transition_group_id) %>%
     dplyr::summarise(chromatogramIndex = base::list(.data$chromatogramIndex)) %>%
     as.data.frame()
@@ -182,8 +182,8 @@ mapPrecursorToChromIndices <- function(prec2transition, chromHead){
 #' @export
 getChromatogramIndices <- function(fileInfo, precursors, mzPntrs, applyFun=lapply){
   # Get precursor to transition mapping and unlist so that each row has one transition.
-  prec2transition <- dplyr::select(precursors, .data$transition_group_id, .data$transition_ids) %>%
-    tidyr::unnest(.data$transition_ids) %>% as.data.frame()
+  prec2transition <- dplyr::select(precursors, 'transition_group_id', 'transition_ids') %>%
+    tidyr::unnest('transition_ids') %>% as.data.frame()
   # For each precursor get associated chromatogram Indices
   runs <- rownames(fileInfo)
   prec2chromIndex <- applyFun(seq_along(runs), function(i){

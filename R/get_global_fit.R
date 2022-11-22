@@ -108,7 +108,7 @@ getLinearfit <- function(RUNS_RT){
 #' @param fitType (string) Must be from "loess" or "linear".
 #' @param maxFdrGlobal (numeric) A numeric value between 0 and 1. Features should have m-score lower than this value for participation in global fit.
 #' @param spanvalue (numeric) Spanvalue for LOESS fit. For targeted proteomics 0.1 could be used.
-#' @importFrom dplyr %>%
+#' @importFrom magrittr %>%
 #' @return An object of class "loess".
 #' @seealso \code{\link{getFeatures}}
 #' @examples
