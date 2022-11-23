@@ -36,6 +36,30 @@ Populate an alignment feature mapping table for star align method,
 to map aligned features in experiment runs to the reference run for a given analyte.
 Is a data.table generated from of \code{\link{getRefExpFeatureMap}}.
 }
+\examples{
+data(multipeptide_DIAlignR, package="DIAlignR")
+data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
+params <- paramsDIAlignR()
+df <- multipeptide_DIAlignR[["14383"]]
+df$alignment_rank[2] <- 1L
+XICs.ref <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep0\%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
+XICs.eXp <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep10\%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
+\dontrun{
+# Use getAlignedTimes() to get tAligned.
+alignObj <- testAlignObj()
+tAligned <- alignedTimes2(alignObj, XICs.ref, XICs.eXp)
+setAlignmentRank(df, refIdx = 3L, eXp = "run2", tAligned, XICs.eXp, params, adaptiveRT = 38.66)
+# Use getRefExpFeatureMap() to get a list of feature_alignment_mapping tables
+feature_alignment_mapping <- data.table::as.data.table(structure(list(
+reference_feature_id = structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64"),
+experiment_feature_id = structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")),
+row.names = c(NA, -15L), class = c("data.table", "data.frame"), sorted = "reference_feature_id"))
+populateReferenceExperimentFeatureAlignmentMap(df, feature_alignment_mapping, tAligned, ref = "run0", eXp = "run2", analyte_chr="4618")
+}
+}
+\seealso{
+\code{\link{getRefExpFeatureMap}, \link{alignToRef}}
+}
 \author{
 Justin Sing, \email{justinc.sing@mail.utoronto.ca}
 

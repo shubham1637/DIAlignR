@@ -284,7 +284,35 @@ writeTables <- function(fileInfo, multipeptide, precursors){
 #' @inheritParams getMZMLpointers
 #' @param multiFeatureAlignmentMap (list) contains multiple data-frames that are collection of experiment feature ids
 #' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
-#' @export
+#'
+#' @return Saves the alignment feature id mapping table.
+#'
+#' The mapping table will have the following columns:
+#'
+#' ALIGNMENT_GROUP_ID: (int) An interger number that identifies the group of experiments that are aligned per best representative precursor (peptide).
+#'
+#' REFERENCE: (logical int) A logical interger, 1 indicates the feature used as the reference, 0 indicates the experiment feature being aligned to reference.
+#'
+#' FEATURE_ID: (int64) Feature id derived from OpenSwathWorkflow's peak-group picking annotation, in OSW file.
+#'
+#' Writing to disk will be one of two possible outcomes:
+#'
+#' 1. If fileInfo contains a merged OSW, then the alignment map table will be written to
+#' the sqlite database as ALIGNMENT_GROUP_FEATURE_MAPPING.
+#'
+#' or
+#'
+#' 2. If fileInfo does not contain a merged OSW, then the alignment map table will be written
+#' to a TSV file.
+#'
+#' @seealso \code{\link{getRefExpFeatureMap}, \link{getRunNames}}
+#' @keywords internal
+#'
+#' @examples
+#' data(oswFiles_DIAlignR, , package="DIAlignR")
+#' \dontrun{
+#' writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged, fileInfo)
+#' }
 writeOutFeatureAlignmentMap <- function(multiFeatureAlignmentMap, oswMerged, fileInfo)
 {
   RefExpFeatureMap <- data.table::rbindlist(multiFeatureAlignmentMap)
@@ -308,7 +336,7 @@ writeOutFeatureAlignmentMap <- function(multiFeatureAlignmentMap, oswMerged, fil
     DBI::dbWriteTable(conn, "ALIGNMENT_GROUP_FEATURE_MAPPING", RefExpFeatureMap, overwrite=TRUE)
     DBI::dbDisconnect(conn)
   } else {
-    feature_id_mapping_file <- paste(gsub("[.]tsv", "", outFile), "reference_experiment_feature_map.tsv", sep="_")
+    feature_id_mapping_file <- paste("reference_experiment_feature_map.tsv")
     utils::write.table(RefExpFeatureMap, file = feature_id_mapping_file, sep = "\t", row.names = FALSE, quote = FALSE)
   }
   invisible(NULL)

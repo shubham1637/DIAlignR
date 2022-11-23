@@ -12,10 +12,40 @@ mapped to corresponding reference feature id per analyte. This is an output of \
 
 \item{oswMerged}{(logical) TRUE if merged file from pyprophet is used.}
 
-\item{fileInfo}{(data-frame) output of \code{\link{getRunNames}}.}
+\item{fileInfo}{(data-frame) Output of DIAlignR::getRunNames function}
+}
+\value{
+Saves the alignment feature id mapping table.
+
+The mapping table will have the following columns:
+
+ALIGNMENT_GROUP_ID: (int) An interger number that identifies the group of experiments that are aligned per best representative precursor (peptide).
+
+REFERENCE: (logical int) A logical interger, 1 indicates the feature used as the reference, 0 indicates the experiment feature being aligned to reference.
+
+FEATURE_ID: (int64) Feature id derived from OpenSwathWorkflow's peak-group picking annotation, in OSW file.
+
+Writing to disk will be one of two possible outcomes:
+
+1. If fileInfo contains a merged OSW, then the alignment map table will be written to
+the sqlite database as ALIGNMENT_GROUP_FEATURE_MAPPING.
+
+or
+
+2. If fileInfo does not contain a merged OSW, then the alignment map table will be written
+to a TSV file.
 }
 \description{
 Save alignment mapping to disk, either append table to OSW file, or save TSV file(s)
+}
+\examples{
+data(oswFiles_DIAlignR, , package="DIAlignR")
+\dontrun{
+writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged, fileInfo)
+}
+}
+\seealso{
+\code{\link{getRefExpFeatureMap}, \link{getRunNames}}
 }
 \author{
 Justin Sing, \email{justinc.sing@mail.utoronto.ca}
@@ -25,3 +55,4 @@ ORCID: 0000-0003-0386-0092
 License: (c) Author (2020) + GPL-3
 Date: 2022-11-07
 }
+\keyword{internal}

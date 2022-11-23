@@ -5,6 +5,7 @@ cache: packages
 
 r:
   - release
+  - devel
   - bioc-release
 
 warnings_are_errors: false
@@ -16,8 +17,3 @@ addons:
   apt:
     packages:
       - libnetcdf-dev
-      - libfreetype6-dev
-      - libfontconfig1-dev
-      - xclip
-      - libfribidi-de
-      - libharfbuzz-dev

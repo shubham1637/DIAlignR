@@ -174,6 +174,7 @@ test_that("test_writeOutFeatureAlignmentMap",
             #### Clean up ####
             # Clean OSW and remove alingment map table
             DBI::dbExecute(con, "DROP TABLE ALIGNMENT_GROUP_FEATURE_MAPPING;")
+            DBI::dbExecute(con, "VACUUM;")
             # Disconnect from OSW
             DBI::dbDisconnect(con)
           })
