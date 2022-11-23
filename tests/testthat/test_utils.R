@@ -138,12 +138,6 @@ test_that("test_writeOutFeatureAlignmentMap",
                                                                       experiment_feature_id = structure(c(8.56560434196891e+243,
                                                                                                           1.62593959656114e+49, 4.1149805476014e-97, 1.94083176316202e-40,
                                                                                                           1.29045098420263e-28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA, -15L), class = c("data.table", "data.frame")))
-            # Write out alignment map to disk
-            writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged=TRUE, fileInfo)
-
-            # Load written out table from osw file
-            con <- DBI::dbConnect(RSQLite::SQLite(), fileInfo$featureFile[1])
-            outData <- DBI::dbGetQuery(con, "SELECT * FROM ALIGNMENT_GROUP_FEATURE_MAPPING")
 
             #### Expected Data ####
             expData <- structure(list(ALIGNMENT_GROUP_ID = c(1L, 1L, 1L, 2L, 2L, 3L,
@@ -168,15 +162,39 @@ test_that("test_writeOutFeatureAlignmentMap",
                                                                1.01955111889378e-75, 3.59272034753732e+234), class = "integer64")),
                                  class = "data.frame", row.names = c(NA, 36L))
 
+            #### Writing to OSW ####
+            # Make a Copy of fileInfo with a copy of the OSW file to avoid git history of test merged.osw file from being changed
+            fileInfotmp <- fileInfo
+            copiedOSWpath <- paste(getwd(), basename(unique(fileInfo$featureFile)[1]), sep=.Platform$file.sep)
+            file.copy(unique(fileInfo$featureFile)[1], copiedOSWpath)
+            fileInfotmp$featureFile <- copiedOSWpath
+
+            # Write out alignment map to disk: OSW
+            writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged=TRUE, fileInfotmp)
+
+            # Load written out table from osw file
+            con <- DBI::dbConnect(RSQLite::SQLite(), fileInfotmp$featureFile[1])
+            outData <- DBI::dbGetQuery(con, "SELECT * FROM ALIGNMENT_GROUP_FEATURE_MAPPING")
+            DBI::dbDisconnect(con)
+
             #### Test Expectations ####
             expect_equal(outData, expData, tolerance = 1e-6)
 
-            #### Clean up ####
-            # Clean OSW and remove alingment map table
-            DBI::dbExecute(con, "DROP TABLE ALIGNMENT_GROUP_FEATURE_MAPPING;")
-            DBI::dbExecute(con, "VACUUM;")
-            # Disconnect from OSW
-            DBI::dbDisconnect(con)
+            #### Clean up and Remove Test Output ####
+            file.remove(copiedOSWpath)
+
+            #### Writing to TSV ####
+            # Write out alignment map to disk: TSV
+            writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged=FALSE, fileInfotmp)
+
+            # Load written out table from TSV file
+            outData <- read.table("reference_experiment_feature_map.tsv", header = TRUE, sep = "\t", colClasses = c("integer", "integer", "integer64"))
+
+            #### Test Expectations ####
+            expect_equal(outData, expData, tolerance = 1e-6)
+
+            #### Clean up and Remove Test Output ####
+            file.remove("reference_experiment_feature_map.tsv")
           })
 
 test_that("test_checkParams", {
