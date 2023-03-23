@@ -25,6 +25,7 @@ A list of parameters:
  considered for quantification.}
 \item{alignedFDR2}{(numeric) must be between alignedFDR1 and maxFdrQuery. Features below alignedFDR2 and within certain distance from the aligned time are
  considered for quantification after the alignment.}
+\item{criterion}{(integer) strategy to select peak if found overlapping peaks. 1:intensity, 2: RT overlap, 3: mscore, 4: edge distance}
 \item{level}{(string) apply maxPeptideFDR on Protein as well if specified as "Protein". Default: "Peptide".}
 \item{integrationType}{(string) method to ompute the area of a peak contained in XICs. Must be
  from "intensity_sum", "trapezoid", "simpson".}

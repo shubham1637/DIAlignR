@@ -1,3 +1,16 @@
+#' Inverted versions of in, is.null and is.na
+#'
+#' @noRd
+#'
+#' @examples
+#' 1 %not_in% 1:10
+#' not_null(NULL)
+`%not_in%` <- Negate(`%in%`)
+
+not_null <- Negate(is.null)
+
+not_na <- Negate(is.na)
+
 #' Fetch the reference run for each peptide
 #'
 #' Provides the reference run based on lowest p-value.
@@ -122,6 +135,54 @@ getMultipeptide <- function(precursors, features, runType="DIA_Proteomics", appl
   multipeptide
 }
 
+#' Alignment Feature Mapping Table
+#'
+#' Construct an alignment feature mapping table for star align method, to map aligned features in experiment runs to the reference run
+#' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-0386-0092
+#'
+#' License: (c) Author (2020) + GPL-3
+#' Date: 2022-11-07
+#' @import data.table
+#' @inheritParams alignTargetedRuns
+#' @inheritParams getMultipeptide
+#' @param features (list of data-frames) Contains features and their properties identified in each run.
+#' @return (list) of dataframes per precursor peptide id having following columns:
+#' \item{reference_feature_id}{(integer) id of reference feature.}
+#' \item{experiment_feature_id}{(integer) id of experiment feature aligned to reference feature.}
+#'
+#' @examples
+#' dataPath <- system.file("extdata", package = "DIAlignR")
+#' fileInfo <- getRunNames(dataPath, oswMerged = TRUE)
+#' precursors <- getPrecursors(fileInfo, oswMerged = TRUE, context = "experiment-wide")
+#' features <- getFeatures(fileInfo, maxFdrQuery = 0.05)
+#' multiFeatureAlignmentMap <- getRefExpFeatureMap(precursors, features)
+#' multiFeatureAlignmentMap[["9861"]]
+#' @seealso \code{\link{getPrecursors}, \link{getFeatures}}
+#' @export
+getRefExpFeatureMap <- function(precursors, features, applyFun=lapply){
+  peptideIDs <- unique(precursors$peptide_id)
+  runs <- names(features)
+  num_run = length(features)
+  # Generate mapping tables per peptide
+  multiFeatureAlignmentMap <- lapply(seq_along(peptideIDs), function(i){
+    analytes <- precursors[list(peptideIDs[i]), 1L][[1]]
+    # Initiate empty data.table with max number of rows to fill
+    # TODO: Assume 5 peak groups features per peptide precursor for now. This is the default number of features reported by OpenSwathWorkflow
+    n_top_features <- 5
+    n_rows <- (length(analytes) * n_top_features) * num_run
+    feature_alignment_mapping <- data.table(reference_feature_id=rep(0, n_rows), experiment_feature_id=rep(0, n_rows))
+    # Enforce class for columns to be interger64
+    data.table::setattr(feature_alignment_mapping[['reference_feature_id']], "class","integer64")
+    data.table::setattr(feature_alignment_mapping[['experiment_feature_id']], "class","integer64")
+    data.table::setkeyv(feature_alignment_mapping, "reference_feature_id")
+    feature_alignment_mapping
+  })
+  names(multiFeatureAlignmentMap) <- as.character(peptideIDs)
+  multiFeatureAlignmentMap
+}
+
 dummyTbl <- function(analytes, runType="DIA_Proteomics"){
   if ( runType=="DIA_IPF" ){
     data.table("transition_group_id" = analytes, "feature_id" = bit64::NA_integer64_,
@@ -209,6 +270,78 @@ writeTables <- function(fileInfo, multipeptide, precursors){
   finalTbl
 }
 
+#' Write out alignment map to disk
+#'
+#' Save alignment mapping to disk, either append table to OSW file, or save TSV file(s)
+#' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-0386-0092
+#'
+#' License: (c) Author (2020) + GPL-3
+#' Date: 2022-11-07
+#' @import data.table RSQLite
+#' @inheritParams alignTargetedRuns
+#' @inheritParams getMZMLpointers
+#' @param multiFeatureAlignmentMap (list) contains multiple data-frames that are collection of experiment feature ids
+#' mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.
+#'
+#' @return Saves the alignment feature id mapping table.
+#'
+#' The mapping table will have the following columns:
+#'
+#' ALIGNMENT_GROUP_ID: (int) An interger number that identifies the group of experiments that are aligned per best representative precursor (peptide).
+#'
+#' REFERENCE: (logical int) A logical interger, 1 indicates the feature used as the reference, 0 indicates the experiment feature being aligned to reference.
+#'
+#' FEATURE_ID: (int64) Feature id derived from OpenSwathWorkflow's peak-group picking annotation, in OSW file.
+#'
+#' Writing to disk will be one of two possible outcomes:
+#'
+#' 1. If fileInfo contains a merged OSW, then the alignment map table will be written to
+#' the sqlite database as ALIGNMENT_GROUP_FEATURE_MAPPING.
+#'
+#' or
+#'
+#' 2. If fileInfo does not contain a merged OSW, then the alignment map table will be written
+#' to a TSV file.
+#'
+#' @seealso \code{\link{getRefExpFeatureMap}, \link{getRunNames}}
+#' @keywords internal
+#'
+#' @examples
+#' data(oswFiles_DIAlignR, , package="DIAlignR")
+#' \dontrun{
+#' writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged, fileInfo)
+#' }
+writeOutFeatureAlignmentMap <- function(multiFeatureAlignmentMap, oswMerged, fileInfo)
+{
+  RefExpFeatureMap <- data.table::rbindlist(multiFeatureAlignmentMap)
+  RefExpFeatureMap <- RefExpFeatureMap[reference_feature_id!=0 | experiment_feature_id!=0]
+
+  data.table::setorder(RefExpFeatureMap, "reference_feature_id")
+  RefExpFeatureMap[, ALIGNMENT_GROUP_ID := .GRP, by = "reference_feature_id"]
+
+  RefExpFeatureMap = data.table::melt(RefExpFeatureMap, if.col = "ALIGNMENT_GROUP_ID", measure.vars = c("reference_feature_id", "experiment_feature_id"), variable.name="REFERENCE", value.name = "FEATURE_ID" )
+  RefExpFeatureMap[, REFERENCE:=as.character(REFERENCE)]
+  RefExpFeatureMap[.(REFERENCE = c("reference_feature_id", "experiment_feature_id"), to = c("1", "0")), on = "REFERENCE", REFERENCE := i.to]
+  RefExpFeatureMap[, ALIGNMENT_GROUP_ID:=as.integer(ALIGNMENT_GROUP_ID)]
+  RefExpFeatureMap[, REFERENCE:=as.integer(REFERENCE)]
+  data.table::setkeyv(RefExpFeatureMap, c("ALIGNMENT_GROUP_ID", "REFERENCE", "FEATURE_ID"))
+  RefExpFeatureMap <- unique(RefExpFeatureMap)
+
+  if (oswMerged){
+    oswfile <- unique(fileInfo$featureFile)
+    conn <- DBI::dbConnect(RSQLite::SQLite(), oswfile)
+    ## Write table to database, overwrite if one already exits
+    DBI::dbWriteTable(conn, "ALIGNMENT_GROUP_FEATURE_MAPPING", RefExpFeatureMap, overwrite=TRUE)
+    DBI::dbDisconnect(conn)
+  } else {
+    feature_id_mapping_file <- paste("reference_experiment_feature_map.tsv")
+    utils::write.table(RefExpFeatureMap, file = feature_id_mapping_file, sep = "\t", row.names = FALSE, quote = FALSE)
+  }
+  invisible(NULL)
+}
+
 # Alignment of precursor 4618 , sequence = QFNNTDIVLLEDFQK/3 across runs
 # ref = hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt
 # eXp = hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"
@@ -220,6 +353,57 @@ testAlignObj <- function(){
                     score = c(0,0,0,2.675751,2.385165,4.745081,4.454496,6.67706,6.386474,9.641135,15.48268,26.87968,46.67034,77.78939,121.8607,170.8698,214.2358,244.4554,262.8537,262.5631,270.8538,270.5632,288.2477,319.3287,364.6418,413.4873,453.1931,479.6588,496.5207,506.6607,512.7442,515.267,516.8242,518.2747,519.8424,521.2872,522.6472,524.2912,525.6285,526.5892,526.9713,527.1531,527.4022,527.1116,530.9457,547.7525,588.2834,658.8819,748.3079,833.8337,898.3289,935.5809,948.8015,952.0709,952.8035,953.4267,954.0863,954.8143,955.4842,956.0834,956.802,957.535,958.2853,959.0355,959.7972,960.7983,961.8922,963.0142,964.2597,965.5837,966.878,968.0037,968.4412,968.1507,968.1958,968.9242,985.3144,1085.833,1364.976,1846.928,2409.31,2869.416,3132.509,3231.061,3257.015,3264.422,3269.377,3275.003,3282.515,3290.524,3297.864,3304.43,3310.324,3314.403,3316.806,3317.992,3318.933,3318.642,3319.328,3319.038,3320.17,3321.781,3323.71,3325.64,3327.855,3330.382,3332.989,3335.319,3337.555,3339.96,3342.381,3344.48,3346.456,3348.605,3350.446,3352.092,3353.829,3355.911,3358.256,3360.576,3363.292,3367.099,3372.687,3380.124,3389.957,3401.498,3414.81,3428.762,3441.046,3451.052,3459.235,3466.392,3473.212,3480.14,3490.173,3506.584,3530.062,3561.003,3595.718,3624.828,3642.574,3650.352,3653.893,3656.295,3658.798,3661.361,3663.704,3665.936,3667.714,3669.478,3670.721,3671.991,3673.278,3674.689,3676.068,3677.317,3678.688,3680.062,3681.513,3683.097,3684.786,3686.565,3688.24,3689.741,3690.859,3690.568,3691.496,3691.205,3692.31,3693.465,3694.458,3695.352,3695.061,3695.892,3695.602,3696.512,3697.468,3698.18,3698.799,3699.363,3699.94,3700.634,3701.585,3702.988))
 
   AlignObj
+}
+
+# Alignment of 17186, sequence = 7351_ANAMGIPSLTVTNVPGSTLSR/3 across runs
+# ref = hroest_K120808_Strep10%PlasmaBiolRepl1_R03_SW_filt
+# eXp = hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt
+# Example: test_populateReferenceExperimentFeatureAlignmentMap
+testtAligned <- function(){
+  tAligned <- structure(c(4313, 4316.4, 4319.8, 4323.2, 4326.6, 4330.1, 4333.5,
+                          4336.9, 4340.3, 4343.7, 4347.1, 4350.5, 4353.9, 4357.4, 4360.8,
+                          4364.2, 4367.6, 4371, 4374.4, 4377.8, 4381.3, 4384.7, 4388.1,
+                          4391.5, 4394.9, 4398.3, 4401.7, 4405.2, 4408.6, 4412, 4415.4,
+                          4418.8, 4422.2, 4425.6, 4429.1, 4432.5, 4435.9, 4439.3, 4442.7,
+                          4446.1, 4449.5, 4452.9, 4456.4, 4459.8, 4463.2, 4466.6, 4470,
+                          4473.4, 4476.8, 4480.3, 4483.7, 4487.1, 4490.5, 4493.9, 4497.3,
+                          4500.7, 4504.2, 4507.6, 4511, 4514.4, 4517.8, 4521.2, 4524.6,
+                          4528.1, 4531.5, 4534.9, 4538.3, 4541.7, 4545.1, 4548.5, 4551.9,
+                          4555.4, 4558.8, 4562.2, 4565.6, 4569, 4572.4, 4575.8, 4579.3,
+                          4582.7, 4586.1, 4589.5, 4592.9, 4596.3, 4599.7, 4603.2, 4606.6,
+                          4610, 4613.4, 4616.8, 4620.2, 4623.6, 4627, 4630.5, 4633.9, 4637.3,
+                          4640.7, 4644.1, 4647.5, 4650.9, 4654.4, 4657.8, 4661.2, 4664.6,
+                          4668, 4671.4, 4674.8, 4678.3, 4681.7, 4685.1, 4688.5, 4691.9,
+                          4695.3, 4698.7, 4702.2, 4705.6, 4709, 4712.4, 4715.8, 4719.2,
+                          4722.6, 4726.1, 4729.5, 4732.9, 4736.3, 4739.7, 4743.1, 4746.5,
+                          4749.9, 4753.4, 4756.8, 4760.2, 4763.6, 4767, 4770.4, 4773.8,
+                          4777.3, 4780.7, 4784.1, 4787.5, 4790.9, 4794.3, 4797.7, 4801.2,
+                          4804.6, 4808, 4811.4, 4814.8, 4818.2, 4821.6, 4825.1, 4828.5,
+                          4831.9, 4835.3, 4838.7, 4842.1, 4845.5, 4849, 4852.4, 4855.8,
+                          4859.2, 4862.6, 4866, 4869.4, 4872.8, 4876.3, 4879.7, 4883.1,
+                          4886.5, 4889.9, 4893.3, 4896.7, 4900.2, 4903.6, 4907, NA, 4319.8,
+                          4326.6, 4330.1, 4333.5, 4336.9, 4340.3, 4347.1, 4350.5, 4354,
+                          4357.4, 4360.8, 4364.2, 4371, 4374.4, 4377.9, 4381.3, 4384.7,
+                          4391.5, 4394.9, 4398.3, 4401.8, 4405.2, 4412, 4415.4, 4418.8,
+                          4422.2, 4425.6, 4429.1, 4435.9, 4439.3, 4442.7, 4446.1, 4449.5,
+                          4456.4, 4459.8, 4463.2, 4466.6, 4470, 4473.4, 4480.3, 4483.7,
+                          4487.1, 4490.5, 4493.9, 4500.7, 4504.2, 4507.6, 4511, 4514.4,
+                          4517.8, 4524.6, 4528.1, 4531.5, 4534.9, 4538.3, 4545.1, 4548.5,
+                          4552, 4555.4, 4558.8, 4562.2, 4565.6, 4569, 4572.4, 4575.9, 4579.3,
+                          4582.7, 4586.1, 4589.5, 4592.9, 4596.3, 4599.7, 4603.2, 4604.9,
+                          4606.6, 4610, 4613.4, 4616.8, 4620.2, 4623.6, 4627.1, 4630.5,
+                          4633.9, 4635.6, 4637.3, 4640.7, 4644.1, 4647.5, 4651, 4654.4,
+                          4657.8, 4661.2, 4664.6, 4668, 4671.4, 4673.15, 4674.9, 4678.3,
+                          4681.7, 4685.1, 4688.5, 4691.9, 4695.3, 4698.7, 4702.2, 4705.6,
+                          4709, 4712.4, 4715.8, 4719.2, 4722.6, 4726.1, 4729.5, 4736.3,
+                          4739.7, 4743.1, 4746.5, 4750, 4753.4, 4756.8, 4760.2, 4763.6,
+                          4767, 4770.4, 4773.9, 4777.3, 4780.7, 4784.1, 4787.5, 4790.9,
+                          4794.3, 4797.8, 4801.2, 4804.6, 4808, 4811.4, 4814.8, 4818.2,
+                          4821.6, 4825.1, 4828.5, 4831.9, 4835.3, 4838.7, 4842.1, 4845.5,
+                          4849, 4852.4, 4855.8, 4859.2, 4862.6, 4866, 4869.4, 4872.9, 4876.3,
+                          4879.7, 4883.1, 4886.5, 4889.9, 4893.3, 4896.8, 4900.2, 4903.6,
+                          4907, 4910.4, 4913.8, 4917.2, NA, NA, NA, NA, NA, NA, NA), .Dim = c(175L, 2L))
+  tAligned
 }
 
 #' Checks all the alignment parameters
@@ -320,6 +504,10 @@ checkParams <- function(params){
     stop("alignedFDR2 must be between unalignedFDR and maxFdrQuery. Recommended value is 0.05")
   }
 
+  if(!params[["criterion"]] %in% 1:4){
+    stop("criterion must be from 1,2,3,4. Recommended value is 2")
+  }
+
   if(!any(params[["integrationType"]] %in% c("intensity_sum", "trapezoid", "simpson"))){
     stop("integrationType must be either intensity_sum, trapezoid or simpson.")
   }
@@ -391,6 +579,7 @@ checkParams <- function(params){
 #'  considered for quantification.}
 #' \item{alignedFDR2}{(numeric) must be between alignedFDR1 and maxFdrQuery. Features below alignedFDR2 and within certain distance from the aligned time are
 #'  considered for quantification after the alignment.}
+#' \item{criterion}{(integer) strategy to select peak if found overlapping peaks. 1:intensity, 2: RT overlap, 3: mscore, 4: edge distance}
 #' \item{level}{(string) apply maxPeptideFDR on Protein as well if specified as "Protein". Default: "Peptide".}
 #' \item{integrationType}{(string) method to ompute the area of a peak contained in XICs. Must be
 #'  from "intensity_sum", "trapezoid", "simpson".}
@@ -436,8 +625,8 @@ paramsDIAlignR <- function(){
   params <- list( runType = "DIA_Proteomics", chromFile = "sqMass",
                   maxFdrQuery = 0.05, maxIPFFdrQuery = 0.05, maxPeptideFdr = 0.01,
                   analyteFDR = 0.01, treeDist = "count", treeAgg = "single", alignToRoot = FALSE, prefix = "master",
-                  context = "global", unalignedFDR = 0.00, alignedFDR1 = 0.05, alignedFDR2 = 0.05, level = "Peptide",
-                  integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
+                  context = "global", unalignedFDR = 0.00, alignedFDR1 = 0.05, alignedFDR2 = 0.05, criterion = 2L,
+                  level = "Peptide", integrationType = "intensity_sum", baselineType = "base_to_base", fitEMG = FALSE,
                   recalIntensity = FALSE, fillMissing = TRUE, baseSubtraction = FALSE,
                   XICfilter = "sgolay", polyOrd = 4L, kernelLen = 11L,
                   globalAlignment = "loess", globalAlignmentFdr = 0.01, globalAlignmentSpan = 0.1,
@@ -583,12 +772,41 @@ checkOverlap <- function(x, y){
   olap
 }
 
+getBestPkIdx <- function(df, pk, idx, criterion = 2L){
+  if(criterion == 1L){ # Check based on intensity
+    idx <- idx[which.max(totalIntensity(df, idx))]
+    return(idx)
+  } else if(criterion == 2L){ # Check based on RT overlap
+    idx <- idx[which.max(overlapLen(df, pk, idx))]
+    return(idx)
+  } else if(criterion == 3L){ # Check based on m-score
+    mscores <- .subset2(df, "m_score")[idx]
+    i <- which.min(mscores)
+    if(sum(mscores[i]>=mscores, na.rm=T) == 1){
+      return(idx[i])
+    }
+    idx <- idx[which(mscores[i]>=mscores)]
+  }
+  # Check based on edge-distance
+  idx <- idx[which.min(pkDist(df, pk, idx))]
+  idx
+}
+
+pkDist <- function(df, pk, idx){
+  left <- pk[1] - .subset2(df, "leftWidth")[idx]
+  right <- pk[2] - .subset2(df, "rightWidth")[idx]
+  pmin(abs(right) , abs(left))
+}
+
 overlapLen <- function(df, pk, idx){
   left <- pmax(pk[1], .subset2(df, "leftWidth")[idx])
   right <- pmin(pk[2], .subset2(df, "rightWidth")[idx])
   right - left
 }
 
+totalIntensity <- function(df, idx){
+  sapply(.subset2(df, "intensity")[idx], sum)
+}
 
 #' Prints messages if a certain number of analytes are aligned
 #' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}

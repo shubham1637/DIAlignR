@@ -16,7 +16,8 @@ perBatch(
   params,
   globalFits,
   RSE,
-  applyFun = lapply
+  applyFun = lapply,
+  multiFeatureAlignmentMap = NULL
 )
 }
 \arguments{
@@ -42,6 +43,9 @@ chromatogramIndex: index of chromatogram in mzML file.}
 \item{globalFits}{(list) each element is either of class lm or loess. This is an output of \code{\link{getGlobalFits}}.}
 
 \item{RSE}{(list) Each element represents Residual Standard Error of corresponding fit in globalFits.}
+
+\item{multiFeatureAlignmentMap}{(list) contains multiple data-frames that are collection of experiment feature ids
+mapped to corresponding reference feature id per analyte. This is an output of \code{\link{getRefExpFeatureMap}}.}
 
 \item{rownum}{(integer) represnts the index of the multipepetide to be aligned.}
 }

@@ -13,7 +13,8 @@ alignTargetedRuns(
   runs = NULL,
   peps = NULL,
   refRun = NULL,
-  applyFun = lapply
+  applyFun = lapply,
+  saveAlignedPeaks = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ alignTargetedRuns(
 \item{refRun}{(string) reference for alignment. If no run is provided, m-score is used to select reference run.}
 
 \item{applyFun}{(function) value must be either lapply or BiocParallel::bplapply.}
+
+\item{saveAlignedPeaks}{(logical) Save a mapping table to track aligned feature ids against reference feature id}
 }
 \value{
 An output table with following columns: precursor, run, intensity, RT, leftWidth, rightWidth,

@@ -176,8 +176,8 @@ getNodeRun <- function(runA, runB, mergeName, dataPath, fileInfo, features, mzPn
   with(parent.frame(n = 1), mzPntrs[[mergeName]] <- temp)
 
   ##### Add node run to prec2chromIndex #####
-  prec2transition <- dplyr::select(precursors, .data$transition_group_id, .data$transition_ids) %>%
-    tidyr::unnest(.data$transition_ids) %>% as.data.frame()
+  prec2transition <- dplyr::select(precursors, 'transition_group_id', 'transition_ids') %>%
+    tidyr::unnest('transition_ids') %>% as.data.frame()
   chromatogramIdAsInteger(chromHead) # Select only chromatogramId, chromatogramIndex
   df <- mapPrecursorToChromIndices(prec2transition, chromHead) # Get chromatogram Index for each precursor.
   df <- df[match(precursors$transition_group_id, df$transition_group_id),]

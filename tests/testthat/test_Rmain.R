@@ -104,7 +104,8 @@ test_that("test_getAlignedTimesCpp",{
   run2 <- "hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"
   XICs.ref <- lapply(XIC_QFNNTDIVLLEDFQK_3_DIAlignR[[run1]][["4618"]], as.matrix)
   XICs.eXp <- lapply(XIC_QFNNTDIVLLEDFQK_3_DIAlignR[[run2]][["4618"]], as.matrix)
-  globalFit <- getLOESSfit(oswFiles_DIAlignR, ref = "run2", eXp = "run0", maxFdrGlobal = 0.05, spanvalue = 0.1)
+  RUNS_RT <- getRTdf(oswFiles_DIAlignR, ref = "run2", eXp = "run0", maxFdrGlobal = 0.05)
+  globalFit <- getLOESSfit(RUNS_RT, spanvalue = 0.1)
   tVec.ref <- XICs.ref[[1]][, "time"] # Extracting time component
   tVec.eXp <- XICs.eXp[[1]][, "time"] # Extracting time component
   len <- length(tVec.ref)
@@ -176,7 +177,8 @@ test_that("test_alignChromatogramsCpp",{
   XICs <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR
   data(oswFiles_DIAlignR, package="DIAlignR")
   oswFiles <- oswFiles_DIAlignR
-  Loess.fit <- getLOESSfit(oswFiles, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05, spanvalue = 0.1)
+  RUNS_RT <- getRTdf(oswFiles, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+  Loess.fit <- getLOESSfit(RUNS_RT, spanvalue = 0.1)
   XICs.ref <- XICs[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
   XICs.ref <- smoothXICs(XICs.ref, type = "sgolay", kernelLen = 13, polyOrd = 4)
   XICs.eXp <- XICs[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]

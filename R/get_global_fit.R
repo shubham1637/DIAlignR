@@ -1,6 +1,6 @@
 #' Calculates LOESS fit between RT of two runs
 #'
-#' This function selects features from oswFiles which has m-score < maxFdrLoess. It fits LOESS on these feature.
+#' This function uses output of getRTdf that selects features from oswFiles which has m-score < maxFdrLoess. It fits LOESS on these feature.
 #' Loess mapping is established from reference to experiment run.
 #' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
 #'
@@ -8,22 +8,18 @@
 #'
 #' License: (c) Author (2019) + GPL-3
 #' Date: 2019-12-14
-#' @param oswFiles (list of data-frames) it is output from getFeatures function.
-#' @param ref (string) Must be a combination of "run" and an iteger e.g. "run2".
-#' @param eXp (string) Must be a combination of "run" and an iteger e.g. "run2".
-#' @param maxFdrGlobal (numeric) A numeric value between 0 and 1. Features should have m-score lower than this value for participation in LOESS fit.
+#' @param RUNS_RT (data-frame) must have three calumns: transition_group_id, RT.eXp, and RT.ref.
 #' @param spanvalue (numeric) Spanvalue for LOESS fit. For targeted proteomics 0.1 could be used.
 #' @return An object of class "loess".
-#' @seealso \code{\link{getLinearfit}, \link{getFeatures}}
+#' @seealso \code{\link{getLinearfit}, \link{getFeatures}, \link{getRTdf}}
 #' @keywords internal
 #' @examples
 #' data(oswFiles_DIAlignR, package="DIAlignR")
 #' \dontrun{
-#' Loess.fit <- getLOESSfit(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2",
-#'  maxFdrGlobal = 0.05, spanvalue = 0.1)
+#' RUNS_RT <- getRTdf(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+#' Loess.fit <- getLOESSfit(RUNS_RT, spanvalue = 0.1)
 #' }
-getLOESSfit <- function(oswFiles, ref, eXp, maxFdrGlobal, spanvalue = 0.1){
-  RUNS_RT <- getRTdf(oswFiles, ref, eXp, maxFdrGlobal)
+getLOESSfit <- function(RUNS_RT, spanvalue = 0.1){
   fit <- stats::lowess(RUNS_RT$RT.ref, RUNS_RT$RT.eXp, f = spanvalue, iter =3)
   fit$RT.ref <- RUNS_RT$RT.ref
   fit$RT.eXp <- RUNS_RT$RT.eXp
@@ -70,7 +66,7 @@ dialignrLoess <- function(RUNS_RT, spanvalue){
 
 #' Calculates linear fit between RT of two runs
 #'
-#' This function selects features from oswFiles which has m-score < maxFdrLoess. It fits Linear model on these feature.
+#' This function uses output of getRTdf that selects features from oswFiles which has m-score < maxFdrLoess. It fits Linear model on these feature.
 #' Loess mapping is established from reference to experiment run.
 #' @author Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}
 #'
@@ -78,23 +74,18 @@ dialignrLoess <- function(RUNS_RT, spanvalue){
 #'
 #' License: (c) Author (2019) + GPL-3
 #' Date: 2019-12-14
-#' @param oswFiles (list of data-frames) it is output from getFeatures function.
-#' @param ref (string) Must be a combination of "run" and an iteger e.g. "run2".
-#' @param eXp (string) Must be a combination of "run" and an iteger e.g. "run2".
-#' @param maxFdrGlobal (numeric) A numeric value between 0 and 1. Features should have m-score lower than this value for participation in linear fit.
-#' @importFrom dplyr %>%
-#' @importFrom stats lm
+#' @param RUNS_RT (data-frame) must have three calumns: transition_group_id, RT.eXp, and RT.ref.
+#' @import stats
 #' @return An object of class "lm".
-#' @seealso \code{\link{getLOESSfit}, \link{getFeatures}}
+#' @seealso \code{\link{getLOESSfit}, \link{getFeatures}, \link{getRTdf}}
 #' @keywords internal
 #' @examples
 #' data(oswFiles_DIAlignR, package="DIAlignR")
 #' \dontrun{
-#' lm.fit <- getLinearfit(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2",
-#'  maxFdrGlobal = 0.05)
+#' RUNS_RT <- getRTdf(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+#' lm.fit <- getLinearfit(RUNS_RT)
 #' }
-getLinearfit <- function(oswFiles, ref, eXp, maxFdrGlobal){
-  RUNS_RT <- getRTdf(oswFiles, ref, eXp, maxFdrGlobal)
+getLinearfit <- function(RUNS_RT){
   # For testing we want to avoid validation peptides getting used in the fit.
   fit <- stats::.lm.fit(cbind(1, RUNS_RT$RT.ref), RUNS_RT$RT.eXp)
   fit
@@ -117,7 +108,7 @@ getLinearfit <- function(oswFiles, ref, eXp, maxFdrGlobal){
 #' @param fitType (string) Must be from "loess" or "linear".
 #' @param maxFdrGlobal (numeric) A numeric value between 0 and 1. Features should have m-score lower than this value for participation in global fit.
 #' @param spanvalue (numeric) Spanvalue for LOESS fit. For targeted proteomics 0.1 could be used.
-#' @importFrom dplyr %>%
+#' @importFrom magrittr %>%
 #' @return An object of class "loess".
 #' @seealso \code{\link{getFeatures}}
 #' @examples
@@ -127,12 +118,14 @@ getLinearfit <- function(oswFiles, ref, eXp, maxFdrGlobal){
 #' @export
 getGlobalAlignment <- function(oswFiles, ref, eXp, fitType = "linear", maxFdrGlobal = 0.01, spanvalue = 0.1){
   message("Geting global alignment of ", ref, " and ", eXp, ",", appendLF = FALSE)
+  RUNS_RT <- getRTdf(oswFiles, ref, eXp, maxFdrGlobal)
+  if(is(RUNS_RT, "logical")) return(NA)
   if(fitType == "loess"){
-    fit <- getLOESSfit(oswFiles, ref, eXp, maxFdrGlobal, spanvalue)
+    fit <- getLOESSfit(RUNS_RT, spanvalue)
     N <- length(fit$x)
   }
   else{
-    fit <- getLinearfit(oswFiles, ref, eXp, maxFdrGlobal)
+    fit <- getLinearfit(RUNS_RT)
     N <- length(fit$residuals)
   }
   message(" n = ", N)
@@ -161,6 +154,7 @@ getGlobalAlignment <- function(oswFiles, ref, eXp, fitType = "linear", maxFdrGlo
 #' getRSE(Loess.fit, "loess")
 #' }
 getRSE <- function(fit, globalAlignment){
+  if(is(fit, "logical")) return(NA_real_)
   if(globalAlignment == "loess"){
     lfun <- stats::approxfun(fit, ties = mean)
     fitted <- lfun(fit$RT.ref)
@@ -239,7 +233,10 @@ getGlobalFits <- function(refRun, features, fileInfo, globalAlignment,
 #' df <- getRTdf(features = oswFiles_DIAlignR, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
 #' @export
 getRTdf <- function(features, ref, eXp, maxFdrGlobal){
-  if(maxFdrGlobal > 1) stop("No common precursors found between ", ref, " and ", eXp)
+  if(maxFdrGlobal > 1){
+    warning("No common precursors found between ", ref, " and ", eXp, ". Will do local alignment instead.")
+    return(NA)
+  }
   df.ref <-  features[[ref]][peak_group_rank == 1L & m_score <= maxFdrGlobal, .(transition_group_id, RT)]
   df.eXp <-  features[[eXp]][peak_group_rank == 1L & m_score <= maxFdrGlobal, .(transition_group_id, RT)]
   RUNS_RT <- df.ref[df.eXp, on = .(transition_group_id), nomatch = 0]
@@ -252,6 +249,7 @@ getRTdf <- function(features, ref, eXp, maxFdrGlobal){
 }
 
 extractFit <- function(fit, globalAlignment){
+  if(is(fit, "logical")) return(NA)
   if(globalAlignment == "linear"){
     return(stats::coef(fit))
   }else{

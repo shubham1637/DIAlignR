@@ -33,7 +33,7 @@
 pickNearestFeature <- function(eXpRT, analyte, oswFiles, runname, adaptiveRT, featureFDR){
   # Fetch features for an analyte.
   df <- oswFiles[[runname]] %>% dplyr::filter(.data$transition_group_id == analyte) %>%
-    dplyr::select(.data$leftWidth, .data$rightWidth, .data$RT, .data$intensity, .data$peak_group_rank, .data$m_score)
+    dplyr::select('leftWidth', 'rightWidth', 'RT', 'intensity', 'peak_group_rank', 'm_score')
   # select features which are within adaptive RT of mapped retention time.
   df <- df %>% dplyr::filter(abs(.data$RT - eXpRT) <= adaptiveRT)
   # select highest peak_group_rank feature.
@@ -180,7 +180,7 @@ setAlignmentRank <- function(df, refIdx, eXp, tAligned, XICs, params, adaptiveRT
     if(any(.subset2(df, "m_score")[idx] <= params[["alignedFDR1"]], na.rm = TRUE)){
       # Select peak with biggest overlap
       idx <- idx[which(.subset2(df, "m_score")[idx] <= params[["alignedFDR1"]])]
-      idx <- idx[which.max(overlapLen(df, narwPk, idx))]
+      idx <- getBestPkIdx(df, narwPk, idx, params[["criterion"]])
       set(df, i = idx, "alignment_rank", 1L)
       if(params[["recalIntensity"]]){
         reIntensity2(df, idx, XICs[[analyte_chr]], c(left, right), params)}
@@ -238,4 +238,68 @@ setOtherPrecursors <- function(df, refIdx, XICs, analytes, params){
   invisible(NULL)
 }
 
+#' Populate Alignment Feature Mapping Table
+#'
+#' Populate an alignment feature mapping table for star align method,
+#' to map aligned features in experiment runs to the reference run for a given analyte.
+#' Is a data.table generated from of \code{\link{getRefExpFeatureMap}}.
+#' @author Justin Sing, \email{justinc.sing@mail.utoronto.ca}
+#'
+#' ORCID: 0000-0003-0386-0092
+#'
+#' License: (c) Author (2020) + GPL-3
+#' Date: 2022-11-07
+#' @keywords internal
+#' @import data.table
+#' @importFrom data.table rbindlist as.data.table
+#' @inherit perBatch return
+#' @inheritParams alignToRef
+#' @inheritParams setAlignmentRank
+#' @param analyte_chr (string) name of highest quality precursor/transition_group_id
+#'
+#' @return invisible NULL
+#' @seealso \code{\link{getRefExpFeatureMap}, \link{alignToRef}}
+#' @keywords internal
+#'
+#' @examples
+#' data(multipeptide_DIAlignR, package="DIAlignR")
+#' data(XIC_QFNNTDIVLLEDFQK_3_DIAlignR, package="DIAlignR")
+#' params <- paramsDIAlignR()
+#' df <- multipeptide_DIAlignR[["14383"]]
+#' df$alignment_rank[2] <- 1L
+#' XICs.ref <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
+#' XICs.eXp <- XIC_QFNNTDIVLLEDFQK_3_DIAlignR[["hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]]
+#' \dontrun{
+#' # Use getAlignedTimes() to get tAligned.
+#' alignObj <- testAlignObj()
+#' tAligned <- alignedTimes2(alignObj, XICs.ref, XICs.eXp)
+#' setAlignmentRank(df, refIdx = 3L, eXp = "run2", tAligned, XICs.eXp, params, adaptiveRT = 38.66)
+#' # Use getRefExpFeatureMap() to get a list of feature_alignment_mapping tables
+#' feature_alignment_mapping <- data.table::as.data.table(structure(list(
+#' reference_feature_id = structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64"),
+#' experiment_feature_id = structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")),
+#' row.names = c(NA, -15L), class = c("data.table", "data.frame"), sorted = "reference_feature_id"))
+#' populateReferenceExperimentFeatureAlignmentMap(df, feature_alignment_mapping, tAligned, ref = "run0", eXp = "run2", analyte_chr="4618")
+#' }
+populateReferenceExperimentFeatureAlignmentMap <- function(df, feature_alignment_mapping, tAligned, ref, eXp, analyte_chr){
+  mapped_aligned_features = rbindlist(lapply(df[run==ref & transition_group_id==analyte_chr][["RT"]],
+                                             function(rt_i){
+                                               as.data.table(t(matrix(tAligned[which.min(abs(tAligned[,1]-rt_i)),])))}
+                                             ))
+  # Subset reference and experiment features for current analyte
+  ref_df = df[run==ref & transition_group_id==analyte_chr & !is.na(feature_id)]
+  eXp_df = df[run==eXp & transition_group_id==analyte_chr & !is.na(feature_id)]
 
+  # Get reference to experiment feature mapping
+  lapply(seq(1,nrow(mapped_aligned_features)), function(feature_i){
+    ref_featid <- ref_df[which.min(abs(ref_df[["RT"]]-mapped_aligned_features[["V1"]][[feature_i]]))][['feature_id']]
+    eXp_featid <- eXp_df[which.min(abs(eXp_df[["RT"]]-mapped_aligned_features[["V2"]][[feature_i]]))][['feature_id']]
+    if( length(eXp_featid)==0 ){ return(invisible(NULL)) }
+    if ( eXp_featid %not_in% feature_alignment_mapping[["experiment_feature_id"]] ){
+      populate_index <- which(feature_alignment_mapping[["reference_feature_id"]]==0 & feature_alignment_mapping[["experiment_feature_id"]]==0)
+      data.table::set(feature_alignment_mapping, i=populate_index[1], "reference_feature_id", ref_featid)
+      data.table::set(feature_alignment_mapping, i=populate_index[1], "experiment_feature_id", eXp_featid)
+    }
+  })
+  invisible(NULL)
+}

@@ -4,7 +4,13 @@
 \alias{getPrecursorIndices}
 \title{Get MS1 chromatogram indices of precursors.}
 \usage{
-getPrecursorIndices(fileInfo, precursors, mzPntrs, applyFun = lapply)
+getPrecursorIndices(
+  fileInfo,
+  precursors,
+  mzPntrs,
+  ions = ".*",
+  applyFun = lapply
+)
 }
 \arguments{
 \item{fileInfo}{(data-frame) Output of getRunNames function.}
@@ -12,6 +18,8 @@ getPrecursorIndices(fileInfo, precursors, mzPntrs, applyFun = lapply)
 \item{precursors}{(data-frame) Atleast two columns transition_group_id and transition_ids are required.}
 
 \item{mzPntrs}{A list of mzRpwiz.}
+
+\item{ions}{(character) Strings to specify ions. eg. i0, i1.}
 
 \item{applyFun}{(function) value must be either lapply or BiocParallel::bplapply.}
 }

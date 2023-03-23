@@ -61,6 +61,21 @@ test_that("test_getMultipeptide", {
   expect_equal(outData[[1]], expData, tolerance = 1e-04)
 })
 
+test_that("test_getRefExpFeatureMap",
+          {
+            dataPath <- system.file("extdata", package = "DIAlignR")
+            fileInfo <- getRunNames(dataPath, oswMerged = TRUE)
+            precursors <- getPrecursors(fileInfo, oswMerged = TRUE, context = "experiment-wide", maxPeptideFdr = 0.05)
+            features <- getFeatures(fileInfo, maxFdrQuery = 0.05)
+            outData <- getRefExpFeatureMap(precursors, features)
+            expData <- data.table("reference_feature_id" = rep(0L, 15), "experiment_feature_id" = rep(0L, 15))
+            setattr(expData[['reference_feature_id']], "class","integer64")
+            setattr(expData[['experiment_feature_id']], "class","integer64")
+            setkeyv(expData, "reference_feature_id")
+            expect_identical(length(outData), 229L)
+            expect_equal(outData[[1]], expData, tolerance = 1e-04)
+          })
+
 test_that("test_writeTables", {
   # To check if the two files are same, we can use tools::md5sum(). However, this will
   # not tell us which value is different.
@@ -90,6 +105,97 @@ test_that("test_writeTables", {
                         key = NULL)
   expect_equal(outData[c(82,167),], expData, tolerance = 1e-05)
 })
+
+test_that("test_writeOutFeatureAlignmentMap",
+          {
+            #### Prepare data and outout ####
+            dataPath <- system.file("extdata", package = "DIAlignR")
+            fileInfo <- getRunNames(dataPath, oswMerged = TRUE)
+
+            multiFeatureAlignmentMap <- list(`1338` = structure(list(reference_feature_id = structure(c(4.75292059933946e+94,
+                                                                                                        5.52612460272647e-11, 3.59272034753732e+234, 3.74370892823184e+230,
+                                                                                                        2.34380646139584e+234, 4.75292059933946e+94, 5.52612460272647e-11,
+                                                                                                        3.59272034753732e+234, 3.74370892823184e+230, 0, 0, 0, 0, 0,
+                                                                                                        0), class = "integer64"),
+                                                                     experiment_feature_id = structure(c(2.04161779709829e+87,
+                                                                                                         1.60545397951231e+66, 5.20548354836881e-89, 4.57942078616298e+306,
+                                                                                                         2.66188671607728e-167, 1.89738801704963e+63, 7.46666102909777e-250,
+                                                                                                         1.01955111889378e-75, 5.12280305276836e+252, 0, 0, 0, 0, 0, 0
+                                                                                                        ), class = "integer64")), row.names = c(NA, -15L), class = c("data.table", "data.frame")),
+                                             `19045` = structure(list(reference_feature_id = structure(c(6.28056556040491e-257,
+                                                                                                         4.37872094299259e+26, 4.97487068543727e-50, 1.96129357589358e+225,
+                                                                                                         6.28056556040491e-257, 4.37872094299259e+26, 4.97487068543727e-50,
+                                                                                                         2.22889297151144e-67, 1.96129357589358e+225, 0, 0, 0, 0,
+                                                                                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64"),
+                                                                      experiment_feature_id = structure(c(1.39189055078857e+239,
+                                                                                                          1.64937896938207e+218, 1.3591112627868e-271, 3.36180583288588e-229,
+                                                                                                          2.16310643042558e-237, 5.82423961711318e+254, 9.33806679439292e+229,
+                                                                                                          1.58730393504064e-226, 7.21410639770476e+159, 0, 0, 0,
+                                                                                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA, -30L), class = c("data.table", "data.frame")),
+                                             `19800` = structure(list(reference_feature_id = structure(c(4.72799309850901e-140,
+                                                                                                         1.98100991301857e-234, 4.7297745210988e+87, 4.72799309850901e-140,
+                                                                                                         4.7297745210988e+87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64"),
+                                                                      experiment_feature_id = structure(c(8.56560434196891e+243,
+                                                                                                          1.62593959656114e+49, 4.1149805476014e-97, 1.94083176316202e-40,
+                                                                                                          1.29045098420263e-28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA, -15L), class = c("data.table", "data.frame")))
+
+            #### Expected Data ####
+            expData <- structure(list(ALIGNMENT_GROUP_ID = c(1L, 1L, 1L, 2L, 2L, 3L,
+                                                             3L, 3L, 4L, 4L, 5L, 5L, 5L, 6L, 6L, 6L, 7L, 7L, 7L, 8L, 8L, 8L,
+                                                             9L, 9L, 9L, 10L, 10L, 10L, 11L, 11L, 11L, 12L, 12L, 13L, 13L,
+                                                             13L),
+                                      REFERENCE = c(0L, 0L, 1L, 0L, 1L, 0L, 0L, 1L, 0L, 1L, 0L,
+                                                    0L, 1L, 0L, 0L, 1L, 0L, 0L, 1L, 0L, 0L, 1L, 0L, 0L, 1L, 0L, 0L,
+                                                    1L, 0L, 0L, 1L, 0L, 1L, 0L, 0L, 1L),
+                                      FEATURE_ID = structure(c(2.16310643042558e-237,
+                                                               1.39189055078857e+239, 6.28056556040491e-257, 1.62593959656114e+49,
+                                                               1.98100991301857e-234, 1.94083176316202e-40, 8.56560434196891e+243,
+                                                               4.72799309850901e-140, 1.58730393504064e-226, 2.22889297151144e-67,
+                                                               1.3591112627868e-271, 9.33806679439292e+229, 4.97487068543727e-50,
+                                                               7.46666102909777e-250, 1.60545397951231e+66, 5.52612460272647e-11,
+                                                               1.64937896938207e+218, 5.82423961711318e+254, 4.37872094299259e+26,
+                                                               4.1149805476014e-97, 1.29045098420263e-28, 4.7297745210988e+87,
+                                                               1.89738801704963e+63, 2.04161779709829e+87, 4.75292059933946e+94,
+                                                               3.36180583288588e-229, 7.21410639770476e+159, 1.96129357589358e+225,
+                                                               5.12280305276836e+252, 4.57942078616298e+306, 3.74370892823184e+230,
+                                                               2.66188671607728e-167, 2.34380646139584e+234, 5.20548354836881e-89,
+                                                               1.01955111889378e-75, 3.59272034753732e+234), class = "integer64")),
+                                 class = "data.frame", row.names = c(NA, 36L))
+
+            #### Writing to OSW ####
+            # Make a Copy of fileInfo with a copy of the OSW file to avoid git history of test merged.osw file from being changed
+            fileInfotmp <- fileInfo
+            copiedOSWpath <- paste(getwd(), basename(unique(fileInfo$featureFile)[1]), sep=.Platform$file.sep)
+            file.copy(unique(fileInfo$featureFile)[1], copiedOSWpath)
+            fileInfotmp$featureFile <- copiedOSWpath
+
+            # Write out alignment map to disk: OSW
+            writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged=TRUE, fileInfotmp)
+
+            # Load written out table from osw file
+            con <- DBI::dbConnect(RSQLite::SQLite(), fileInfotmp$featureFile[1])
+            outData <- DBI::dbGetQuery(con, "SELECT * FROM ALIGNMENT_GROUP_FEATURE_MAPPING")
+            DBI::dbDisconnect(con)
+
+            #### Test Expectations ####
+            expect_equal(outData, expData, tolerance = 1e-6)
+
+            #### Clean up and Remove Test Output ####
+            file.remove(copiedOSWpath)
+
+            #### Writing to TSV ####
+            # Write out alignment map to disk: TSV
+            writeOutFeatureAlignmentMap(multiFeatureAlignmentMap, oswMerged=FALSE, fileInfotmp)
+
+            # Load written out table from TSV file
+            outData <- read.table("reference_experiment_feature_map.tsv", header = TRUE, sep = "\t", colClasses = c("integer", "integer", "integer64"))
+
+            #### Test Expectations ####
+            expect_equal(outData, expData, tolerance = 1e-6)
+
+            #### Clean up and Remove Test Output ####
+            file.remove("reference_experiment_feature_map.tsv")
+          })
 
 test_that("test_checkParams", {
 })

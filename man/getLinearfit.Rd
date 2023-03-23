@@ -4,33 +4,27 @@
 \alias{getLinearfit}
 \title{Calculates linear fit between RT of two runs}
 \usage{
-getLinearfit(oswFiles, ref, eXp, maxFdrGlobal)
+getLinearfit(RUNS_RT)
 }
 \arguments{
-\item{oswFiles}{(list of data-frames) it is output from getFeatures function.}
-
-\item{ref}{(string) Must be a combination of "run" and an iteger e.g. "run2".}
-
-\item{eXp}{(string) Must be a combination of "run" and an iteger e.g. "run2".}
-
-\item{maxFdrGlobal}{(numeric) A numeric value between 0 and 1. Features should have m-score lower than this value for participation in linear fit.}
+\item{RUNS_RT}{(data-frame) must have three calumns: transition_group_id, RT.eXp, and RT.ref.}
 }
 \value{
 An object of class "lm".
 }
 \description{
-This function selects features from oswFiles which has m-score < maxFdrLoess. It fits Linear model on these feature.
+This function uses output of getRTdf that selects features from oswFiles which has m-score < maxFdrLoess. It fits Linear model on these feature.
 Loess mapping is established from reference to experiment run.
 }
 \examples{
 data(oswFiles_DIAlignR, package="DIAlignR")
 \dontrun{
-lm.fit <- getLinearfit(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2",
- maxFdrGlobal = 0.05)
+RUNS_RT <- getRTdf(oswFiles = oswFiles_DIAlignR, ref = "run1", eXp = "run2", maxFdrGlobal = 0.05)
+lm.fit <- getLinearfit(RUNS_RT)
 }
 }
 \seealso{
-\code{\link{getLOESSfit}, \link{getFeatures}}
+\code{\link{getLOESSfit}, \link{getFeatures}, \link{getRTdf}}
 }
 \author{
 Shubham Gupta, \email{shubh.gupta@mail.utoronto.ca}

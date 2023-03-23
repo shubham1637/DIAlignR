@@ -96,7 +96,8 @@ test_that("test_getAlignedTimesFast", {
   XICs.ref <- lapply(XIC_QFNNTDIVLLEDFQK_3_DIAlignR[[run1]][["4618"]], as.matrix)
   XICs.eXp <- lapply(XIC_QFNNTDIVLLEDFQK_3_DIAlignR[[run2]][["4618"]], as.matrix)
   adaptiveRT <- 77.82315
-  fit <- getLOESSfit(oswFiles_DIAlignR, ref = "run2", eXp = "run0", maxFdrGlobal = 0.05, spanvalue = 0.1)
+  RUNS_RT <- getRTdf(oswFiles_DIAlignR, ref = "run2", eXp = "run0", maxFdrGlobal = 0.05)
+  fit <- getLOESSfit(RUNS_RT, spanvalue = 0.1)
   fit <- extractFit(fit, params$globalAlignment)
   outData <- getAlignedTimesFast(XICs.ref, XICs.eXp, fit, adaptiveRT, params)
   expect_equal(outData[1:3,1], c(4978.4, 4981.8, 4985.2), tolerance = 1e-03)

@@ -177,3 +177,78 @@ test_that("test_setOtherPrecursors", {
   expect_equal(df[5,c(3:6, 10)], data.table(RT = 2586.12, intensity = 19.30421, leftWidth = 2564.094, rightWidth = 2605.06, alignment_rank = 1L),
                tolerance = 1e-06)
 })
+
+
+test_that("test_populateReferenceExperimentFeatureAlignmentMap",
+          {
+            #### Prepare Data and Output ####
+
+            # Runs and Analyte
+            ref <- "run0"
+            eXp <- "run1"
+            analyte_chr <- "17186"
+
+            # Subset of Feature alignment map table
+            feature_alignment_map <- data.table("reference_feature_id" = rep(bit64::as.integer64(0), 15), "experiment_feature_id" = rep(bit64::as.integer64(0), 15))
+            setkeyv(feature_alignment_map, "reference_feature_id")
+
+            # Subset of multipeptide for current eXp aligned to Ref
+            dt <- structure(list(transition_group_id = c(17186L, 17186L, 17186L,
+                                                         17186L, 17186L, 17186L, 17186L, 17186L, 17186L, 17186L, 17186L,
+                                                         17186L, 17186L, 17186L, 17186L, 17186L, 17186L, 17186L),
+                                 feature_id = structure(c(4.75292059933946e+94,
+                                                          5.52612460272647e-11, 3.59272034753732e+234, 3.74370892823184e+230,
+                                                          2.34380646139584e+234, 0, 2.04161779709829e+87, 1.60545397951231e+66,
+                                                          5.20548354836881e-89, 2.66188671607728e-167, 4.57942078616298e+306,
+                                                          0, 1.89738801704963e+63, 7.46666102909777e-250, 1.01955111889378e-75,
+                                                          1.29960826886799e-188, 5.12280305276836e+252, 0), class = "integer64"),
+                                 RT = c(4649.7, 4604.19, 4715.68, 4370.9, 4880.38, NA, 4681.37,
+                                        4628.26, 4741.25, 4873.31, 4484.56, NA, 4676.93, 4638.36,
+                                        4735.13, 4347.61, 4425.08, NA),
+                                 intensity = c(396.068, 48.3087,
+                                               54.6872, 60.1767, 57.5545, NA, 933.868, 96.0476, 100.972,
+                                               78.625, 15.4901, NA, 412.235, 44.3814, 46.9198, 15.0419,
+                                               64.7877, NA),
+                                 leftWidth = c(4620.22119140625, 4582.669921875,
+                                                4698.740234375, 4347.1201171875, 4879.6767578125, NA, 4637.30078125,
+                                                4613.40380859375, 4722.64599609375, 4838.7158203125, 4473.43994140625,
+                                                NA, 4647.56005859375, 4616.8359375, 4726.078125, 4336.90380859375,
+                                                4401.77001953125, NA),
+                                 rightWidth = c(4691.91015625, 4620.22119140625,
+                                                4743.1220703125, 4388.0849609375, 4906.98779296875, NA, 4708.98876953125,
+                                                4644.1279296875, 4767.02587890625, 4889.923828125, 4487.09521484375,
+                                                NA, 4709.009765625, 4647.56005859375, 4760.216796875, 4353.97412109375,
+                                                4446.14697265625, NA),
+                                 peak_group_rank = c(1L, 2L, 3L, 4L,
+                                                     5L, NA, 1L, 2L, 3L, 4L, 5L, NA, 1L, 2L, 3L, 4L, 5L, NA),
+                                 m_score = c(5.69207721480095e-05, 0.0157610817708339, 0.224875109435837,
+                                             0.281696713296988, 0.30530712857306, NA, 5.69207721480095e-05,
+                                             0.00535845032028004, 0.0219196954403725, 0.318687030402833,
+                                             0.383338141620706, NA, 5.69207721480095e-05, 0.0273833236082787,
+                                             0.140154915469226, 0.213467945793095, 0.327528954268794,
+                                             NA),
+                                 run = c("run0", "run0", "run0", "run0", "run0", "run0",
+                                         "run1", "run1", "run1", "run1", "run1", "run1", "run2", "run2",
+                                         "run2", "run2", "run2", "run2"),
+                                 alignment_rank = c(1L, NA,
+                                                    NA, NA, NA, NA, 1L, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,
+                                                    NA)), row.names = c(NA, -18L), class = c("data.table", "data.frame"
+                                                    ), sorted = "run")
+            # Aligned RT axes
+            tAligned <- testtAligned()
+
+            # Populate alignment map table
+            populateReferenceExperimentFeatureAlignmentMap(dt, feature_alignment_map, tAligned, ref, eXp, analyte_chr)
+
+            ##### Expected Data ####
+            expData <- structure(list(reference_feature_id = structure(c(4.75292059933946e+94,
+                                                                         5.52612460272647e-11, 3.59272034753732e+234, 3.74370892823184e+230,
+                                                                         2.34380646139584e+234, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64"),
+                                      experiment_feature_id = structure(c(2.04161779709829e+87,
+                                                                          1.60545397951231e+66, 5.20548354836881e-89, 4.57942078616298e+306,
+                                                                          2.66188671607728e-167, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), class = "integer64")), row.names = c(NA,
+                                                                                                                                                                     -15L), class = c("data.table", "data.frame"))
+
+            ##### Test Expectations ####
+            expect_equal(feature_alignment_map, expData, tolerance = 1e-06)
+          })
