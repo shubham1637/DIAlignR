@@ -57,8 +57,7 @@ class MSChromatogram :
 public:
 
   /// Comparator for the retention time.
-  struct MZLess :
-    public std::binary_function<MSChromatogram, MSChromatogram, bool>
+  struct MZLess
   {
     bool operator()(const MSChromatogram& a, const MSChromatogram& b) const;
   };
