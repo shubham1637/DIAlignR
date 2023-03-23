@@ -120,6 +120,19 @@ Instead, use `oswMerged = FALSE` and `scoreFile=PATH/TO/model_global.osw`.
 
 
 ## Visualizing multiple chromatograms 
+We can plot the chromatograms as well. First we fetch chromatograms which is a list of matrices.
+```{r, message=FALSE}
+dataPath <- system.file("extdata", package = "DIAlignR")
+runs <- c("hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt",
+ "hroest_K120809_Strep10%PlasmaBiolRepl2_R04_SW_filt")
+XICs <- getXICs(analytes = 4618L, runs = runs, dataPath = dataPath, oswMerged = TRUE)
+```
+
+Then we plot the XICs:
+```{r}
+plotXICgroup(XICs[["hroest_K120809_Strep0%PlasmaBiolRepl2_R04_SW_filt"]][["4618"]])
+```
+
 
 ## Investigating alignment of analytes
 
